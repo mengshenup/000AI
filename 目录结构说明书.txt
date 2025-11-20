@@ -69,4 +69,4 @@ start_server.bat 实际上是运行 python run.py。
 先双击 Angel_Server/start_server.bat
 (等待显示 "Uvicorn running on ... 8000")
 再双击 Angel_Client/start_client.bat
-(浏览器自动弹出，系统连接成功)
+(浏览器自动弹出，系统连接成功！)
