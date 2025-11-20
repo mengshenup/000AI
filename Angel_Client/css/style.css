@@ -1,0 +1,516 @@
+/* === 2025年11月 Seraphim System Style (性能优化版) === */
+:root {
+    /* === 关键修改：这里不再写死路径 === */
+    /* 由 window_manager.js 动态注入 */
+    --bg-wallpaper: none;
+    --win-bg: rgba(255, 255, 255, 0.95);
+    --win-border: 1px solid rgba(255, 255, 255, 0.8);
+    --accent-color: #FF9A9E;
+    --taskbar-bg: rgba(255, 255, 255, 0.95);
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: var(--bg-wallpaper) no-repeat center center fixed;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+    transition: background-image 0.5s ease-in-out;
+}
+
+#desktop {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 图标样式 */
+.desktop-icon {
+    position: absolute;
+    width: 84px;
+    text-align: center;
+    color: #fff;
+    cursor: default;
+    padding: 8px;
+    border-radius: 12px;
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.desktop-icon:hover {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+}
+
+.desktop-icon:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.icon-svg {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 6px;
+    /* 性能优化: 移除drop-shadow,添加硬件加速 */
+    pointer-events: none;
+    will-change: transform;
+}
+
+.icon-text {
+    font-size: 12px;
+    line-height: 1.4;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 3D 角色 */
+#angel-companion {
+    position: absolute;
+    bottom: 60px;
+    right: 40px;
+    width: 280px;
+    height: 320px;
+    z-index: 200;
+    cursor: grab;
+    /* 性能优化: 移除drop-shadow改用box-shadow,添加硬件加速 */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+#angel-companion:active {
+    cursor: grabbing;
+}
+
+/* 气泡对话框 */
+.speech-bubble {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(255, 255, 255, 0.98);
+    padding: 12px 16px;
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    font-size: 13px;
+    color: #333;
+    width: 220px;
+    opacity: 0;
+    transition: 0.4s;
+    pointer-events: none;
+    border: 1px solid #fff;
+    font-weight: 600;
+    z-index: 201;
+    text-align: center;
+}
+
+.speech-bubble.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* 窗口通用 */
+.window {
+    position: absolute;
+    background: var(--win-bg);
+    /* 性能优化: blur从30px降到10px,视觉差异小但性能提升显著 */
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 300px;
+    min-height: 180px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 10;
+    /* 硬件加速提示 */
+    will-change: transform, opacity;
+    transform: translateZ(0) scale(0.95);
+}
+
+.window.open {
+    opacity: 1;
+    transform: translateZ(0) scale(1);
+    pointer-events: auto;
+}
+
+.window.minimized {
+    opacity: 0;
+    transform: translateZ(0) translateY(60px) scale(0.8);
+    pointer-events: none;
+    transition: 0.2s ease-in;
+}
+
+.title-bar {
+    height: 44px;
+    background: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    cursor: default;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.win-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #444;
+    pointer-events: none;
+}
+
+.win-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.win-btn {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: 0.2s;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.win-btn:hover {
+    transform: scale(1.1);
+}
+
+.close-btn {
+    background: #ff6b6b;
+}
+
+.min-btn {
+    background: #feca57;
+}
+
+.max-btn {
+    background: #28c940;
+}
+
+.win-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* App 特有样式 */
+#win-manual .win-content {
+    padding: 20px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #444;
+}
+
+.manual-section {
+    margin-bottom: 20px;
+}
+
+.manual-title {
+    font-weight: bold;
+    font-size: 15px;
+    color: var(--accent-color);
+    border-bottom: 2px solid #eee;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.data-table th {
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    padding: 5px;
+    color: #666;
+}
+
+.data-table td {
+    padding: 5px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.warn-box {
+    background: #fff5f5;
+    border-left: 4px solid #ff6b6b;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #c0392b;
+    margin-top: 10px;
+}
+
+.limit-tag {
+    display: inline-block;
+    background: #eee;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    color: #e83e8c;
+    font-weight: bold;
+}
+
+/* 壁纸 App 样式 */
+.wallpaper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 15px;
+    padding: 20px;
+}
+
+.wp-item {
+    height: 80px;
+    border-radius: 8px;
+    cursor: pointer;
+    background-size: cover;
+    border: 2px solid transparent;
+    transition: 0.2s;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.wp-item:hover {
+    transform: scale(1.05);
+}
+
+.wp-item.active {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.5);
+}
+
+/* 任务栏 */
+#taskbar {
+    height: 50px;
+    background: var(--taskbar-bg);
+    /* 性能优化: blur从30px降到10px */
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 15px;
+    z-index: 99999;
+    border-top: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.03);
+    /* 硬件加速 */
+    transform: translateZ(0);
+}
+
+.start-btn {
+    position: absolute;
+    left: 15px;
+    width: 40px;
+    height: 40px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23FF9A9E'/%3E%3Ccircle cx='50' cy='50' r='35' fill='white'/%3E%3Ccircle cx='50' cy='50' r='25' fill='%23FF9A9E'/%3E%3C/svg%3E") no-repeat center;
+    background-size: 30px;
+    border-radius: 6px;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.start-btn:hover {
+    transform: scale(1.05);
+    background-color: rgba(200, 200, 200, 0.2);
+}
+
+.task-app {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.task-app:hover {
+    background: rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+}
+
+.task-app.running::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 16px;
+    height: 3px;
+    background: var(--accent-color);
+    border-radius: 2px;
+}
+
+.task-app.active {
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* 状态栏 */
+.sys-tray {
+    position: absolute;
+    right: 15px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    font-size: 12px;
+    color: #444;
+}
+
+.net-stats,
+.ai-stats {
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: #666;
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.ai-stats:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+.ai-stats span {
+    font-weight: 600;
+}
+
+/* 计费详情弹窗 */
+#billing-popover {
+    position: absolute;
+    bottom: 60px;
+    right: 80px;
+    width: 260px;
+    background: rgba(30, 30, 40, 0.95);
+    backdrop-filter: blur(10px);
+    color: #eee;
+    border-radius: 8px;
+    border: 1px solid #444;
+    padding: 12px;
+    display: none;
+    z-index: 100000;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+}
+
+#billing-popover h4 {
+    margin: 0 0 8px 0;
+    color: #FF9A9E;
+    border-bottom: 1px solid #555;
+    padding-bottom: 4px;
+    font-size: 12px;
+}
+
+.bill-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.bill-row.total {
+    border-top: 1px solid #555;
+    margin-top: 6px;
+    padding-top: 6px;
+    color: #FF9A9E;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.bill-sub {
+    color: #aaa;
+    font-size: 10px;
+    padding-left: 8px;
+}
+
+/* 拖拽 & 内容通用 */
+#drag-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2147483647;
+    display: none;
+    cursor: move;
+}
+
+.file-list {
+    padding: 10px;
+    overflow-y: auto;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    border: 1px solid #f0f0f0;
+    margin-bottom: 8px;
+    transition: 0.2s;
+}
+
+.file-item:hover {
+    transform: translateX(5px);
+    border-color: var(--accent-color);
+}
+
+#context-menu {
+    position: absolute;
+    display: none;
+    z-index: 99999;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid #eee;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    min-width: 150px;
+    padding: 6px;
+}
+
+.ctx-item {
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    gap: 10px;
+}
+
+.ctx-item:hover {
+    background: var(--accent-color);
+    color: white;
+}

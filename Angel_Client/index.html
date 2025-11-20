@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seraphim OS v6.0 (Refactored)</title>
+    <script src="./assets/three.min.js"></script>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+
+    <!-- 拖拽遮罩层 -->
+    <div id="drag-overlay"></div>
+
+    <!-- 3D 角色 -->
+    <div id="angel-companion">
+        <div class="speech-bubble" id="angel-speech">创造者，系统重构完毕！✨</div>
+    </div>
+
+    <!-- 账单弹窗 -->
+    <div id="billing-popover">
+        <h4>天使账单 (Billing)</h4>
+        <div class="bill-row"><span>流量费</span><span id="pop-net">$0.00</span></div>
+        <div class="bill-row"><span>模型调用:</span></div>
+        <div id="pop-models"></div>
+        <div class="bill-row total"><span>Total</span><span id="pop-total">$0.00</span></div>
+    </div>
+
+    <!-- 桌面区域 -->
+    <div id="desktop">
+        <!-- 桌面图标由 JS 动态生成，这里留空 -->
+
+        <!-- 窗口: 情报站 -->
+        <div class="window" id="win-seed">
+            <div class="title-bar">
+                <div class="win-title">📍 零号大坝情报站</div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn max-btn"></div> <!-- 暂未实现最大化逻辑，留作装饰 -->
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div style="padding:10px;">
+                <button id="btn-scan"
+                    style="width:100%; padding:8px; background:var(--accent-color); color:#fff; border:none; border-radius:6px; cursor:pointer;">🚀
+                    扫描点位</button>
+            </div>
+            <div class="win-content file-list" id="file-list">
+                <div style="text-align:center; color:#aaa; margin-top:60px;">(｡•́︿•̀｡) 暂无数据</div>
+            </div>
+        </div>
+
+        <!-- 窗口: 观察眼 -->
+        <div class="window" id="win-angel">
+            <div class="title-bar">
+                <div class="win-title">👀 天使之眼</div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div class="win-content">
+                <div id="remote-screen"
+                    style="flex:1; background:#000; display:flex; justify-content:center; align-items:center;">
+                    <img id="live-image" src="" style="max-width:100%; display:none; pointer-events:none;" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 窗口: 手册 -->
+        <div class="window" id="win-manual">
+            <div class="title-bar">
+                <div class="win-title">📘 手册</div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div class="win-content" style="padding:20px;">
+                <p>系统说明书...</p>
+            </div>
+        </div>
+
+        <!-- 窗口: 设置 -->
+        <div class="window" id="win-settings">
+            <div class="title-bar">
+                <div class="win-title">🎨 设置</div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div class="win-content" style="padding:15px;">
+                <div class="wallpaper-grid" id="wp-grid"></div>
+                <div style="margin-top:10px;">
+                    <input type="text" id="custom-wp" placeholder="自定义图片URL..." style="width:70%;">
+                    <button id="btn-custom-wp">应用</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务栏 -->
+    <div id="taskbar">
+        <div class="start-btn"></div>
+        <div id="taskbar-apps" style="display:flex; gap:8px;"></div>
+        <div class="sys-tray">
+            <div class="net-stats"><span>▲ <span id="tx-stat">0</span></span> | <span>▼ <span
+                        id="rx-stat">0</span></span></div>
+            <div class="ai-stats" id="btn-billing"><span id="ai-cost">0.00</span></div>
+            <div id="fps-display" style="margin-left:10px; font-weight:bold; color:#888;">FPS: 0</div>
+            <div id="clock-time" style="font-weight:600; margin-left:10px;">00:00</div>
+        </div>
+    </div>
+
+    <!-- 入口模块 -->
+    <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>
