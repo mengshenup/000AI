@@ -1,47 +1,112 @@
-import { WS_URL } from './config.js';
-import { bus } from './event_bus.js';
+import { WS_URL } from './config.js'; // 导入 WebSocket 服务器地址配置
+import { bus } from './event_bus.js'; // 导入事件总线，用于通知其他模块
 
 export class Network {
+    // ---------------------------------------------------------------- //
+    //  网络管理类()
+    //
+    //  函数用处：
+    //     管理 WebSocket 连接，负责与服务器进行双向通信。
+    //
+    //  易懂解释：
+    //     这是小天使的“电话线”。它负责拨通服务器的电话，把你的指令传过去，再把服务器的消息传回来。
+    //
+    //  警告：
+    //     如果网络断开，它会自动尝试重连。
+    // ---------------------------------------------------------------- //
     constructor() {
-        this.ws = null;
-        this.reconnectTimer = null;
+        this.ws = null; // WebSocket 实例容器
+        this.reconnectTimer = null; // 重连定时器
     }
 
     connect() {
+        // ---------------------------------------------------------------- //
+        //  连接()
+        //
+        //  函数用处：
+        //     建立 WebSocket 连接，并绑定 open, message, close 等事件处理函数。
+        //
+        //  易懂解释：
+        //     拨打电话。如果通了就喊一声“信号满格”，如果断了就过一会再拨。
+        // ---------------------------------------------------------------- //
+
         try {
+            // 创建 WebSocket 连接对象
             this.ws = new WebSocket(WS_URL);
-            
+
+            // 当连接成功建立时触发
             this.ws.onopen = () => {
-                console.log("WS Connected");
+                console.log("WS Connected"); // 控制台打印日志
+                // 通知小天使说话
                 bus.emit('system:speak', "网络接通！信号满格📶");
             };
-            
+
+            // 当收到服务器消息时触发
             this.ws.onmessage = (e) => {
+                // 解析收到的 JSON 字符串数据
                 const d = JSON.parse(e.data);
-                
-                // 分发事件，不再直接操作 DOM
-                if(d._stats) bus.emit('net:stats', d._stats);
-                if(d.type === 'log') bus.emit('system:speak', d.msg);
-                if(d.type === 'frame_update') bus.emit('net:frame', d.image);
-                if(d.type === 'new_intel') bus.emit('net:intel', d.data);
+
+                // 分发事件，不再直接操作 DOM，而是通过事件总线通知其他模块
+                if (d._stats) bus.emit('net:stats', d._stats); // 更新网络统计
+                if (d.type === 'log') bus.emit('system:speak', d.msg); // 系统日志消息 -> 小天使说话
+                if (d.type === 'frame_update') bus.emit('net:frame', d.image); // 视频帧更新
+                if (d.type === 'new_intel') bus.emit('net:intel', d.data); // 发现新情报
             };
 
+            // 当连接关闭时触发
             this.ws.onclose = () => {
-                console.log("WS Closed, retrying...");
-                bus.emit('system:speak', "网络中断，正在重连...📡");
+                console.log("WS Closed, retrying..."); // 打印日志
+                bus.emit('system:speak', "网络中断，正在重连...📡"); // 通知用户
+
+                // 清除旧的定时器，防止重复
                 clearTimeout(this.reconnectTimer);
+                // 设置 3 秒后尝试重新连接
                 this.reconnectTimer = setTimeout(() => this.connect(), 3000);
             };
-        } catch(e) {
+        } catch (e) {
+            // 捕获连接过程中的同步错误
             console.error(e);
         }
     }
 
-    send(type, payload = {}) {
-        if(this.ws && this.ws.readyState === 1) {
-            this.ws.send(JSON.stringify({type, ...payload}));
+    send(arg1, arg2 = {}) {
+        // ---------------------------------------------------------------- //
+        //  发送(类型/对象, [负载数据])
+        //
+        //  函数用处：
+        //     向服务器发送 JSON 格式的指令。支持两种调用方式：
+        //     1. send('cmd', {data: 1})
+        //     2. send({type: 'cmd', data: 1})
+        //
+        //  易懂解释：
+        //     对着电话筒说话。把你的命令打包成一个包裹寄给服务器。
+        //
+        //  警告：
+        //     如果连接未就绪 (readyState !== 1)，消息会被丢弃并提示错误。
+        // ---------------------------------------------------------------- //
+
+        let type, payload;
+        // 判断第一个参数是否为对象，以支持不同的调用习惯
+        if (typeof arg1 === 'object') {
+            type = arg1.type; // 从对象中提取 type
+            payload = arg1;   // 整个对象作为 payload
         } else {
+            type = arg1;      // 第一个参数是 type 字符串
+            payload = arg2;   // 第二个参数是数据对象
+        }
+
+        // 检查 WebSocket 是否存在且处于连接打开状态 (readyState 1)
+        if (this.ws && this.ws.readyState === 1) {
+            // 构造最终要发送的数据对象，确保包含 type 字段
+            const data = { ...payload, type };
+            // 将对象转换为 JSON 字符串并发送
+            this.ws.send(JSON.stringify(data));
+        } else {
+            // 如果没连接，通知用户
             bus.emit('system:speak', "网络未连接，无法发送指令❌");
         }
     }
 }
+
+// 导出 Network 类的单例实例，确保整个应用只使用一个网络连接
+export const network = new Network();

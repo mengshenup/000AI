@@ -1,516 +1,599 @@
-/* === 2025年11月 Seraphim System Style (性能优化版) === */
+/* 
+// ---------------------------------------------------------------- //
+//  全局变量定义()
+//
+//  代码用处：
+//     定义 CSS 变量，方便统一管理颜色、尺寸和背景图。
+//
+//  易懂解释：
+//     这是装修队的“色卡”和“尺子”。把常用的颜色和尺寸定好名字，后面直接叫名字就行，不用每次都重新调色。
+//
+//  警告：
+//     修改这里的变量会影响整个网站的风格，请谨慎调整。
+// ---------------------------------------------------------------- //
+*/
 :root {
-    /* === 关键修改：这里不再写死路径 === */
-    /* 由 window_manager.js 动态注入 */
     --bg-wallpaper: none;
-    --win-bg: rgba(255, 255, 255, 0.95);
-    --win-border: 1px solid rgba(255, 255, 255, 0.8);
-    --accent-color: #FF9A9E;
-    --taskbar-bg: rgba(255, 255, 255, 0.95);
+    /* 桌面背景图，由 JS 动态修改 */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    /* 磨砂玻璃背景色 */
+    --glass-border: rgba(255, 255, 255, 0.5);
+    /* 磨砂玻璃边框色 */
+    --primary-color: #0984e3;
+    /* 主题色 (蓝色) */
+    --text-color: #2d3436;
+    /* 主要文字颜色 */
+}
+
+/* 
+// ---------------------------------------------------------------- //
+//  全局重置()
+//
+//  代码用处：
+//     清除浏览器默认的 margin 和 padding，设置字体。
+//
+//  易懂解释：
+//     把一张白纸上的脏东西擦干净，准备开始画画。
+//
+//  警告：
+//     box-sizing: border-box 改变了盒子模型的计算方式，这是现代网页开发的标准做法。
+// ---------------------------------------------------------------- //
+*/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    /* 让 padding 不增加元素总宽度 */
+    user-select: none;
+    /* 禁止用户选中文本 (像原生应用一样) */
 }
 
 body {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
+    font-family: 'Segoe UI', sans-serif;
+    /* 使用系统字体 */
+    overflow: hidden;
+    /* 隐藏滚动条，整个页面不可滚动 */
     height: 100vh;
-    overflow: hidden;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-    background: var(--bg-wallpaper) no-repeat center center fixed;
-    background-size: cover;
-    display: flex;
-    flex-direction: column;
-    user-select: none;
-    transition: background-image 0.5s ease-in-out;
+    /* 占满视口高度 */
+    background-color: #000;
+    /* 默认黑色背景 */
 }
 
+/* 
+// ---------------------------------------------------------------- //
+//  桌面容器样式()
+//
+//  代码用处：
+//     设置壁纸、背景尺寸和位置。
+//
+//  易懂解释：
+//     这是电脑屏幕的“桌面”。它铺满了整个屏幕，上面贴着壁纸。
+//
+//  警告：
+//     height 计算减去了 40px，是为了给底部的任务栏留出空间。
+// ---------------------------------------------------------------- //
+*/
 #desktop {
-    flex: 1;
+    width: 100%;
+    height: calc(100% - 40px);
+    /* 减去任务栏高度 */
+    background-image: var(--bg-wallpaper);
+    /* 使用变量里的壁纸 */
+    background-size: cover;
+    /* 图片铺满 */
+    background-position: center;
+    /* 图片居中 */
     position: relative;
-    overflow: hidden;
+    /* 作为子元素定位的参考系 */
+    transition: background-image 0.5s ease;
+    /* 切换壁纸时的淡入淡出效果 */
 }
 
-/* 图标样式 */
+/* 
+// ---------------------------------------------------------------- //
+//  小天使容器样式()
+//
+//  代码用处：
+//     定义小天使 3D 模型的显示区域。
+//
+//  易懂解释：
+//     这是小天使住的“透明盒子”。它悬浮在桌面的右下角。
+//
+//  警告：
+//     z-index 设为 50，确保它浮在普通窗口上面，但不会遮挡最高优先级的弹窗。
+// ---------------------------------------------------------------- //
+*/
+.angel-container {
+    position: absolute;
+    width: 200px;
+    height: 300px;
+    bottom: 20px;
+    right: 20px;
+    z-index: 50;
+    /* 保证在普通窗口之上 */
+}
+
+/* 
+// ---------------------------------------------------------------- //
+//  对话气泡样式()
+//
+//  代码用处：
+//     定义小天使头顶气泡的外观和动画。
+//
+//  易懂解释：
+//     这是漫画里的对话框。平时是隐形的，小天使说话时才会冒出来。
+//
+//  警告：
+//     使用了 opacity 和 transform 进行动画，性能较好。
+// ---------------------------------------------------------------- //
+*/
+.speech-bubble {
+    position: absolute;
+    bottom: 280px;
+    /* 在小天使头顶上方 */
+    right: 50px;
+    background: white;
+    padding: 10px 15px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    max-width: 200px;
+    opacity: 0;
+    /* 默认隐藏 */
+    transform: translateY(10px);
+    /* 默认向下偏移 */
+    transition: all 0.3s ease;
+    /* 动画过渡 */
+    pointer-events: none;
+    /* 气泡不阻挡鼠标点击 */
+    z-index: 51;
+}
+
+/* 气泡的小尾巴 */
+.speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 30px;
+    border-width: 10px 10px 0;
+    border-style: solid;
+    border-color: white transparent transparent;
+}
+
+/* 激活状态：显示气泡 */
+.speech-bubble.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* 
+// ---------------------------------------------------------------- //
+//  桌面图标样式()
+//
+//  代码用处：
+//     定义桌面应用图标的布局、颜色和交互效果。
+//
+//  易懂解释：
+//     这是桌面上那些可以点击的小图标。
+//
+//  警告：
+//     position: absolute 是为了支持自由拖拽布局。
+// ---------------------------------------------------------------- //
+*/
 .desktop-icon {
     position: absolute;
-    width: 84px;
-    text-align: center;
-    color: #fff;
-    cursor: default;
-    padding: 8px;
-    border-radius: 12px;
-    transition: background 0.2s, transform 0.1s;
+    width: 80px;
+    height: 90px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 1;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
 }
 
 .desktop-icon:hover {
     background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(10px);
-}
-
-.desktop-icon:active {
-    transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.3);
+    /* 鼠标悬停变亮 */
 }
 
 .icon-svg {
-    width: 56px;
-    height: 56px;
-    margin-bottom: 6px;
-    /* 性能优化: 移除drop-shadow,添加硬件加速 */
-    pointer-events: none;
-    will-change: transform;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 5px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    /* 图标阴影 */
 }
 
 .icon-text {
+    color: white;
     font-size: 12px;
-    line-height: 1.4;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 6px;
-    background: rgba(0, 0, 0, 0.2);
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* 3D 角色 */
-#angel-companion {
-    position: absolute;
-    bottom: 60px;
-    right: 40px;
-    width: 280px;
-    height: 320px;
-    z-index: 200;
-    cursor: grab;
-    /* 性能优化: 移除drop-shadow改用box-shadow,添加硬件加速 */
-    /* box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); */
-    will-change: transform;
-    transform: translateZ(0);
-}
-
-#angel-companion:active {
-    cursor: grabbing;
-}
-
-/* 气泡对话框 */
-.speech-bubble {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(10px);
-    background: rgba(255, 255, 255, 0.98);
-    padding: 12px 16px;
-    border-radius: 18px;
-    border-bottom-left-radius: 4px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    font-size: 13px;
-    color: #333;
-    width: 220px;
-    opacity: 0;
-    transition: 0.4s;
-    pointer-events: none;
-    border: 1px solid #fff;
-    font-weight: 600;
-    z-index: 201;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    /* 文字阴影，防止在亮色壁纸上看不清 */
     text-align: center;
 }
 
-.speech-bubble.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-
-/* 窗口通用 */
+/* 
+// ---------------------------------------------------------------- //
+//  窗口通用样式()
+//
+//  代码用处：
+//     定义所有应用窗口的基础外观（玻璃拟态效果）。
+//
+//  易懂解释：
+//     这是所有软件窗口的“外壳”。看起来像是一块磨砂玻璃。
+//
+//  警告：
+//     backdrop-filter 比较消耗 GPU 性能，低端设备可能会卡顿。
+// ---------------------------------------------------------------- //
+*/
 .window {
     position: absolute;
-    background: var(--win-bg);
-    /* 性能优化: blur从30px降到10px,视觉差异小但性能提升显著 */
+    background: var(--glass-bg);
+    /* 磨砂背景 */
     backdrop-filter: blur(10px);
-    border-radius: 12px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.8);
+    /* 毛玻璃模糊效果 */
+    border: 1px solid var(--glass-border);
+    /* 半透明边框 */
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    min-width: 300px;
-    min-height: 180px;
+    transition: transform 0.2s, opacity 0.2s;
+    /* 打开/关闭动画 */
+    transform: scale(0.95);
+    /* 默认稍微缩小 */
     opacity: 0;
+    /* 默认透明 */
     pointer-events: none;
-    transition: opacity 0.2s, transform 0.2s;
-    z-index: 10;
-    /* 硬件加速提示 */
-    will-change: transform, opacity;
-    transform: translateZ(0) scale(0.95);
+    /* 默认不可点击 */
 }
 
+/* 窗口打开状态 */
 .window.open {
+    transform: scale(1);
+    /* 恢复原大小 */
     opacity: 1;
-    transform: translateZ(0) scale(1);
+    /* 不透明 */
     pointer-events: auto;
+    /* 恢复点击 */
 }
 
+/* 窗口最小化状态 */
 .window.minimized {
+    transform: scale(0.8) translateY(200px);
+    /* 缩小并向下飞出 */
     opacity: 0;
-    transform: translateZ(0) translateY(60px) scale(0.8);
     pointer-events: none;
-    transition: 0.2s ease-in;
 }
 
+/* 
+// ---------------------------------------------------------------- //
+//  窗口标题栏样式()
+//
+//  代码用处：
+//     定义窗口顶部的拖拽区域和控制按钮。
+//
+//  易懂解释：
+//     窗口的“把手”。按住这里可以拖动窗口。
+//
+//  警告：
+//     user-select: none 防止拖拽时误选文字。
+// ---------------------------------------------------------------- //
+*/
 .title-bar {
-    height: 44px;
-    background: rgba(255, 255, 255, 0.5);
+    height: 30px;
+    background: rgba(255, 255, 255, 0.3);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
-    cursor: default;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0 10px;
+    cursor: grab;
+    /* 鼠标变成抓手形状 */
+}
+
+.title-bar:active {
+    cursor: grabbing;
+    /* 抓紧形状 */
 }
 
 .win-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #444;
-    pointer-events: none;
+    font-size: 12px;
+    color: #555;
+    font-weight: bold;
 }
 
 .win-controls {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
+/* 窗口控制按钮 (红黄绿) */
 .win-btn {
     width: 12px;
     height: 12px;
     border-radius: 50%;
+    border: none;
     cursor: pointer;
-    transition: 0.2s;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.win-btn:hover {
-    transform: scale(1.1);
 }
 
 .close-btn {
-    background: #ff6b6b;
+    background: #ff5f56;
 }
 
+/* 关闭 (红) */
 .min-btn {
-    background: #feca57;
+    background: #ffbd2e;
 }
 
+/* 最小化 (黄) */
 .max-btn {
-    background: #28c940;
+    background: #27c93f;
 }
 
-.win-content {
+/* 最大化 (绿) - 目前未实现功能 */
+
+/* 
+// ---------------------------------------------------------------- //
+//  窗口内容区域样式()
+//
+//  代码用处：
+//     定义窗口内部主要内容的显示区域。
+//
+//  易懂解释：
+//     窗口里的“肚子”。软件的内容都显示在这里。
+//
+//  警告：
+//     overflow: auto 允许内容过多时出现滚动条。
+// ---------------------------------------------------------------- //
+*/
+.content {
     flex: 1;
-    overflow: hidden;
+    /* 占满剩余空间 */
+    padding: 15px;
+    overflow: auto;
+    /* 内容溢出显示滚动条 */
     position: relative;
-    display: flex;
-    flex-direction: column;
 }
 
-/* App 特有样式 */
-#win-manual .win-content {
-    padding: 20px;
-    overflow-y: auto;
-    font-size: 13px;
-    line-height: 1.6;
-    color: #444;
-}
-
-.manual-section {
-    margin-bottom: 20px;
-}
-
-.manual-title {
-    font-weight: bold;
-    font-size: 15px;
-    color: var(--accent-color);
-    border-bottom: 2px solid #eee;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-}
-
-.data-table th {
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-    padding: 5px;
-    color: #666;
-}
-
-.data-table td {
-    padding: 5px;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.warn-box {
-    background: #fff5f5;
-    border-left: 4px solid #ff6b6b;
-    padding: 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    color: #c0392b;
-    margin-top: 10px;
-}
-
-.limit-tag {
-    display: inline-block;
-    background: #eee;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
-    color: #e83e8c;
-    font-weight: bold;
-}
-
-/* 壁纸 App 样式 */
-.wallpaper-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 15px;
-    padding: 20px;
-}
-
-.wp-item {
-    height: 80px;
-    border-radius: 8px;
-    cursor: pointer;
-    background-size: cover;
-    border: 2px solid transparent;
-    transition: 0.2s;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.wp-item:hover {
-    transform: scale(1.05);
-}
-
-.wp-item.active {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(32, 201, 151, 0.5);
-}
-
-/* 任务栏 */
+/* 
+// ---------------------------------------------------------------- //
+//  任务栏样式()
+//
+//  代码用处：
+//     定义底部任务栏的外观和布局。
+//
+//  易懂解释：
+//     屏幕最下面的那个长条。显示时间、开始菜单和正在运行的软件。
+//
+//  警告：
+//     z-index: 1000 确保任务栏永远在最上面。
+// ---------------------------------------------------------------- //
+*/
 #taskbar {
-    height: 50px;
-    background: var(--taskbar-bg);
-    /* 性能优化: blur从30px降到10px */
+    height: 40px;
+    background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(10px);
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 12px;
+    justify-content: space-between;
     padding: 0 15px;
-    z-index: 99999;
-    border-top: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.03);
-    /* 硬件加速 */
-    transform: translateZ(0);
+    position: relative;
+    z-index: 1000;
 }
 
 .start-btn {
-    position: absolute;
-    left: 15px;
-    width: 40px;
-    height: 40px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23FF9A9E'/%3E%3Ccircle cx='50' cy='50' r='35' fill='white'/%3E%3Ccircle cx='50' cy='50' r='25' fill='%23FF9A9E'/%3E%3C/svg%3E") no-repeat center;
-    background-size: 30px;
-    border-radius: 6px;
-    transition: 0.2s;
+    font-weight: bold;
+    color: var(--primary-color);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
-.start-btn:hover {
-    transform: scale(1.05);
-    background-color: rgba(200, 200, 200, 0.2);
+/* 任务栏应用列表 */
+#taskbar-apps {
+    display: flex;
+    gap: 10px;
 }
 
 .task-app {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    position: relative;
     transition: all 0.2s;
+    position: relative;
 }
 
 .task-app:hover {
     background: rgba(0, 0, 0, 0.05);
-    transform: translateY(-2px);
-}
-
-.task-app.running::after {
-    content: '';
-    position: absolute;
-    bottom: 4px;
-    width: 16px;
-    height: 3px;
-    background: var(--accent-color);
-    border-radius: 2px;
 }
 
 .task-app.active {
-    background: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-}
-
-/* 状态栏 */
-.sys-tray {
-    position: absolute;
-    right: 15px;
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    font-size: 12px;
-    color: #444;
-}
-
-.net-stats,
-.ai-stats {
-    font-family: 'Consolas', monospace;
-    font-size: 11px;
-    color: #666;
-    display: flex;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.05);
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    position: relative;
-    border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.ai-stats:hover {
     background: rgba(0, 0, 0, 0.1);
-    color: #333;
+    /* 当前激活窗口高亮 */
 }
 
-.ai-stats span {
-    font-weight: 600;
-}
-
-/* 计费详情弹窗 */
-#billing-popover {
+/* 运行指示灯 (图标下方的小点) */
+.task-app.running::after {
+    content: '';
     position: absolute;
-    bottom: 60px;
-    right: 80px;
-    width: 260px;
-    background: rgba(30, 30, 40, 0.95);
-    backdrop-filter: blur(10px);
-    color: #eee;
-    border-radius: 8px;
-    border: 1px solid #444;
-    padding: 12px;
-    display: none;
-    z-index: 100000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    font-family: 'Consolas', monospace;
-    font-size: 11px;
+    bottom: 2px;
+    width: 4px;
+    height: 4px;
+    background: var(--text-color);
+    border-radius: 50%;
 }
 
-#billing-popover h4 {
-    margin: 0 0 8px 0;
-    color: #FF9A9E;
-    border-bottom: 1px solid #555;
-    padding-bottom: 4px;
-    font-size: 12px;
+/* 
+// ---------------------------------------------------------------- //
+//  特定窗口尺寸定义()
+//
+//  代码用处：
+//     为不同的应用窗口设置默认的宽度和高度。
+//
+//  易懂解释：
+//     给不同的软件定做不同大小的衣服。
+//
+//  警告：
+//     如果内容超出这个尺寸，会显示滚动条。
+// ---------------------------------------------------------------- //
+*/
+#win-manual {
+    width: 400px;
+    height: 500px;
 }
 
-.bill-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 4px;
+#win-angel {
+    width: 600px;
+    height: 450px;
 }
 
-.bill-row.total {
-    border-top: 1px solid #555;
-    margin-top: 6px;
-    padding-top: 6px;
-    color: #FF9A9E;
-    font-weight: bold;
-    font-size: 12px;
+#win-intel {
+    width: 350px;
+    height: 500px;
 }
 
-.bill-sub {
-    color: #aaa;
-    font-size: 10px;
-    padding-left: 8px;
+#win-settings {
+    width: 500px;
+    height: 400px;
 }
 
-/* 拖拽 & 内容通用 */
+/* 
+// ---------------------------------------------------------------- //
+//  壁纸选择网格样式()
+//
+//  代码用处：
+//     定义设置窗口中壁纸缩略图的排列方式。
+//
+//  易懂解释：
+//     像相册一样把壁纸排成一行行。
+//
+//  警告：
+//     使用 CSS Grid 布局，自动填充列数。
+// ---------------------------------------------------------------- //
+*/
+#wp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.wp-item {
+    height: 60px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.wp-item.active {
+    border-color: var(--primary-color);
+    /* 选中的壁纸加蓝框 */
+}
+
+/* 
+// ---------------------------------------------------------------- //
+//  情报列表样式()
+//
+//  代码用处：
+//     定义情报站APP中列表项的样式。
+//
+//  易懂解释：
+//     每一条情报长什么样。
+//
+//  警告：
+//     无。
+// ---------------------------------------------------------------- //
+*/
+.file-item {
+    transition: background 0.2s;
+}
+
+.file-item:hover {
+    background: #f5f6fa;
+    /* 鼠标悬停变色 */
+}
+
+/* 
+// ---------------------------------------------------------------- //
+//  拖拽遮罩层()
+//
+//  代码用处：
+//     一个全屏透明层，在拖拽开始时显示。
+//
+//  易懂解释：
+//     防止拖拽过快时鼠标甩到 iframe 里导致拖拽失效。
+//
+//  警告：
+//     z-index 必须极高 (9999)。
+// ---------------------------------------------------------------- //
+*/
 #drag-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 2147483647;
+    z-index: 9999;
     display: none;
-    cursor: move;
+    /* 默认隐藏 */
+    cursor: grabbing;
 }
 
-.file-list {
-    padding: 10px;
-    overflow-y: auto;
-}
-
-.file-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    background: #fff;
-    border: 1px solid #f0f0f0;
-    margin-bottom: 8px;
-    transition: 0.2s;
-}
-
-.file-item:hover {
-    transform: translateX(5px);
-    border-color: var(--accent-color);
-}
-
-#context-menu {
+/* 
+// ---------------------------------------------------------------- //
+//  账单弹窗样式()
+//
+//  代码用处：
+//     定义右下角账单详情弹窗的样式。
+//
+//  易懂解释：
+//     显示你花了多少钱的小窗口。
+//
+//  警告：
+//     默认是隐藏的，点击账单按钮才显示。
+// ---------------------------------------------------------------- //
+*/
+#billing-popover {
+    display: none;
     position: absolute;
-    display: none;
-    z-index: 99999;
-    background: rgba(255, 255, 255, 0.98);
-    border: 1px solid #eee;
-    border-radius: 10px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    min-width: 150px;
-    padding: 6px;
-}
-
-.ctx-item {
-    padding: 8px 12px;
+    bottom: 50px;
+    right: 10px;
+    width: 280px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    z-index: 2000;
     font-size: 13px;
-    cursor: pointer;
-    border-radius: 6px;
-    display: flex;
-    gap: 10px;
 }
 
-.ctx-item:hover {
-    background: var(--accent-color);
-    color: white;
+.bill-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.bill-total {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 16px;
+    border-bottom: none;
+}
+
+.bill-sub {
+    font-size: 12px;
+    color: #666;
+    border-bottom: none;
+    margin-bottom: 4px;
 }

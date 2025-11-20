@@ -1,122 +1,337 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
+<!-- 
+// ---------------------------------------------------------------- //
+//  HTML头部定义()
+//
+//  代码用处：
+//     定义网页的基本信息，引入 CSS 样式表和必要的外部脚本库。
+//
+//  易懂解释：
+//     这是房子的地基和框架。告诉浏览器这个房子叫什么名字，用什么装修风格（CSS），需要哪些工具（JS库）。
+//
+//  警告：
+//     Three.js 必须在 main.js 之前加载，否则 3D 小天使无法显示。
+// ---------------------------------------------------------------- //
+-->
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seraphim OS v6.0 (Refactored)</title>
-    <script src="./assets/three.min.js"></script>
-    <link rel="stylesheet" href="./css/style.css">
+    <title>Seraphim OS</title>
+    <!-- 引入主样式表 -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- 引入 Three.js 3D 引擎库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 
 <body>
-
-    <!-- 拖拽遮罩层 -->
-    <div id="drag-overlay"></div>
-
-    <!-- 3D 角色 -->
-    <div id="angel-companion">
-        <div class="speech-bubble" id="angel-speech">创造者，系统重构完毕！✨</div>
-    </div>
-
-    <!-- 账单弹窗 -->
-    <div id="billing-popover">
-        <h4>天使账单 (Billing)</h4>
-        <div class="bill-row"><span>流量费</span><span id="pop-net">$0.00</span></div>
-        <div class="bill-row"><span>模型调用:</span></div>
-        <div id="pop-models"></div>
-        <div class="bill-row total"><span>Total</span><span id="pop-total">$0.00</span></div>
-    </div>
-
-    <!-- 桌面区域 -->
+    <!-- 
+    // ---------------------------------------------------------------- //
+    //  桌面容器()
+    //
+    //  代码用处：
+    //     整个操作系统的桌面区域，包含背景壁纸、桌面图标和所有应用窗口。
+    //
+    //  易懂解释：
+    //     这就是你的电脑屏幕。所有的东西都在这个大盒子里。
+    //
+    //  警告：
+    //     id="desktop" 是窗口管理器定位图标和窗口的基准，不可更改。
+    // ---------------------------------------------------------------- //
+    -->
     <div id="desktop">
-        <!-- 桌面图标由 JS 动态生成，这里留空 -->
 
-        <!-- 窗口: 情报站 -->
-        <div class="window" id="win-seed">
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  小天使组件()
+        //
+        //  代码用处：
+        //     包含 3D 小天使的渲染容器和对话气泡。
+        //
+        //  易懂解释：
+        //     小天使住的地方。一个是她的身体（3D模型），一个是她说话的气泡。
+        //
+        //  警告：
+        //     angel-companion 容器的大小决定了小天使的显示范围。
+        // ---------------------------------------------------------------- //
+        -->
+        <div class="angel-container">
+            <div id="angel-companion" style="width:100%;height:100%;"></div>
+            <div id="angel-speech" class="speech-bubble">...</div>
+        </div>
+
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  拖拽遮罩层()
+        //
+        //  代码用处：
+        //     全屏透明遮罩，用于在拖拽窗口时覆盖 iframe，防止鼠标事件丢失。
+        //
+        //  易懂解释：
+        //     拖东西的时候铺一层保鲜膜，防止东西掉进缝里（iframe）拿不出来。
+        //
+        //  警告：
+        //     默认是隐藏的 (display: none)，只有拖拽时才会显示。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="drag-overlay"></div>
+
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  系统说明书窗口()
+        //
+        //  代码用处：
+        //     展示系统使用说明的静态窗口。
+        //
+        //  易懂解释：
+        //     一本电子说明书，教你怎么用这个系统。
+        //
+        //  警告：
+        //     内容是静态 HTML，修改文字直接改这里。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="win-manual" class="window">
             <div class="title-bar">
-                <div class="win-title">📍 零号大坝情报站</div>
                 <div class="win-controls">
-                    <div class="win-btn min-btn"></div>
-                    <div class="win-btn max-btn"></div> <!-- 暂未实现最大化逻辑，留作装饰 -->
-                    <div class="win-btn close-btn"></div>
+                    <button class="win-btn close-btn"></button>
+                    <button class="win-btn min-btn"></button>
                 </div>
+                <div class="win-title">系统说明书</div>
             </div>
-            <div style="padding:10px;">
-                <button id="btn-scan"
-                    style="width:100%; padding:8px; background:var(--accent-color); color:#fff; border:none; border-radius:6px; cursor:pointer;">🚀
-                    扫描点位</button>
-            </div>
-            <div class="win-content file-list" id="file-list">
-                <div style="text-align:center; color:#aaa; margin-top:60px;">(｡•́︿•̀｡) 暂无数据</div>
+            <div class="content" style="color:#444; line-height:1.6;">
+                <h3>欢迎使用 Seraphim OS! ✨</h3>
+                <p>这是一个基于 Web 的桌面操作系统模拟器。</p>
+                <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
+                <p><b>操作指南：</b></p>
+                <ul>
+                    <li>🖱️ <b>拖拽窗口</b>：按住标题栏移动。</li>
+                    <li>📂 <b>打开应用</b>：双击桌面图标。</li>
+                    <li>👀 <b>小天使交互</b>：
+                        <ul>
+                            <li>左键点击：随机对话</li>
+                            <li>右键拖拽：旋转视角</li>
+                        </ul>
+                    </li>
+                    <li>⚙️ <b>个性化</b>：在设置中更换壁纸。</li>
+                </ul>
             </div>
         </div>
 
-        <!-- 窗口: 观察眼 -->
-        <div class="window" id="win-angel">
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  观察眼窗口 (浏览器)
+        //
+        //  代码用处：
+        //     内嵌一个 iframe 用于显示外部网页（如视频网站），并提供控制栏。
+        //
+        //  易懂解释：
+        //     这其实就是一个浏览器。你可以在里面看视频，小天使会陪你一起看。
+        //
+        //  警告：
+        //     由于跨域限制 (CORS)，部分网站可能无法在 iframe 中正常加载。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="win-angel" class="window">
             <div class="title-bar">
-                <div class="win-title">👀 天使之眼</div>
                 <div class="win-controls">
-                    <div class="win-btn min-btn"></div>
-                    <div class="win-btn close-btn"></div>
+                    <button class="win-btn close-btn"></button>
+                    <button class="win-btn min-btn"></button>
                 </div>
+                <div class="win-title">观察眼 - 视觉系统</div>
             </div>
-            <div class="win-content">
-                <div id="remote-screen"
-                    style="flex:1; background:#000; display:flex; justify-content:center; align-items:center;">
-                    <img id="live-image" src="" style="max-width:100%; display:none; pointer-events:none;" />
+            <div class="content" style="display:flex; flex-direction:column; padding:0;">
+                <!-- 浏览器地址栏 -->
+                <div style="padding:8px; background:#f1f2f6; display:flex; gap:8px; border-bottom:1px solid #ddd;">
+                    <input type="text" id="browser-url" placeholder="输入网址 (例如 https://www.bilibili.com)"
+                        style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
+                    <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
+                    <button id="btn-browser-analyze"
+                        style="padding:4px 12px; cursor:pointer; background:var(--primary-color); color:white; border:none; border-radius:4px;">分析画面</button>
+                </div>
+
+                <!-- 浏览器内容区域 (iframe) -->
+                <div style="flex:1; position:relative; background:black;">
+                    <!-- 实时画面 (截图) -->
+                    <img id="live-image" style="width:100%; height:100%; object-fit:contain; display:none;" />
+                    <!-- 远程控制层 -->
+                    <div id="remote-screen"
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>
+                    <!-- 视频进度条 -->
+                    <div id="video-progress-bar"
+                        style="position:absolute; bottom:0; left:0; width:100%; height:5px; background:rgba(255,255,255,0.3); cursor:pointer; display:none;">
+                        <div style="width:0%; height:100%; background:red;"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 窗口: 手册 -->
-        <div class="window" id="win-manual">
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  情报站窗口()
+        //
+        //  代码用处：
+        //     显示收集到的“老六点位”列表，支持手动添加和扫描。
+        //
+        //  易懂解释：
+        //     你的游戏攻略本。记录了所有关键的时间点和位置。
+        //
+        //  警告：
+        //     数据存储在本地，换电脑会丢失。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="win-intel" class="window">
             <div class="title-bar">
-                <div class="win-title">📘 手册</div>
                 <div class="win-controls">
-                    <div class="win-btn min-btn"></div>
-                    <div class="win-btn close-btn"></div>
+                    <button class="win-btn close-btn"></button>
+                    <button class="win-btn min-btn"></button>
                 </div>
+                <div class="win-title">情报站</div>
             </div>
-            <div class="win-content" style="padding:20px;">
-                <p>系统说明书...</p>
+            <div class="content">
+                <div style="margin-bottom:10px; display:flex; gap:10px;">
+                    <button id="btn-scan"
+                        style="flex:1; padding:8px; background:var(--primary-color); color:white; border:none; border-radius:4px; cursor:pointer;">
+                        📡 扫描老六点位
+                    </button>
+                    <button id="btn-add-custom"
+                        style="padding:8px; background:#00b894; color:white; border:none; border-radius:4px; cursor:pointer;">
+                        +
+                    </button>
+                </div>
+                <div id="file-list" style="height:380px; overflow-y:auto;">
+                    <!-- 列表项由 JS 动态生成 -->
+                </div>
             </div>
         </div>
 
-        <!-- 窗口: 设置 -->
-        <div class="window" id="win-settings">
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  设置窗口()
+        //
+        //  代码用处：
+        //     提供更换壁纸等个性化设置选项。
+        //
+        //  易懂解释：
+        //     装修工具箱。可以在这里给电脑换个新皮肤。
+        //
+        //  警告：
+        //     自定义壁纸功能目前仅支持网络图片 URL。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="win-settings" class="window">
             <div class="title-bar">
-                <div class="win-title">🎨 设置</div>
                 <div class="win-controls">
-                    <div class="win-btn min-btn"></div>
-                    <div class="win-btn close-btn"></div>
+                    <button class="win-btn close-btn"></button>
+                    <button class="win-btn min-btn"></button>
                 </div>
+                <div class="win-title">个性化设置</div>
             </div>
-            <div class="win-content" style="padding:15px;">
-                <div class="wallpaper-grid" id="wp-grid"></div>
-                <div style="margin-top:10px;">
-                    <input type="text" id="custom-wp" placeholder="自定义图片URL..." style="width:70%;">
-                    <button id="btn-custom-wp">应用</button>
+            <div class="content">
+                <h4>选择壁纸</h4>
+                <div id="wp-grid" style="margin-top:10px;">
+                    <!-- 壁纸列表由 JS 动态生成 -->
+                </div>
+                <div style="margin-top:20px;">
+                    <h4>自定义壁纸</h4>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <input type="text" id="custom-wp" placeholder="输入图片 URL" style="flex:1; padding:5px;">
+                        <button id="btn-custom-wp" style="padding:5px 10px;">应用</button>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  账单悬浮窗()
+        //
+        //  代码用处：
+        //     显示当前 AI 服务的调用费用统计。
+        //
+        //  易懂解释：
+        //     你的话费单。看看刚才那个分析花了多少钱。
+        //
+        //  警告：
+        //     这里的费用是估算的，仅供参考。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="billing-popover">
+            <div class="bill-row bill-total">
+                <span>本月总消费</span>
+                <span id="pop-total">¥0.00</span>
+            </div>
+            <div class="bill-row">
+                <span>网络流量费</span>
+                <span id="pop-net">¥0.00</span>
+            </div>
+            <div style="margin-top:10px; font-weight:bold; color:#444;">模型调用详情</div>
+            <div id="pop-models" style="margin-top:5px; max-height:100px; overflow-y:auto;">
+                <!-- 详情由 JS 填充 -->
+            </div>
+        </div>
+
     </div>
 
-    <!-- 任务栏 -->
+    <!-- 
+    // ---------------------------------------------------------------- //
+    //  任务栏()
+    //
+    //  代码用处：
+    //     底部导航栏，包含开始菜单、应用图标、网络状态和时钟。
+    //
+    //  易懂解释：
+    //     屏幕最下面那一排。
+    //
+    //  警告：
+    //     z-index 最高，确保永远显示在最前面。
+    // ---------------------------------------------------------------- //
+    -->
     <div id="taskbar">
-        <div class="start-btn"></div>
-        <div id="taskbar-apps" style="display:flex; gap:8px;"></div>
-        <div class="sys-tray">
-            <div class="net-stats"><span>▲ <span id="tx-stat">0</span></span> | <span>▼ <span
-                        id="rx-stat">0</span></span></div>
-            <div class="ai-stats" id="btn-billing"><span id="ai-cost">0.00</span></div>
-            <div id="fps-display" style="margin-left:10px; font-weight:bold; color:#888;">FPS: 0</div>
-            <div id="clock-time" style="font-weight:600; margin-left:10px;">00:00</div>
+        <div class="start-btn">
+            <svg style="width:20px;fill:currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z" />
+            </svg>
+            <span>开始</span>
+        </div>
+
+        <div id="taskbar-apps">
+            <!-- 任务栏应用由 JS 动态生成 -->
+        </div>
+
+        <div style="display:flex; gap:15px; font-size:12px; color:#666; align-items:center;">
+            <!-- 账单按钮 -->
+            <div id="btn-billing" style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+                <span>💰</span>
+                <span id="ai-cost">¥0.00</span>
+            </div>
+            <!-- 网络状态 -->
+            <div style="display:flex; gap:8px;">
+                <span>⬆️ <span id="tx-stat">0KB/s</span></span>
+                <span>⬇️ <span id="rx-stat">0KB/s</span></span>
+            </div>
+            <!-- FPS 显示 -->
+            <div id="fps-display" style="color:#666; font-weight:bold;">FPS: 60</div>
+            <!-- 时钟 -->
+            <div id="clock-time" style="font-weight:bold; color:#333;">12:00</div>
         </div>
     </div>
 
-    <!-- 入口模块 -->
-    <script type="module" src="./js/main.js"></script>
+    <!-- 
+    // ---------------------------------------------------------------- //
+    //  脚本引入()
+    //
+    //  代码用处：
+    //     引入主程序逻辑。type="module" 允许使用 ES6 模块化语法 (import/export)。
+    //
+    //  易懂解释：
+    //     给房子通上电，让电器都能转起来。
+    //
+    //  警告：
+    //     必须放在 body 的最后，确保所有 HTML 元素都已加载完毕。
+    // ---------------------------------------------------------------- //
+    -->
+    <script type="module" src="js/main.js"></script>
 </body>
 
 </html>

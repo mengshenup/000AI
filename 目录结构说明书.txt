@@ -4,16 +4,19 @@
 │ │ [核心功能：逻辑计算、AI计费、浏览器控制、WebSocket服务]
 │ │
 │ ├── routers/ # 🔌 [路由层]
-│ │ ├── init.py # (标识文件)
+│ │ ├── __init__.py # (标识文件)
 │ │ └── websocket_handler.py # 处理 ws:// 协议，负责收发指令
 │ │
 │ ├── services/ # ⚙️ [业务层]
-│ │ ├── init.py # (标识文件)
+│ │ ├── __init__.py # (标识文件)
+│ │ ├── agent.py # 🤖 [AI] Gemini 视频分析服务
 │ │ ├── billing.py # 计费逻辑 (算钱)
 │ │ └── browser.py # 浏览器逻辑 (Playwright 控制)
 │ │
 │ ├── user_data/ # 📁 [缓存] (运行时自动生成，无需手动创建)
 │ │
+│ ├── .env # 🔐 [密钥] 存放 API Key 等敏感信息 (需手动创建)
+│ ├── API配置指南.md # 📖 [文档] Gemini API 申请与配置教程
 │ ├── config.py # ⚙️ [配置] 定价表、常量设置
 │ ├── main.py # 🧠 [应用] FastAPI APP 定义 (核心业务逻辑)
 │ ├── run.py # 🚀 [启动] 独立启动器 (负责环境配置与热更新)
@@ -34,6 +37,8 @@
 │ └── style.css # (配合 JS 动态调整)
 │
 ├── js/ # 🧠 [逻辑模块] (ES Modules)
+│ ├── apps/ # 📱 [应用] 独立 App 逻辑
+│ │ └── intelligence.js # 📍 情报站逻辑
 │ ├── event_bus.js # 🆕 [核心] 事件总线 (负责模块间通信)
 │ ├── config.js # ⚙️ [配置] 静态数据
 │ ├── store.js # 💾 [存储] LocalStorage 管理
@@ -44,6 +49,7 @@
 │
 ├── index.html # 🖥️ [网页] 极简的 HTML 骨架
 └── start_client.bat # 🚀 [启动] 开启 5500 端口并弹出浏览器
+
 ⚡️ 架构说明书
 🔴 Angel_Server (后端)
 身份：系统的“大脑”和“手脚”。

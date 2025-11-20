@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seraphim OS v6.0 (Refactored)</title>
+    <script src="./assets/three.min.js"></script>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+
+    <!-- 鎷栨嫿閬僵灞?-->
+    <div id="drag-overlay"></div>
+
+    <!-- 3D 瑙掕壊 -->
+    <div id="angel-companion">
+        <div class="speech-bubble" id="angel-speech">鍒涢€犺€咃紝绯荤粺閲嶆瀯瀹屾瘯锛佲湪</div>
+    </div>
+
+    <!-- 璐﹀崟寮圭獥 -->
+    <div id="billing-popover">
+        <h4>澶╀娇璐﹀崟 (Billing)</h4>
+        <div class="bill-row"><span>娴侀噺璐?/span><span id="pop-net">$0.00</span></div>
+        <div class="bill-row"><span>妯″瀷璋冪敤:</span></div>
+        <div id="pop-models"></div>
+        <div class="bill-row total"><span>Total</span><span id="pop-total">$0.00</span></div>
+    </div>
+
+    <!-- 妗岄潰鍖哄煙 -->
+    <div id="desktop">
+        <!-- 妗岄潰鍥炬爣鐢?JS 鍔ㄦ€佺敓鎴愶紝杩欓噷鐣欑┖ -->
+
+        <!-- 绐楀彛: 鎯呮姤绔?-->
+        <div class="window" id="win-seed">
+            <div class="title-bar">
+                <div class="win-title">馃搷 闆跺彿澶у潩鎯呮姤绔?/div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn max-btn"></div> <!-- 鏆傛湭瀹炵幇鏈€澶у寲閫昏緫锛岀暀浣滆楗?-->
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div style="padding:10px;">
+                <button id="btn-scan"
+                    style="width:100%; padding:8px; background:var(--accent-color); color:#fff; border:none; border-radius:6px; cursor:pointer;">馃殌
+                    鎵弿鐐逛綅</button>
+            </div>
+            <div class="win-content file-list" id="file-list">
+                <div style="text-align:center; color:#aaa; margin-top:60px;">(锝♀€⑻侊缚鈥⑻€锝? 鏆傛棤鏁版嵁</div>
+            </div>
+        </div>
+
+        <!-- 绐楀彛: 瑙傚療鐪?-->
+        <div class="window" id="win-angel">
+            <div class="title-bar">
+                <div class="win-title">馃憖 澶╀娇涔嬬溂</div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div class="win-content">
+                <div id="remote-screen"
+                    style="flex:1; background:#000; display:flex; justify-content:center; align-items:center;">
+                    <img id="live-image" src="" style="max-width:100%; display:none; pointer-events:none;" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 绐楀彛: 鎵嬪唽 -->
+        <div class="window" id="win-manual">
+            <div class="title-bar">
+                <div class="win-title">馃摌 鎵嬪唽</div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div class="win-content" style="padding:20px;">
+                <p>绯荤粺璇存槑涔?..</p>
+            </div>
+        </div>
+
+        <!-- 绐楀彛: 璁剧疆 -->
+        <div class="window" id="win-settings">
+            <div class="title-bar">
+                <div class="win-title">馃帹 璁剧疆</div>
+                <div class="win-controls">
+                    <div class="win-btn min-btn"></div>
+                    <div class="win-btn close-btn"></div>
+                </div>
+            </div>
+            <div class="win-content" style="padding:15px;">
+                <div class="wallpaper-grid" id="wp-grid"></div>
+                <div style="margin-top:10px;">
+                    <input type="text" id="custom-wp" placeholder="鑷畾涔夊浘鐗嘦RL..." style="width:70%;">
+                    <button id="btn-custom-wp">搴旂敤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 浠诲姟鏍?-->
+    <div id="taskbar">
+        <div class="start-btn"></div>
+        <div id="taskbar-apps" style="display:flex; gap:8px;"></div>
+        <div class="sys-tray">
+            <div class="net-stats"><span>鈻?<span id="tx-stat">0</span></span> | <span>鈻?<span
+                        id="rx-stat">0</span></span></div>
+            <div class="ai-stats" id="btn-billing"><span id="ai-cost">0.00</span></div>
+            <div id="fps-display" style="margin-left:10px; font-weight:bold; color:#888;">FPS: 0</div>
+            <div id="clock-time" style="font-weight:600; margin-left:10px;">00:00</div>
+        </div>
+    </div>
+
+    <!-- 鍏ュ彛妯″潡 -->
+    <script type="module" src="./js/main.js"></script>
+</body>
+
+</html>
