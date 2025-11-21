@@ -28,7 +28,7 @@ echo.
 :: 3. Install Libraries
 echo [DEBUG] 3. Installing AI Libraries...
 echo [INFO] Using Tsinghua Mirror...
-pip install --user fastapi uvicorn playwright google-generativeai python-dotenv -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install --user -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 if errorlevel 1 (
     echo.
