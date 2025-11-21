@@ -13,6 +13,7 @@ import { bus } from '../event_bus.js';
 import { network } from '../network.js';
 
 export const APP_NAME = 'Oracle Node';
+export const APP_OPEN_MSG = "神谕节点已就绪，等待接收命运的指引... 📡";
 
 class IntelligenceApp {
     constructor() {

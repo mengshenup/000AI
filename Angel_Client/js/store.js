@@ -17,8 +17,8 @@ class Store {
     // ---------------------------------------------------------------- //
     constructor() {
         // 尝试从浏览器缓存中读取上次保存的状态
-        // 版本号 _v4 用于在代码更新导致数据结构变化时，强制重置旧缓存
-        const saved = localStorage.getItem('seraphim_apps_v4');
+        // 版本号 _v5 用于强制重置旧缓存，解决热更新不生效的问题
+        const saved = localStorage.getItem('seraphim_apps_v5');
 
         if (saved) {
             // 如果有缓存，解析缓存
@@ -31,8 +31,10 @@ class Store {
             // 这样可以自动过滤掉旧版本遗留的、不再使用的 APP (解决图标重复问题)
             Object.keys(this.apps).forEach(key => {
                 if (savedApps[key]) {
+                    // 过滤掉 name 和 openMsg，防止旧缓存覆盖新代码的配置
+                    const { name, openMsg, ...safeState } = savedApps[key];
                     // 保留默认配置中的静态属性(如 iconPath, color)，只覆盖动态属性(如 pos, winPos, isOpen)
-                    this.apps[key] = { ...this.apps[key], ...savedApps[key] };
+                    this.apps[key] = { ...this.apps[key], ...safeState };
                 }
             });
         } else {
@@ -55,7 +57,7 @@ class Store {
         //     localStorage 是同步操作，如果数据量非常大（虽然这里不会），可能会轻微阻塞主线程。
         // ---------------------------------------------------------------- //
 
-        localStorage.setItem('seraphim_apps_v4', JSON.stringify(this.apps));
+        localStorage.setItem('seraphim_apps_v5', JSON.stringify(this.apps));
     }
 
     getApp(id) {
@@ -95,6 +97,24 @@ class Store {
             this.apps[id] = { ...this.apps[id], ...data };
             // 保存更改
             this.save();
+        }
+    }
+
+    setAppMetadata(id, metadata) {
+        // ---------------------------------------------------------------- //
+        //  设置应用元数据(应用ID, 元数据对象)
+        //
+        //  函数用处：
+        //     运行时注入应用的静态信息（如名称、欢迎语）。
+        //     这些信息不应该被保存到 localStorage 中（因为它们是代码的一部分，不是用户状态）。
+        //
+        //  易懂解释：
+        //     给户口本上补全名字和照片。
+        // ---------------------------------------------------------------- //
+        if (this.apps[id]) {
+            this.apps[id] = { ...this.apps[id], ...metadata };
+            // 注意：这里不调用 save()，因为我们不想把代码里的静态配置保存到用户的缓存里
+            // 这样如果下次代码改了名字，用户刷新页面能立刻看到新名字，而不是旧缓存
         }
     }
 }

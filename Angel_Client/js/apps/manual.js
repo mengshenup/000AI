@@ -20,5 +20,6 @@ class ManualApp {
 }
 
 export const APP_NAME = 'Revelation Codex'; // 原名：系统说明书
+export const APP_OPEN_MSG = "已打开启示录，正在读取系统真理... 📖";
 import { store } from '../store.js';
 export const manualApp = new ManualApp(); // 导出单例实例
