@@ -1,8 +1,14 @@
 import { Angel } from './angel.js'; // 导入小天使类
 import { network } from './network.js'; // 导入网络单例
-import { WindowManager } from './window_manager.js'; // 导入窗口管理器
+import { wm } from './window_manager.js'; // 导入窗口管理器单例
 import { bus } from './event_bus.js'; // 导入事件总线
-import { intelligenceApp } from './apps/intelligence.js'; // 导入情报APP模块
+
+// 导入所有 APP 模块
+// 注意：新增桌面应用请务必在此处导入，并在 apps/ 目录下创建对应模块文件
+import { intelligenceApp } from './apps/intelligence.js';
+import { browserApp } from './apps/browser.js';
+import { settingsApp } from './apps/settings.js';
+import { manualApp } from './apps/manual.js';
 
 // ---------------------------------------------------------------- //
 //  主入口文件()
@@ -19,7 +25,7 @@ import { intelligenceApp } from './apps/intelligence.js'; // 导入情报APP模�
 
 // 1. 实例化核心模块
 const net = network; // 获取网络实例引用
-const wm = new WindowManager(); // 创建窗口管理器实例
+// wm 已经在导入时实例化了
 const angel = new Angel('angel-companion'); // 创建小天使实例，绑定到 DOM 元素
 
 function setupBusinessLogic() {
@@ -77,17 +83,7 @@ function setupBusinessLogic() {
     });
 
     // === 监听 UI 命令 -> 发送网络请求 ===
-
-    // 监听“开始扫描”命令
-    bus.on('cmd:scan', () => {
-        net.send('start_scan'); // 发送网络请求
-        wm.openApp('win-angel'); // 自动打开“观察眼”窗口
-    });
-
-    // 监听“远程点击”命令
-    bus.on('cmd:remote_click', (pos) => {
-        net.send('click', pos); // 发送点击坐标
-    });
+    // (原本的 cmd:scan 和 cmd:remote_click 已移动到 browser.js)
 }
 
 window.onload = () => {
@@ -119,68 +115,11 @@ window.onload = () => {
 
     // === 特定 UI 绑定 (非通用部分) ===
 
-    // 绑定扫描按钮点击事件
+    // 绑定扫描按钮点击事件 (保留在这里，因为它可能属于全局工具栏，或者也可以移到 browser.js，但目前先保留)
+    // 实际上 browser.js 已经监听了 cmd:scan，这里只是触发事件
     document.getElementById('btn-scan')?.addEventListener('click', () => bus.emit('cmd:scan'));
 
-    // === 浏览器控制逻辑 ===
-    const btnGo = document.getElementById('btn-browser-go');
-    const inputUrl = document.getElementById('browser-url');
-    if (btnGo && inputUrl) {
-        btnGo.onclick = () => {
-            const url = inputUrl.value;
-            if (url) {
-                window.current_browser_url = url; // 记录当前 URL 到全局变量
-                net.send({ type: 'browser_navigate', url: url }); // 发送导航指令
-                bus.emit('system:speak', "正在前往目标网页..."); // 语音提示
-            }
-        };
-    }
-
-    // 绑定分析按钮
-    const btnAnalyze = document.getElementById('btn-browser-analyze');
-    if (btnAnalyze) {
-        btnAnalyze.onclick = () => {
-            net.send({ type: 'agent_analyze' }); // 发送分析指令
-            bus.emit('system:speak', "正在分析当前视频..."); // 语音提示
-        };
-    }
-
-    // === 视频进度条拖动逻辑 ===
-    const progressBar = document.getElementById('video-progress-bar');
-    const remoteScreen = document.getElementById('remote-screen');
-
-    if (remoteScreen && progressBar) {
-        // 鼠标悬停显示进度条
-        remoteScreen.addEventListener('mouseenter', () => progressBar.style.display = 'block');
-        remoteScreen.addEventListener('mouseleave', () => progressBar.style.display = 'none');
-
-        // 点击进度条跳转
-        progressBar.addEventListener('click', (e) => {
-            e.stopPropagation(); // 防止冒泡触发 remoteScreen 的点击
-            const rect = progressBar.getBoundingClientRect();
-            // 计算点击位置的百分比
-            const percent = ((e.clientX - rect.left) / rect.width) * 100;
-            net.send({ type: 'video_drag', progress: percent }); // 发送拖拽指令
-            bus.emit('system:speak', `跳转到 ${Math.round(percent)}%`); // 语音提示
-        });
-    }
-
-    // === 远程点击逻辑 ===
-    if (remoteScreen) {
-        remoteScreen.addEventListener('click', (e) => {
-            // 如果点击的是进度条，不触发远程点击
-            if (e.target.closest('#video-progress-bar')) return;
-
-            const img = document.getElementById('live-image');
-            if (!img) return;
-            const r = img.getBoundingClientRect();
-            // 计算相对坐标 (0.0 - 1.0)
-            bus.emit('cmd:remote_click', {
-                x: (e.clientX - r.left) / r.width,
-                y: (e.clientY - r.top) / r.height
-            });
-        });
-    }
+    // (浏览器控制、视频进度条、远程点击逻辑已移动到 apps/browser.js)
 
     // === 小天使特殊拖拽绑定 ===
     // 因为小天使不是标准 Window，需要单独绑定拖拽逻辑
@@ -198,9 +137,5 @@ window.onload = () => {
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
     });
 
-    // === 自定义壁纸按钮 ===
-    document.getElementById('btn-custom-wp')?.addEventListener('click', () => {
-        const url = document.getElementById('custom-wp')?.value;
-        if (url) wm.changeWallpaper(url); // 调用窗口管理器更换壁纸
-    });
+    // (自定义壁纸按钮逻辑已移动到 apps/settings.js)
 };
