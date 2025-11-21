@@ -2,6 +2,9 @@ import sys
 import os
 from dotenv import load_dotenv
 
+# 禁止生成 .pyc 文件
+sys.dont_write_bytecode = True
+
 # Load environment variables from .env file
 # 加载 .env 文件中的环境变量
 load_dotenv()
