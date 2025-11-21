@@ -13,12 +13,10 @@ class IntelligenceApp {
     //     它记录了所有发现的“老六点位”，你可以点击它们直接跳转到视频对应的进度。
     //
     //  警告：
-    //     依赖 localStorage 存储数据，清空浏览器缓存会导致数据丢失。
+    //     数据现在存储在服务器端 (user_data/spots.json)，不再依赖 localStorage。
     // ---------------------------------------------------------------- //
     constructor() {
-        // 从 localStorage 读取保存的点位列表，如果没有则初始化为空数组
-        this.spots = JSON.parse(localStorage.getItem('angel_intel_spots') || '[]');
-        // 初始化应用
+        this.spots = []; // 初始化为空数组
         this.init();
     }
 
@@ -30,14 +28,25 @@ class IntelligenceApp {
         //     渲染列表，绑定按钮事件，并监听网络发来的新情报。
         //
         //  易懂解释：
-        //     应用启动时的准备工作。把以前记的小本本拿出来翻开，然后竖起耳朵听有没有新消息。
-        //
-        //  警告：
-        //     如果 DOM 元素还没加载完成（例如脚本在 head 中运行），这里可能会找不到元素导致报错。
+        //     应用启动时的准备工作。向服务器请求最新的情报数据。
         // ---------------------------------------------------------------- //
 
-        this.renderList(); // 首次渲染列表
         this.bindEvents(); // 绑定按钮点击事件
+
+        // 连接建立后，请求加载数据
+        // 如果网络还没准备好，可以在 network 模块里加一个 onReady 回调，或者简单地延迟一下
+        setTimeout(() => {
+            network.send({ type: 'load_spots' });
+        }, 1000);
+
+        // 监听来自服务器的点位数据更新
+        bus.on('net:update_spots', (data) => {
+            if (data.data) {
+                this.spots = data.data;
+                this.renderList();
+                console.log("已同步服务端点位数据:", this.spots.length);
+            }
+        });
 
         // 监听来自服务器的新情报 (扫描发现的)
         bus.on('net:new_intel', (data) => {
@@ -70,12 +79,6 @@ class IntelligenceApp {
         //
         //  函数用处：
         //     给界面上的“扫描”和“手动添加”按钮绑定点击处理函数。
-        //
-        //  易懂解释：
-        //     告诉按钮：“如果有人按你，你就这么做...”。
-        //
-        //  警告：
-        //     必须确保 HTML 中存在 id 为 'btn-scan' 和 'btn-add-custom' 的元素，否则无法绑定。
         // ---------------------------------------------------------------- //
 
         // 获取扫描按钮
@@ -125,9 +128,6 @@ class IntelligenceApp {
         //
         //  易懂解释：
         //     在小本本上记下一条新线索。如果这条线索已经记过了，就不重复记了。
-        //
-        //  警告：
-        //     去重逻辑仅基于 'name' 和 'raw_time'，如果这两个字段相同则视为重复。
         // ---------------------------------------------------------------- //
 
         // 查重：如果名称和时间都一样，就不重复添加
@@ -140,7 +140,7 @@ class IntelligenceApp {
         spotData.added_at = new Date().toLocaleString(); // 记录添加时间
 
         this.spots.unshift(spotData); // 添加到数组开头（最新的在最前）
-        this.save(); // 保存到 localStorage
+        this.save(); // 保存到服务器
         this.renderList(); // 刷新界面
     }
 
@@ -149,16 +149,15 @@ class IntelligenceApp {
         //  保存()
         //
         //  函数用处：
-        //     持久化存储点位数据到浏览器的 localStorage 中。
+        //     将数据发送给服务器进行持久化存储。
         //
         //  易懂解释：
-        //     把记在脑子里的东西写到硬盘上，这样关机也不会忘。
-        //
-        //  警告：
-        //     localStorage 容量有限（通常 5MB），如果存储大量数据可能会失败。
+        //     把小本本交给管家保管。
         // ---------------------------------------------------------------- //
-
-        localStorage.setItem('angel_intel_spots', JSON.stringify(this.spots));
+        network.send({
+            type: 'save_spots',
+            data: this.spots
+        });
     }
 
     renderList() {
@@ -167,12 +166,6 @@ class IntelligenceApp {
         //
         //  函数用处：
         //     将点位数组转换为 HTML 元素显示在界面上。
-        //
-        //  易懂解释：
-        //     把小本本上的字写到黑板上，让大家都能看见。
-        //
-        //  警告：
-        //     每次调用都会清空并重新生成整个列表，数据量大时可能会有性能影响。
         // ---------------------------------------------------------------- //
 
         const container = document.getElementById('file-list'); // 获取列表容器
@@ -222,12 +215,6 @@ class IntelligenceApp {
         //
         //  函数用处：
         //     发送跳转指令给服务器，控制浏览器播放视频到指定时间。
-        //
-        //  易懂解释：
-        //     像遥控器一样，直接把电影进度条拖到精彩的地方。
-        //
-        //  警告：
-        //     如果视频页面未打开或不支持跳转，此操作可能无效。
         // ---------------------------------------------------------------- //
 
         console.log("Jumping to:", spot);

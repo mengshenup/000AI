@@ -3,6 +3,7 @@ import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from services.browser import AngelBrowser
 from services.billing import global_billing
+from services.storage import save_data, load_data
 
 # 创建 API 路由实例
 router = APIRouter()
@@ -180,22 +181,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 处理旧版跳转指令 (兼容性)
                 elif cmd_type == "jump_to":
                     ts = command.get("timestamp", 0)
-                    success = await browser_service.jump_to_video(ts)
-                    if success:
-                        await send_packet(websocket, "log", {"msg": f"🎬 已跳转至 {ts}秒"})
-                    else:
-                        await send_packet(websocket, "log", {"msg": "⚠️ 跳转失败：未找到视频对象"})
-
-                # 处理点击指令
-                elif cmd_type == "click":
-                    if "x" in command and "y" in command:
-                        await browser_service.handle_click(command["x"], command["y"])
-
-            # 每一轮循环都发送一次截图 (保持实时画面)
-            b64_img = await browser_service.get_screenshot_b64()
-            if b64_img:
-                # 发送帧更新消息
-                await send_packet(websocket, "frame_update", {"image": f"data:image/jpeg;base64,{b64_img}"})
     except Exception as e:
         # 打印全局异常
         print(f"❌ WebSocket Error: {e}")
