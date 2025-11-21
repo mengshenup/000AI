@@ -1,21 +1,21 @@
-import { bus } from '../event_bus.js'; // 导入事件总线
-import { network } from '../network.js'; // 导入网络单例
-import { wm } from '../window_manager.js'; // 导入窗口管理器单例
+//  函数用处：
+//     管理“观察眼”APP的业务逻辑。包括地址栏导航、视频分析、进度条控制和远程点击。
+//
+//  易懂解释：
+//     这是你的“网络电视”遥控器。
+//     你可以换台（输网址）、让小天使帮你看看电视里演了啥（分析画面）、快进（拖进度条）。
+//
+//  警告：
+//     依赖于 DOM 中特定的 ID（如 btn-browser-go, video-progress-bar），如果 HTML 结构改变，这里需要同步修改。
+// ---------------------------------------------------------------- //
+
+import { bus } from '../event_bus.js';
+import { network } from '../network.js';
+import { wm } from '../window_manager.js';
+
+export const APP_NAME = 'Void Gazer';
 
 class BrowserApp {
-    // ---------------------------------------------------------------- //
-    //  浏览器应用类()
-    //
-    //  函数用处：
-    //     管理“观察眼”APP的业务逻辑。包括地址栏导航、视频分析、进度条控制和远程点击。
-    //
-    //  易懂解释：
-    //     这是你的“网络电视”遥控器。
-    //     你可以换台（输网址）、让小天使帮你看看电视里演了啥（分析画面）、快进（拖进度条）。
-    //
-    //  警告：
-    //     依赖于 DOM 中特定的 ID（如 btn-browser-go, video-progress-bar），如果 HTML 结构改变，这里需要同步修改。
-    // ---------------------------------------------------------------- //
     constructor() {
         this.init(); // 初始化应用
     }

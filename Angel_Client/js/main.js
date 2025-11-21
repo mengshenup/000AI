@@ -1,32 +1,3 @@
-import { Angel } from './angel.js'; // 导入小天使类
-import { network } from './network.js'; // 导入网络单例
-import { wm } from './window_manager.js'; // 导入窗口管理器单例
-import { bus } from './event_bus.js'; // 导入事件总线
-
-// 导入所有 APP 模块
-// 注意：新增桌面应用请务必在此处导入，并在 apps/ 目录下创建对应模块文件
-import { intelligenceApp } from './apps/intelligence.js';
-import { browserApp } from './apps/browser.js';
-import { settingsApp } from './apps/settings.js';
-import { manualApp } from './apps/manual.js';
-
-// ---------------------------------------------------------------- //
-//  主入口文件()
-//
-//  函数用处：
-//     这是整个前端程序的起点。它负责实例化核心模块，把它们组装在一起，并启动整个系统。
-//
-//  易懂解释：
-//     这是总指挥部。它把小天使、网络、窗口管理器都叫过来，告诉大家“准备，开始工作！”
-//
-//  警告：
-//     此文件依赖所有其他模块，必须最后加载。
-// ---------------------------------------------------------------- //
-
-// 1. 实例化核心模块
-const net = network; // 获取网络实例引用
-// wm 已经在导入时实例化了
-const angel = new Angel('angel-companion'); // 创建小天使实例，绑定到 DOM 元素
 
 function setupBusinessLogic() {
     // ---------------------------------------------------------------- //

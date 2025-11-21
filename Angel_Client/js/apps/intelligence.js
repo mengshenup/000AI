@@ -1,20 +1,20 @@
-import { bus } from '../event_bus.js'; // 导入事件总线
-import { network } from '../network.js'; // 导入网络模块
+//  函数用处：
+//     管理“情报站”APP的业务逻辑。包括点位列表的展示、添加、保存以及跳转功能。
+//
+//  易懂解释：
+//     这是游戏里的“任务日志”或者“攻略本”。
+//     它记录了所有发现的“老六点位”，你可以点击它们直接跳转到视频对应的进度。
+//
+//  警告：
+//     数据现在存储在服务器端 (user_data/spots.json)，不再依赖 localStorage。
+// ---------------------------------------------------------------- //
+
+import { bus } from '../event_bus.js';
+import { network } from '../network.js';
+
+export const APP_NAME = 'Oracle Node';
 
 class IntelligenceApp {
-    // ---------------------------------------------------------------- //
-    //  情报应用类()
-    //
-    //  函数用处：
-    //     管理“情报站”APP的业务逻辑。包括点位列表的展示、添加、保存以及跳转功能。
-    //
-    //  易懂解释：
-    //     这是游戏里的“任务日志”或者“攻略本”。
-    //     它记录了所有发现的“老六点位”，你可以点击它们直接跳转到视频对应的进度。
-    //
-    //  警告：
-    //     数据现在存储在服务器端 (user_data/spots.json)，不再依赖 localStorage。
-    // ---------------------------------------------------------------- //
     constructor() {
         this.spots = []; // 初始化为空数组
         this.init();
@@ -193,12 +193,12 @@ class IntelligenceApp {
 
             // 填充内容
             el.innerHTML = `
-                <div>
-                    <div style="font-weight:bold; color:#333;">${spot.name}</div>
-                    <div style="font-size:12px; color:#888;">${spot.time_str} | ${spot.added_at}</div>
-                </div>
-                <button style="padding:4px 8px; background:#00b894; color:white; border:none; border-radius:4px;">跳转</button>
-            `;
+                    <div>
+                        <div style="font-weight:bold; color:#333;">${spot.name}</div>
+                        <div style="font-size:12px; color:#888;">${spot.time_str} | ${spot.added_at}</div>
+                    </div>
+                    <button style="padding:4px 8px; background:#00b894; color:white; border:none; border-radius:4px;">跳转</button>
+                `;
 
             // 点击整个条目触发跳转
             el.onclick = () => {

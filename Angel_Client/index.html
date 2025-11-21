@@ -326,11 +326,199 @@
     //
     //  易懂解释：
     //     给房子通上电，让电器都能转起来。
+        -->
+        <div id="win-intel" class="window">
+            <div class="title-bar">
+                <div class="win-controls">
+                    <button class="win-btn close-btn"></button>
+                    <button class="win-btn min-btn"></button>
+                </div>
+                <div class="win-title">情报站</div>
+            </div>
+            <div class="content">
+                <div style="margin-bottom:10px; display:flex; gap:10px;">
+                    <button id="btn-scan"
+                        style="flex:1; padding:8px; background:var(--primary-color); color:white; border:none; border-radius:4px; cursor:pointer;">
+                        📡 扫描老六点位
+                    </button>
+                    <button id="btn-add-custom"
+                        style="padding:8px; background:#00b894; color:white; border:none; border-radius:4px; cursor:pointer;">
+                        +
+                    </button>
+                </div>
+                <div id="file-list" style="height:380px; overflow-y:auto;">
+                    <!-- 列表项由 JS 动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  设置窗口()
+        //
+        //  代码用处：
+        //     提供更换壁纸等个性化设置选项。
+        //
+        //  易懂解释：
+        //     装修工具箱。可以在这里给电脑换个新皮肤。
+        //
+        //  警告：
+        //     自定义壁纸功能目前仅支持网络图片 URL。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="win-settings" class="window">
+            <div class="title-bar">
+                <div class="win-controls">
+                    <button class="win-btn close-btn"></button>
+                    <button class="win-btn min-btn"></button>
+                </div>
+                <div class="win-title">个性化设置</div>
+            </div>
+            <div class="content">
+                <h4>选择壁纸</h4>
+                <div id="wp-grid" style="margin-top:10px;">
+                    <!-- 壁纸列表由 JS 动态生成 -->
+                </div>
+                <div style="margin-top:20px;">
+                    <h4>自定义壁纸</h4>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <input type="text" id="custom-wp" placeholder="输入图片 URL" style="flex:1; padding:5px;">
+                        <button id="btn-custom-wp" style="padding:5px 10px;">应用</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 
+        // ---------------------------------------------------------------- //
+        //  账单悬浮窗()
+        //
+        //  代码用处：
+        //     显示当前 AI 服务的调用费用统计。
+        //
+        //  易懂解释：
+        //     你的话费单。看看刚才那个分析花了多少钱。
+        //
+        //  警告：
+        //     这里的费用是估算的，仅供参考。
+        // ---------------------------------------------------------------- //
+        -->
+        <div id="billing-popover">
+            <div class="bill-row bill-total">
+                <span>本月总消费</span>
+                <span id="pop-total">¥0.00</span>
+            </div>
+            <div class="bill-row">
+                <span>网络流量费</span>
+                <span id="pop-net">¥0.00</span>
+            </div>
+            <div style="margin-top:10px; font-weight:bold; color:#444;">模型调用详情</div>
+            <div id="pop-models" style="margin-top:5px; max-height:100px; overflow-y:auto;">
+                <!-- 详情由 JS 填充 -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 
+    // ---------------------------------------------------------------- //
+    //  任务栏()
+    //
+    //  代码用处：
+    //     底部导航栏，包含开始菜单、应用图标、网络状态和时钟。
+    //
+    //  易懂解释：
+    //     屏幕最下面那一排。
+    //
+    //  警告：
+    //     z-index 最高，确保永远显示在最前面。
+    // ---------------------------------------------------------------- //
+    -->
+    <div id="taskbar">
+        <div class="start-btn">
+            <svg style="width:20px;fill:currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z" />
+            </svg>
+            <span>开始</span>
+        </div>
+
+        <div id="taskbar-apps">
+            <!-- 任务栏应用由 JS 动态生成 -->
+        </div>
+
+        <div style="display:flex; gap:15px; font-size:12px; color:#666; align-items:center;">
+            <!-- 账单按钮 -->
+            <div id="btn-billing" style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+                <span>💰</span>
+                <span id="ai-cost">¥0.00</span>
+            </div>
+            <!-- 网络状态 -->
+            <div style="display:flex; gap:8px;">
+                <span>⬆️ <span id="tx-stat">0KB/s</span></span>
+                <span>⬇️ <span id="rx-stat">0KB/s</span></span>
+            </div>
+            <!-- FPS 显示 -->
+            <div id="fps-display" style="color:#666; font-weight:bold;">FPS: 60</div>
+            <!-- 时钟 -->
+            <div id="clock-time" style="font-weight:bold; color:#333;">12:00</div>
+        </div>
+    </div>
+
+    <!-- 
+    // ---------------------------------------------------------------- //
+    //  脚本引入()
+    //
+    //  代码用处：
+    //     引入主程序逻辑。type="module" 允许使用 ES6 模块化语法 (import/export)。
+    //
+    //  易懂解释：
+    //     给房子通上电，让电器都能转起来。
     //
     //  警告：
     //     必须放在 body 的最后，确保所有 HTML 元素都已加载完毕。
     // ---------------------------------------------------------------- //
     -->
+    <!--
+    // ---------------------------------------------------------------- //
+    //  灵魂棱镜窗口 (原任务管理器)
+    //
+    //  代码用处：
+    //     显示当前运行的所有应用状态，提供管理功能。
+    //
+    //  易懂解释：
+    //     系统的“监工”。看看谁在偷懒，谁在干活，不听话的就关掉它。
+    // ---------------------------------------------------------------- //
+    -->
+    <div id="win-taskmgr" class="window">
+        <div class="title-bar">
+            <div class="win-controls">
+                <button class="win-btn close-btn"></button>
+                <button class="win-btn min-btn"></button>
+            </div>
+            <div class="win-title">灵魂棱镜</div>
+        </div>
+        <div class="content">
+            <div id="task-list" style="height:100%; overflow-y:auto; padding:10px;">
+                <!-- 任务列表由 JS 动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!--
+    // ---------------------------------------------------------------- //
+    //  右键菜单 (Ritual Menu)
+    //
+    //  代码用处：
+    //     自定义右键菜单容器。
+    //
+    //  易懂解释：
+    //     当你想对某个东西做点什么时，弹出的那个小菜单。
+    // ---------------------------------------------------------------- //
+    -->
+    <div id="context-menu" class="context-menu" style="display:none; position:absolute; z-index:9999;">
+        <!-- 菜单项由 JS 动态生成 -->
+    </div>
+
     <script type="module" src="js/main.js"></script>
 </body>
 

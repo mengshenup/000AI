@@ -1,5 +1,7 @@
 class ManualApp {
     // ---------------------------------------------------------------- //
+class ManualApp {
+    // ---------------------------------------------------------------- //
     //  说明书应用类()
     //
     //  函数用处：
@@ -17,4 +19,6 @@ class ManualApp {
     }
 }
 
+export const APP_NAME = 'Revelation Codex'; // 原名：系统说明书
+import { store } from '../store.js';
 export const manualApp = new ManualApp(); // 导出单例实例
