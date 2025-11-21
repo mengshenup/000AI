@@ -86,21 +86,28 @@ window.onload = () => {
 
     // 初始化各个模块
     angel.init(); // 启动小天使
-    wm.init();    // 启动窗口管理器
 
     // 注入应用元数据 (解耦名称和配置)
-    // 动态导入应用模块的元数据
-    import('./apps/manual.js').then(m => store.setAppMetadata('win-manual', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
-    import('./apps/browser.js').then(m => store.setAppMetadata('win-angel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
-    import('./apps/intelligence.js').then(m => store.setAppMetadata('win-intel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
-    import('./apps/settings.js').then(m => store.setAppMetadata('win-settings', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
-    import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
-
-    // 稍微延迟一下刷新任务栏，确保元数据注入完成 (因为 import 是异步的)
-    setTimeout(() => wm.updateTaskbar(), 100);
-
-    setupBusinessLogic(); // 绑定逻辑
-    net.connect(); // 连接服务器
+    // 使用 Promise.all 确保所有元数据都加载完成后，再初始化窗口管理器
+    // 这样可以避免“先渲染了没有名字的图标，然后再更新名字”导致的闪烁或显示错误
+    Promise.all([
+        import('./apps/manual.js').then(m => store.setAppMetadata('win-manual', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
+        import('./apps/browser.js').then(m => store.setAppMetadata('win-angel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
+        import('./apps/intelligence.js').then(m => store.setAppMetadata('win-intel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
+        import('./apps/settings.js').then(m => store.setAppMetadata('win-settings', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
+        import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }))
+    ]).then(() => {
+        console.log("应用元数据注入完成，启动窗口管理器...");
+        wm.init();    // 启动窗口管理器 (此时 store 中已经有了名字)
+        setupBusinessLogic(); // 绑定逻辑
+        net.connect(); // 连接服务器
+    }).catch(err => {
+        console.error("应用元数据加载失败:", err);
+        // 即使失败也尝试启动，避免完全白屏
+        wm.init();
+        setupBusinessLogic();
+        net.connect();
+    });
 
     // 启动时钟逻辑 (每秒更新一次)
     setInterval(() => {
