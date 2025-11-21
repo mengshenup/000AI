@@ -10,6 +10,7 @@
 import { wm } from '../window_manager.js';
 
 export const APP_NAME = 'Reality Shaper';
+export const APP_OPEN_MSG = "正在重塑现实参数... ⚙️";
 
 class SettingsApp {
     constructor() {

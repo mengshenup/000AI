@@ -1,3 +1,16 @@
+import { bus } from './event_bus.js';
+import { network as net } from './network.js';
+import { wm } from './window_manager.js';
+import { angel } from './angel.js';
+import { store } from './store.js';
+
+// 导入应用模块以确保它们被加载
+import './apps/browser.js';
+import './apps/settings.js';
+import './apps/manual.js';
+import './apps/intelligence.js';
+import './apps/task_manager.js';
+import './apps/context_menu.js';
 
 function setupBusinessLogic() {
     // ---------------------------------------------------------------- //
@@ -74,6 +87,18 @@ window.onload = () => {
     // 初始化各个模块
     angel.init(); // 启动小天使
     wm.init();    // 启动窗口管理器
+
+    // 注入应用元数据 (解耦名称和配置)
+    // 动态导入应用模块的元数据
+    import('./apps/manual.js').then(m => store.setAppMetadata('win-manual', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
+    import('./apps/browser.js').then(m => store.setAppMetadata('win-angel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
+    import('./apps/intelligence.js').then(m => store.setAppMetadata('win-intel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
+    import('./apps/settings.js').then(m => store.setAppMetadata('win-settings', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
+    import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }));
+
+    // 稍微延迟一下刷新任务栏，确保元数据注入完成 (因为 import 是异步的)
+    setTimeout(() => wm.updateTaskbar(), 100);
+
     setupBusinessLogic(); // 绑定逻辑
     net.connect(); // 连接服务器
 

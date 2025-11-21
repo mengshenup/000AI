@@ -14,6 +14,7 @@ import { network } from '../network.js';
 import { wm } from '../window_manager.js';
 
 export const APP_NAME = 'Void Gazer';
+export const APP_OPEN_MSG = "虚空注视者已启动，正在连接全视之眼... 👁️";
 
 class BrowserApp {
     constructor() {

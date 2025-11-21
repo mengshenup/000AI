@@ -2,6 +2,9 @@ import { store } from '../store.js';
 import { bus } from '../event_bus.js';
 import { wm } from '../window_manager.js';
 
+export const APP_NAME = 'Soul Prism';
+export const APP_OPEN_MSG = "灵魂棱镜已展开，正在审视系统状态... 📊";
+
 export class TaskManagerApp {
     // ---------------------------------------------------------------- //
     //  灵魂棱镜类 (Task Manager)
