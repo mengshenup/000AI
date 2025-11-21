@@ -23,17 +23,16 @@ class Store {
         if (saved) {
             // 如果有缓存，解析缓存
             const savedApps = JSON.parse(saved);
-            // 将默认配置合并进去，确保新增的 APP (如情报站) 能显示出来
-            // 使用深拷贝的 DEFAULT_APPS 作为基底，然后用保存的数据覆盖它
-            // 这样既保留了用户的设置(如位置)，又有了新 APP
-            this.apps = { ...JSON.parse(JSON.stringify(DEFAULT_APPS)), ...savedApps };
 
-            // 再次检查：如果有新 APP 在 savedApps 里完全不存在，上面的合并可能不够
-            // (因为 savedApps 里的 key 可能少于 DEFAULT_APPS)
-            // 所以我们需要遍历 DEFAULT_APPS，把缺失的补上
-            Object.keys(DEFAULT_APPS).forEach(key => {
-                if (!this.apps[key]) {
-                    this.apps[key] = JSON.parse(JSON.stringify(DEFAULT_APPS[key]));
+            // 初始化为默认配置的深拷贝
+            this.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
+
+            // 仅从 savedApps 中恢复已知 APP 的状态 (位置、是否打开等)
+            // 这样可以自动过滤掉旧版本遗留的、不再使用的 APP (解决图标重复问题)
+            Object.keys(this.apps).forEach(key => {
+                if (savedApps[key]) {
+                    // 保留默认配置中的静态属性(如 iconPath, color)，只覆盖动态属性(如 pos, winPos, isOpen)
+                    this.apps[key] = { ...this.apps[key], ...savedApps[key] };
                 }
             });
         } else {
