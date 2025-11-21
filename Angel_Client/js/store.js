@@ -20,9 +20,26 @@ class Store {
         // 版本号 _v4 用于在代码更新导致数据结构变化时，强制重置旧缓存
         const saved = localStorage.getItem('seraphim_apps_v4');
 
-        // 如果有缓存，就解析缓存；如果没有，就使用默认配置的深拷贝
-        // JSON.parse(JSON.stringify(...)) 是一种简单的深拷贝方法，防止修改影响原对象
-        this.apps = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_APPS));
+        if (saved) {
+            // 如果有缓存，解析缓存
+            const savedApps = JSON.parse(saved);
+            // 将默认配置合并进去，确保新增的 APP (如情报站) 能显示出来
+            // 使用深拷贝的 DEFAULT_APPS 作为基底，然后用保存的数据覆盖它
+            // 这样既保留了用户的设置(如位置)，又有了新 APP
+            this.apps = { ...JSON.parse(JSON.stringify(DEFAULT_APPS)), ...savedApps };
+
+            // 再次检查：如果有新 APP 在 savedApps 里完全不存在，上面的合并可能不够
+            // (因为 savedApps 里的 key 可能少于 DEFAULT_APPS)
+            // 所以我们需要遍历 DEFAULT_APPS，把缺失的补上
+            Object.keys(DEFAULT_APPS).forEach(key => {
+                if (!this.apps[key]) {
+                    this.apps[key] = JSON.parse(JSON.stringify(DEFAULT_APPS[key]));
+                }
+            });
+        } else {
+            // 如果没有缓存，直接使用默认配置
+            this.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
+        }
     }
 
     save() {
