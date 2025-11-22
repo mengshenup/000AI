@@ -1,5 +1,31 @@
-class ManualApp {
-    // ---------------------------------------------------------------- //
+export const config = {
+    id: 'win-manual',
+    name: 'Revelation Codex',
+    icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z',
+    color: '#0984e3',
+    pos: { x: 20, y: 20 },
+    winPos: { x: 100, y: 50 },
+    openMsg: "已打开启示录，正在读取系统真理... 📖",
+    content: `
+        <h3>欢迎使用 Seraphim OS! ✨</h3>
+        <p>这是一个基于 Web 的桌面操作系统模拟器。</p>
+        <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
+        <p><b>操作指南：</b></p>
+        <ul>
+            <li>🖱️ <b>拖拽窗口</b>：按住标题栏移动。</li>
+            <li>📂 <b>打开应用</b>：双击桌面图标。</li>
+            <li>👀 <b>小天使交互</b>：
+                <ul>
+                    <li>左键点击：随机对话</li>
+                    <li>右键拖拽：旋转视角</li>
+                </ul>
+            </li>
+            <li>⚙️ <b>个性化</b>：在设置中更换壁纸。</li>
+        </ul>
+    `,
+    contentStyle: 'color:#444; line-height:1.6;'
+};
+
 class ManualApp {
     // ---------------------------------------------------------------- //
     //  说明书应用类()
@@ -19,7 +45,4 @@ class ManualApp {
     }
 }
 
-export const APP_NAME = 'Revelation Codex'; // 原名：系统说明书
-export const APP_OPEN_MSG = "已打开启示录，正在读取系统真理... 📖";
-import { store } from '../store.js';
-export const manualApp = new ManualApp(); // 导出单例实例
+export const app = new ManualApp();

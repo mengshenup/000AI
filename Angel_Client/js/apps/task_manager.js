@@ -1,3 +1,18 @@
+export const config = {
+    id: 'win-taskmgr',
+    name: 'Soul Prism',
+    icon: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
+    color: '#d63031',
+    pos: { x: 20, y: 380 },
+    winPos: { x: 300, y: 300 },
+    openMsg: "灵魂棱镜已展开，正在审视系统状态... 📊",
+    content: `
+        <div id="task-list" style="height:100%; overflow-y:auto; padding:10px;">
+            <!-- 任务列表由 JS 动态生成 -->
+        </div>
+    `
+};
+
 import { store } from '../store.js';
 import { bus } from '../event_bus.js';
 import { wm } from '../window_manager.js';
@@ -20,6 +35,8 @@ export class TaskManagerApp {
         this.id = 'win-taskmgr';
         this.listContainer = null;
         this.updateInterval = null;
+        // 延迟初始化
+        setTimeout(() => this.init(), 100);
     }
 
     init() {
@@ -28,12 +45,8 @@ export class TaskManagerApp {
         // ---------------------------------------------------------------- //
         this.listContainer = document.getElementById('task-list');
 
-        // 监听打开事件，开始刷新列表
-        // 这里我们简单地通过轮询或者事件总线来更新。
-        // 为了实时性，当窗口打开时，我们设置一个定时器刷新。
-
-        // 监听窗口打开/关闭状态变化 (通过 store 监听比较复杂，这里简化为每次打开时刷新)
-        // 由于没有直接的 "onOpen" 回调，我们利用 bus 监听系统消息，或者在 render 中判断
+        // 启动自动刷新
+        this.onOpen();
     }
 
     render() {
@@ -114,4 +127,4 @@ export class TaskManagerApp {
     }
 }
 
-export const taskManagerApp = new TaskManagerApp();
+export const app = new TaskManagerApp();

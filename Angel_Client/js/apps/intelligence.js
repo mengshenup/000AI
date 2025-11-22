@@ -1,3 +1,28 @@
+export const config = {
+    id: 'win-intel',
+    name: 'Oracle Node',
+    icon: 'M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z',
+    color: '#00b894',
+    pos: { x: 20, y: 200 },
+    winPos: { x: 150, y: 150 },
+    openMsg: "神谕节点已就绪，等待接收命运的指引... 📡",
+    content: `
+        <div style="margin-bottom:10px; display:flex; gap:10px;">
+            <button id="btn-scan"
+                style="flex:1; padding:8px; background:var(--primary-color); color:white; border:none; border-radius:4px; cursor:pointer;">
+                📡 扫描老六点位
+            </button>
+            <button id="btn-add-custom"
+                style="padding:8px; background:#00b894; color:white; border:none; border-radius:4px; cursor:pointer;">
+                +
+            </button>
+        </div>
+        <div id="file-list" style="height:380px; overflow-y:auto;">
+            <!-- 列表项由 JS 动态生成 -->
+        </div>
+    `
+};
+
 //  函数用处：
 //     管理“情报站”APP的业务逻辑。包括点位列表的展示、添加、保存以及跳转功能。
 //
@@ -18,7 +43,8 @@ export const APP_OPEN_MSG = "神谕节点已就绪，等待接收命运的指引
 class IntelligenceApp {
     constructor() {
         this.spots = []; // 初始化为空数组
-        this.init();
+        // 延迟初始化，等待 DOM 元素被创建
+        setTimeout(() => this.init(), 100);
     }
 
     init() {
@@ -228,5 +254,4 @@ class IntelligenceApp {
     }
 }
 
-// 导出单例
-export const intelligenceApp = new IntelligenceApp();
+export const app = new IntelligenceApp();

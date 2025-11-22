@@ -1,3 +1,38 @@
+export const config = {
+    id: 'win-angel',
+    name: 'Omni-Eye',
+    icon: 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z',
+    color: '#6c5ce7',
+    pos: { x: 20, y: 110 },
+    winPos: { x: 400, y: 100 },
+    openMsg: "虚空注视者已启动，正在连接全视之眼... 👁️",
+    content: `
+        <!-- 浏览器地址栏 -->
+        <div style="padding:8px; background:#f1f2f6; display:flex; gap:8px; border-bottom:1px solid #ddd;">
+            <input type="text" id="browser-url" placeholder="输入网址 (例如 https://www.bilibili.com)"
+                style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
+            <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
+            <button id="btn-browser-analyze"
+                style="padding:4px 12px; cursor:pointer; background:var(--primary-color); color:white; border:none; border-radius:4px;">分析画面</button>
+        </div>
+
+        <!-- 浏览器内容区域 (iframe) -->
+        <div style="flex:1; position:relative; background:black;">
+            <!-- 实时画面 (截图) -->
+            <img id="live-image" style="width:100%; height:100%; object-fit:contain; display:none;" />
+            <!-- 远程控制层 -->
+            <div id="remote-screen"
+                style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>
+            <!-- 视频进度条 -->
+            <div id="video-progress-bar"
+                style="position:absolute; bottom:0; left:0; width:100%; height:5px; background:rgba(255,255,255,0.3); cursor:pointer; display:none;">
+                <div style="width:0%; height:100%; background:red;"></div>
+            </div>
+        </div>
+    `,
+    contentStyle: 'display:flex; flex-direction:column; padding:0;'
+};
+
 //  函数用处：
 //     管理“观察眼”APP的业务逻辑。包括地址栏导航、视频分析、进度条控制和远程点击。
 //
@@ -13,12 +48,10 @@ import { bus } from '../event_bus.js';
 import { network } from '../network.js';
 import { wm } from '../window_manager.js';
 
-export const APP_NAME = 'Void Gazer';
-export const APP_OPEN_MSG = "虚空注视者已启动，正在连接全视之眼... 👁️";
-
 class BrowserApp {
     constructor() {
-        this.init(); // 初始化应用
+        // 延迟初始化，等待 DOM 元素被创建
+        setTimeout(() => this.init(), 100);
     }
 
     init() {
@@ -142,4 +175,4 @@ class BrowserApp {
     }
 }
 
-export const browserApp = new BrowserApp(); // 导出单例实例
+export const app = new BrowserApp();
