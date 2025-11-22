@@ -1,126 +1,139 @@
-import { bus } from '../event_bus.js';
+import { bus } from '../event_bus.js'; // 💖 导入事件总线，虽然当前文件暂未使用，但保留以备扩展
 
 export class ContextMenuApp {
-    // ---------------------------------------------------------------- //
-    //  仪式菜单类 (Context Menu)
+    // =================================
+    //  🎉 仪式菜单类 (无参数)
     //
-    //  函数用处：
-    //     管理自定义右键菜单的显示、隐藏和交互。
+    //  🎨 代码用途：
+    //     管理自定义右键菜单的显示、隐藏和交互逻辑
     //
-    //  易懂解释：
-    //     这是你的“魔法书”。当你念出咒语（点击右键），它就会浮现出来，供你选择要施展的法术。
+    //  💡 易懂解释：
+    //     这是你的“魔法书”！当你念出咒语（点击右键），它就会浮现出来，供你选择要施展的法术~ 📖
     //
-    //  警告：
-    //     菜单的样式（如背景色、边框）依赖 CSS 类 .context-menu 和 .menu-item。
-    // ---------------------------------------------------------------- //
-
+    //  ⚠️ 警告：
+    //     菜单的样式（如背景色、边框）依赖 CSS 类 .context-menu 和 .menu-item，修改样式时请注意。
+    // =================================
     constructor() {
-        this.menu = null; // 稍后在 init 中获取
-        this.isVisible = false;
+        this.menu = null; // 💖 菜单 DOM 元素，稍后在 init 中获取
+        this.isVisible = false; // 💖 菜单当前是否可见的状态标记
 
         // 绑定 this
-        this.hide = this.hide.bind(this);
+        this.hide = this.hide.bind(this); // 💖 确保 hide 方法在作为回调传递时，this 依然指向当前实例
         
         // 自动初始化
-        window.addEventListener('load', () => this.init());
+        window.addEventListener('load', () => this.init()); // 💖 等待页面完全加载后，自动执行初始化
     }
 
+    // =================================
+    //  🎉 初始化函数 (无参数)
+    //
+    //  🎨 代码用途：
+    //     获取菜单 DOM 元素并设置全局点击监听以关闭菜单
+    //
+    //  💡 易懂解释：
+    //     准备好魔法书，并告诉它：“只要我点别的地方，你就赶紧藏起来！” 🤫
+    //
+    //  ⚠️ 警告：
+    //     依赖 DOM 中 id="context-menu" 的元素。
+    // =================================
     init() {
-        this.menu = document.getElementById('context-menu');
+        this.menu = document.getElementById('context-menu'); // 💖 获取 HTML 中预定义的菜单容器元素
         
-        // ---------------------------------------------------------------- //
-        //  初始化()
-        //
-        //  函数用处：
-        //     设置全局点击监听以关闭菜单。
-        // ---------------------------------------------------------------- //
-
         // 点击任意地方关闭菜单
         document.addEventListener('click', (e) => {
+            // 💖 如果菜单是打开的，且点击的位置不在菜单内部
             if (this.isVisible && !this.menu.contains(e.target)) {
-                this.hide();
+                this.hide(); // 💖 隐藏菜单
             }
         });
 
         // 滚动时也关闭菜单
-        document.addEventListener('scroll', this.hide, true);
+        document.addEventListener('scroll', this.hide, true); // 💖 页面滚动时，强制隐藏菜单，防止位置错乱
     }
 
+    // =================================
+    //  🎉 显示菜单 (X坐标, Y坐标, 菜单项列表)
+    //
+    //  🎨 代码用途：
+    //     在指定位置渲染并显示菜单，动态生成菜单项
+    //
+    //  💡 易懂解释：
+    //     在你的指尖召唤魔法书！把你想用的法术（菜单项）都列出来~ ✨
+    //
+    //  ⚠️ 警告：
+    //     items 数组中的 action 必须是函数，否则点击会报错。
+    // =================================
     show(x, y, items) {
-        // ---------------------------------------------------------------- //
-        //  显示菜单(X坐标, Y坐标, 菜单项列表)
-        //
-        //  函数用处：
-        //     在指定位置渲染并显示菜单。
-        //
-        //  易懂解释：
-        //     在你的指尖召唤魔法书。
-        //
-        //  参数：
-        //     items: Array<{ label: string, action: function, icon?: string }>
-        // ---------------------------------------------------------------- //
-
-        if (!this.menu) return;
+        if (!this.menu) return; // 💖 如果菜单元素未找到，直接返回
 
         // 1. 生成菜单内容
-        this.menu.innerHTML = '';
-        items.forEach(item => {
-            const el = document.createElement('div');
-            el.className = 'menu-item';
+        this.menu.innerHTML = ''; // 💖 清空旧的菜单项
+        items.forEach(item => { // 💖 遍历传入的菜单项数据
+            const el = document.createElement('div'); // 💖 创建菜单项容器
+            el.className = 'menu-item'; // 💖 添加 CSS 类名
             // 简单的内联样式，建议后续移入 CSS 文件
-            el.style.padding = '8px 12px';
-            el.style.cursor = 'pointer';
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.gap = '8px';
-            el.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-            el.style.color = '#fff';
-            el.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+            el.style.padding = '8px 12px'; // 💖 设置内边距
+            el.style.cursor = 'pointer'; // 💖 设置鼠标样式为手型
+            el.style.display = 'flex'; // 💖 使用 Flex 布局
+            el.style.alignItems = 'center'; // 💖 垂直居中对齐
+            el.style.gap = '8px'; // 💖 图标和文字之间的间距
+            el.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'; // 💖 设置半透明黑色背景
+            el.style.color = '#fff'; // 💖 设置文字颜色为白色
+            el.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)'; // 💖 添加底部细线分隔符
 
             // 鼠标悬停效果
-            el.onmouseenter = () => el.style.backgroundColor = 'var(--primary-color)';
-            el.onmouseleave = () => el.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            el.onmouseenter = () => el.style.backgroundColor = 'var(--primary-color)'; // 💖 鼠标移入时高亮
+            el.onmouseleave = () => el.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'; // 💖 鼠标移出时恢复背景
 
             el.innerHTML = `
-                ${item.icon ? `<span>${item.icon}</span>` : ''}
-                <span>${item.label}</span>
+                ${item.icon ? `<span>${item.icon}</span>` : ''} <!-- 💖 如果有图标，显示图标 -->
+                <span>${item.label}</span> <!-- 💖 显示菜单项文字 -->
             `;
 
             el.onclick = (e) => {
-                e.stopPropagation(); // 防止触发全局点击关闭
-                item.action();
-                this.hide();
+                e.stopPropagation(); // 💖 防止触发全局点击关闭事件
+                item.action(); // 💖 执行该菜单项对应的动作函数
+                this.hide(); // 💖 动作执行完后关闭菜单
             };
 
-            this.menu.appendChild(el);
+            this.menu.appendChild(el); // 💖 将菜单项添加到菜单容器中
         });
 
         // 2. 设置位置
-        this.menu.style.left = `${x}px`;
-        this.menu.style.top = `${y}px`;
-        this.menu.style.display = 'block';
+        this.menu.style.left = `${x}px`; // 💖 设置菜单的水平位置
+        this.menu.style.top = `${y}px`; // 💖 设置菜单的垂直位置
+        this.menu.style.display = 'block'; // 💖 显示菜单
 
         // 3. 边界检查 (防止菜单超出屏幕)
-        const rect = this.menu.getBoundingClientRect();
-        if (rect.right > window.innerWidth) {
-            this.menu.style.left = `${window.innerWidth - rect.width - 5}px`;
+        const rect = this.menu.getBoundingClientRect(); // 💖 获取菜单渲染后的尺寸和位置
+        if (rect.right > window.innerWidth) { // 💖 如果菜单右侧超出屏幕宽度
+            this.menu.style.left = `${window.innerWidth - rect.width - 5}px`; // 💖 向左移动，使其完全显示
         }
-        if (rect.bottom > window.innerHeight) {
-            this.menu.style.top = `${window.innerHeight - rect.height - 5}px`;
+        if (rect.bottom > window.innerHeight) { // 💖 如果菜单底部超出屏幕高度
+            this.menu.style.top = `${window.innerHeight - rect.height - 5}px`; // 💖 向上移动，使其完全显示
         }
 
-        this.isVisible = true;
+        this.isVisible = true; // 💖 标记菜单为可见状态
     }
 
+    // =================================
+    //  🎉 隐藏菜单 (无参数)
+    //
+    //  🎨 代码用途：
+    //     隐藏菜单 DOM 元素并更新状态
+    //
+    //  💡 易懂解释：
+    //     收起魔法书，下次再见！👋
+    //
+    //  ⚠️ 警告：
+    //     无
+    // =================================
     hide() {
-        // ---------------------------------------------------------------- //
-        //  隐藏菜单()
-        // ---------------------------------------------------------------- //
-        if (this.menu) {
-            this.menu.style.display = 'none';
-            this.isVisible = false;
+        if (this.menu) { // 💖 确保菜单元素存在
+            this.menu.style.display = 'none'; // 💖 隐藏菜单
+            this.isVisible = false; // 💖 标记菜单为不可见状态
         }
     }
 }
 
-export const contextMenuApp = new ContextMenuApp();
+export const contextMenuApp = new ContextMenuApp(); // 💖 导出单例实例供全局使用

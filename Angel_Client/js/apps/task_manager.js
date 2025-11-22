@@ -1,130 +1,186 @@
 export const config = {
-    id: 'win-taskmgr',
-    name: 'Soul Prism',
-    icon: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
-    color: '#d63031',
-    pos: { x: 20, y: 380 },
-    winPos: { x: 300, y: 300 },
-    openMsg: "灵魂棱镜已展开，正在审视系统状态... 📊",
+    // =================================
+    //  🎉 任务管理器配置 (ID, 名称, 图标...)
+    //
+    //  🎨 代码用途：
+    //     定义“灵魂棱镜”任务管理器的基础元数据和界面结构
+    //
+    //  💡 易懂解释：
+    //     这是你的“水晶球”！透过它，你可以看到所有正在运行的灵魂（应用），并决定它们的去留~ 🔮
+    //
+    //  ⚠️ 警告：
+    //     列表容器 ID 为 task-list。
+    // =================================
+    id: 'win-taskmgr', // 💖 窗口的唯一标识符
+    name: 'Soul Prism', // 💖 窗口标题栏显示的名称
+    icon: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z', // 💖 SVG 图标路径（列表形状）
+    color: '#d63031', // 💖 窗口的主题颜色（红色）
+    pos: { x: 20, y: 380 }, // 💖 桌面图标的默认位置
+    winPos: { x: 300, y: 300 }, // 💖 窗口打开时的默认屏幕坐标
+    openMsg: "灵魂棱镜已展开，正在审视系统状态... 📊", // 💖 打开应用时小天使说的话
     content: `
+        <!-- 💖 任务列表容器 -->
         <div id="task-list" style="height:100%; overflow-y:auto; padding:10px;">
             <!-- 任务列表由 JS 动态生成 -->
         </div>
     `
 };
 
-import { store } from '../store.js';
-import { bus } from '../event_bus.js';
-import { wm } from '../window_manager.js';
+import { store } from '../store.js'; // 💖 导入全局状态存储
+import { bus } from '../event_bus.js'; // 💖 导入事件总线
+import { wm } from '../window_manager.js'; // 💖 导入窗口管理器
 
-export const APP_NAME = 'Soul Prism';
-export const APP_OPEN_MSG = "灵魂棱镜已展开，正在审视系统状态... 📊";
+export const APP_NAME = 'Soul Prism'; // 💖 导出应用名称常量
+export const APP_OPEN_MSG = "灵魂棱镜已展开，正在审视系统状态... 📊"; // 💖 导出启动消息常量
 
 export class TaskManagerApp {
-    // ---------------------------------------------------------------- //
-    //  灵魂棱镜类 (Task Manager)
+    // =================================
+    //  🎉 灵魂棱镜类 (无参数)
     //
-    //  函数用处：
-    //     管理“灵魂棱镜”应用的逻辑，显示系统进程列表。
+    //  🎨 代码用途：
+    //     管理“灵魂棱镜”应用的逻辑，显示和控制系统进程列表
     //
-    //  易懂解释：
-    //     这是你的“水晶球”。透过它，你可以看到所有正在运行的灵魂（应用），并决定它们的去留。
-    // ---------------------------------------------------------------- //
-
+    //  💡 易懂解释：
+    //     这是系统的“管家婆”！谁在干活，谁在偷懒，一眼就能看出来，还能随时叫停或者叫醒它们~ 👮‍♀️
+    //
+    //  ⚠️ 警告：
+    //     无
+    // =================================
     constructor() {
-        this.id = 'win-taskmgr';
-        this.listContainer = null;
-        this.updateInterval = null;
+        this.id = 'win-taskmgr'; // 💖 应用 ID
+        this.listContainer = null; // 💖 列表容器 DOM 元素，稍后获取
+        this.updateInterval = null; // 💖 自动刷新定时器 ID
         // 监听窗口就绪事件，替代 setTimeout
-        bus.on(`app:ready:${config.id}`, () => this.init());
+        bus.on(`app:ready:${config.id}`, () => this.init()); // 💖 注册初始化回调
     }
 
+    // =================================
+    //  🎉 初始化函数 (无参数)
+    //
+    //  🎨 代码用途：
+    //     获取列表容器并启动自动刷新
+    //
+    //  💡 易懂解释：
+    //     管家婆上岗啦！拿起花名册（列表），开始点名~ 📝
+    //
+    //  ⚠️ 警告：
+    //     依赖 DOM 元素 ID task-list。
+    // =================================
     init() {
-        // ---------------------------------------------------------------- //
-        //  初始化()
-        // ---------------------------------------------------------------- //
-        this.listContainer = document.getElementById('task-list');
+        this.listContainer = document.getElementById('task-list'); // 💖 获取列表容器 DOM
 
         // 启动自动刷新
-        this.onOpen();
+        this.onOpen(); // 💖 立即执行一次打开逻辑
     }
 
+    // =================================
+    //  🎉 渲染列表 (无参数)
+    //
+    //  🎨 代码用途：
+    //     读取 store 中的应用状态，动态生成并更新任务列表 DOM
+    //
+    //  💡 易懂解释：
+    //     把花名册上的名字一个个念出来，看看谁是绿灯（运行中），谁是灰灯（睡觉中）~ 🚦
+    //
+    //  ⚠️ 警告：
+    //     频繁操作 DOM，如果应用数量非常多可能会有性能压力。
+    // =================================
     render() {
-        // ---------------------------------------------------------------- //
-        //  渲染列表()
-        //
-        //  函数用处：
-        //     读取 store 中的应用状态，生成列表项。
-        // ---------------------------------------------------------------- //
-        if (!this.listContainer) this.listContainer = document.getElementById('task-list');
-        if (!this.listContainer) return;
+        if (!this.listContainer) this.listContainer = document.getElementById('task-list'); // 💖 再次尝试获取容器
+        if (!this.listContainer) return; // 💖 容器不存在则返回
 
-        const apps = store.apps;
-        this.listContainer.innerHTML = '';
+        const apps = store.apps; // 💖 从全局状态中获取所有应用信息
+        this.listContainer.innerHTML = ''; // 💖 清空列表
 
-        Object.entries(apps).forEach(([id, app]) => {
-            const item = document.createElement('div');
-            item.style.display = 'flex';
-            item.style.alignItems = 'center';
-            item.style.justifyContent = 'space-between';
-            item.style.padding = '10px';
-            item.style.marginBottom = '5px';
-            item.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-            item.style.borderRadius = '4px';
+        Object.entries(apps).forEach(([id, app]) => { // 💖 遍历所有应用
+            const item = document.createElement('div'); // 💖 创建列表项容器
+            item.style.display = 'flex'; // 💖 Flex 布局
+            item.style.alignItems = 'center'; // 💖 垂直居中
+            item.style.justifyContent = 'space-between'; // 💖 两端对齐
+            item.style.padding = '10px'; // 💖 内边距
+            item.style.marginBottom = '5px'; // 💖 底部间距
+            item.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; // 💖 半透明背景
+            item.style.borderRadius = '4px'; // 💖 圆角
 
-            const statusColor = app.isOpen ? '#55efc4' : '#b2bec3';
-            const statusText = app.isOpen ? '运行中' : '休眠中';
+            const statusColor = app.isOpen ? '#55efc4' : '#b2bec3'; // 💖 根据状态决定颜色（绿色/灰色）
+            const statusText = app.isOpen ? '运行中' : '休眠中'; // 💖 根据状态决定文本
 
             item.innerHTML = `
                 <div style="display:flex; alignItems:center; gap:10px;">
+                    <!-- 💖 应用图标 -->
                     <svg style="width:20px; height:20px; fill:${app.color}" viewBox="0 0 24 24">
                         <path d="${app.iconPath}"/>
                     </svg>
                     <div>
-                        <div style="font-weight:bold;">${app.name}</div>
-                        <div style="font-size:12px; color:${statusColor};">${statusText}</div>
+                        <div style="font-weight:bold;">${app.name}</div> <!-- 💖 应用名称 -->
+                        <div style="font-size:12px; color:${statusColor};">${statusText}</div> <!-- 💖 状态文本 -->
                     </div>
                 </div>
                 <div style="display:flex; gap:5px;">
                     ${app.isOpen ?
+                    // 💖 如果运行中，显示“终止”按钮
                     `<button class="tm-btn-close" data-id="${id}" style="padding:4px 8px; background:#ff7675; border:none; border-radius:4px; color:white; cursor:pointer;">终止</button>` :
+                    // 💖 如果休眠中，显示“唤醒”按钮
                     `<button class="tm-btn-open" data-id="${id}" style="padding:4px 8px; background:#0984e3; border:none; border-radius:4px; color:white; cursor:pointer;">唤醒</button>`
                 }
                 </div>
             `;
 
             // 绑定按钮事件
-            const closeBtn = item.querySelector('.tm-btn-close');
+            const closeBtn = item.querySelector('.tm-btn-close'); // 💖 获取终止按钮
             if (closeBtn) {
                 closeBtn.onclick = () => {
-                    wm.closeApp(id);
-                    this.render(); // 立即刷新
+                    wm.closeApp(id); // 💖 调用窗口管理器关闭应用
+                    this.render(); // 💖 立即刷新列表状态
                 };
             }
 
-            const openBtn = item.querySelector('.tm-btn-open');
+            const openBtn = item.querySelector('.tm-btn-open'); // 💖 获取唤醒按钮
             if (openBtn) {
                 openBtn.onclick = () => {
-                    wm.openApp(id);
-                    this.render(); // 立即刷新
+                    wm.openApp(id); // 💖 调用窗口管理器打开应用
+                    this.render(); // 💖 立即刷新列表状态
                 };
             }
 
-            this.listContainer.appendChild(item);
+            this.listContainer.appendChild(item); // 💖 将列表项添加到容器
         });
     }
 
-    // 当应用被打开时调用 (需要在 main.js 或 window_manager 中触发)
+    // =================================
+    //  🎉 开启自动刷新 (无参数)
+    //
+    //  🎨 代码用途：
+    //     启动定时器，定期刷新任务列表状态
+    //
+    //  💡 易懂解释：
+    //     管家婆每隔一秒钟就看一眼花名册，确保信息是最新的！⏱️
+    //
+    //  ⚠️ 警告：
+    //     需要在窗口打开时调用。
+    // =================================
     onOpen() {
-        this.render();
+        this.render(); // 💖 立即渲染一次
         // 开启自动刷新 (每秒刷新一次状态)
-        if (this.updateInterval) clearInterval(this.updateInterval);
-        this.updateInterval = setInterval(() => this.render(), 1000);
+        if (this.updateInterval) clearInterval(this.updateInterval); // 💖 清除旧的定时器
+        this.updateInterval = setInterval(() => this.render(), 1000); // 💖 设置新的定时器
     }
 
+    // =================================
+    //  🎉 关闭自动刷新 (无参数)
+    //
+    //  🎨 代码用途：
+    //     清除定时器，停止刷新
+    //
+    //  💡 易懂解释：
+    //     管家婆下班啦，不再盯着花名册看了~ 💤
+    //
+    //  ⚠️ 警告：
+    //     需要在窗口关闭时调用，防止内存泄漏。
+    // =================================
     onClose() {
-        if (this.updateInterval) clearInterval(this.updateInterval);
+        if (this.updateInterval) clearInterval(this.updateInterval); // 💖 清除定时器
     }
 }
 
-export const app = new TaskManagerApp();
+export const app = new TaskManagerApp(); // 💖 导出应用实例
