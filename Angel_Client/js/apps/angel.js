@@ -136,6 +136,17 @@ export class AngelApp {
     //     必须确保 DOM 元素 #angel-scene 已经存在，否则无法挂载渲染器。
     // =================================
     init() {
+        // 🛑 防止重复初始化导致多个渲染循环
+        if (this.renderer) {
+            // 如果已经有渲染器，说明是重新打开窗口
+            // 我们需要重新挂载 DOM，但不需要重新创建 Scene
+            this.container = document.getElementById('angel-scene');
+            if (this.container && !this.container.contains(this.renderer.domElement)) {
+                this.container.appendChild(this.renderer.domElement);
+            }
+            return;
+        }
+
         // 获取容器
         this.container = document.getElementById('angel-scene'); // 💖 获取用于渲染 3D 场景的 DOM 元素
         if (!this.container) return; // 💖 如果找不到容器，直接退出，防止报错

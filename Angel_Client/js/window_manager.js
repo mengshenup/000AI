@@ -600,6 +600,7 @@ export class WindowManager {
             const div = document.createElement('div');
             div.className = 'task-app';
             div.dataset.id = id;
+            div.title = app.name || id; // ♿ 添加无障碍标题
             // 🎨 插入图标 SVG (优先使用 icon 字段，兼容 iconPath)
             const iconPath = app.icon || app.iconPath;
             div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`;

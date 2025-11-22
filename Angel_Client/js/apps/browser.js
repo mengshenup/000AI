@@ -69,6 +69,11 @@ class BrowserApp {
     constructor() {
         // 💖 监听窗口就绪事件，确保 DOM 元素存在后再初始化
         bus.on(`app:ready:${config.id}`, () => this.init());
+
+        // 监听“远程点击”命令 (从 main.js 移过来的逻辑，这里直接处理)
+        bus.on('cmd:remote_click', (pos) => {
+            network.send('click', pos); // 💖 将点击坐标通过网络发送给服务器
+        });
     }
 
     // =================================
@@ -184,9 +189,9 @@ class BrowserApp {
         }
 
         // 监听“远程点击”命令 (从 main.js 移过来的逻辑，这里直接处理)
-        bus.on('cmd:remote_click', (pos) => {
-            network.send('click', pos); // 💖 将点击坐标通过网络发送给服务器
-        });
+        // bus.on('cmd:remote_click', (pos) => {
+        //    network.send('click', pos); // 💖 将点击坐标通过网络发送给服务器
+        // });
     }
 }
 

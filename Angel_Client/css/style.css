@@ -43,6 +43,7 @@
     margin: 0; /* 🧹 清除默认外边距 */
     padding: 0; /* 🧹 清除默认内边距 */
     box-sizing: border-box; /* 📦 让 padding 不增加元素总宽度 */
+    -webkit-user-select: none; /* 🍎 Safari 兼容 */
     user-select: none; /* 🚫 禁止用户选中文本 (像原生应用一样) */
 }
 
@@ -210,6 +211,7 @@ body {
 .window {
     position: absolute; /* 📍 绝对定位 */
     background: var(--glass-bg); /* 🌫️ 磨砂背景 */
+    -webkit-backdrop-filter: blur(10px); /* 🍎 Safari 兼容 */
     backdrop-filter: blur(10px); /* 🌫️ 毛玻璃模糊效果 */
     border: 1px solid var(--glass-border); /* 📏 半透明边框 */
     border-radius: 10px; /* 📏 窗口圆角 */
@@ -342,6 +344,7 @@ body {
 #taskbar {
     height: 40px; /* 📏 任务栏高度 */
     background: rgba(255, 255, 255, 0.8); /* 🌫️ 半透明背景 */
+    -webkit-backdrop-filter: blur(10px); /* 🍎 Safari 兼容 */
     backdrop-filter: blur(10px); /* 🌫️ 毛玻璃效果 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */

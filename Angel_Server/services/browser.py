@@ -53,13 +53,18 @@ class AngelBrowser:
         # 🚀 启动 Playwright 服务
         self.playwright = await async_playwright().start()
         # 🍪 启动持久化浏览器上下文（保持登录状态和缓存）
-        self.browser_context = await self.playwright.chromium.launch_persistent_context(
-            USER_DATA_DIR, # 📂 用户数据目录
-            headless=True, # 👻 无头模式（不显示界面）
-            channel="chrome", # 🖥️ 使用系统安装的 Chrome
-            args=["--disable-blink-features=AutomationControlled"], # 🕵️ 隐藏自动化特征
-            viewport=VIEWPORT # 📏 设置窗口大小
-        )
+        try:
+            self.browser_context = await self.playwright.chromium.launch_persistent_context(
+                USER_DATA_DIR, # 📂 用户数据目录
+                headless=True, # 👻 无头模式（不显示界面）
+                # channel="chrome", # 🖥️ 使用系统安装的 Chrome (已注释，改用 bundled chromium)
+                args=["--disable-blink-features=AutomationControlled"], # 🕵️ 隐藏自动化特征
+                viewport=VIEWPORT # 📏 设置窗口大小
+            )
+        except Exception as e:
+            print(f"❌ Browser launch failed: {e}")
+            # Fallback or re-raise
+            raise e
         # 📄 获取第一个页面，如果没有则新建一个
         self.page = self.browser_context.pages[0] if self.browser_context.pages else await self.browser_context.new_page()
         

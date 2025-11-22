@@ -203,6 +203,18 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 🕰️ 处理旧版跳转指令 (兼容性)
                 elif cmd_type == "jump_to":
                     ts = command.get("timestamp", 0)
+                    # ...existing code...
+            
+            # 📸 每一帧都尝试发送截图
+            # 如果没有命令处理（超时），或者处理完命令后，都更新画面
+            try:
+                # 🖼️ 获取当前画面截图 (Base64)
+                screenshot = await browser_service.get_screenshot_b64()
+                if screenshot:
+                    # 📤 发送画面更新消息
+                    await send_packet(websocket, "frame_update", {"image": screenshot})
+            except Exception as e:
+                print(f"Screenshot Error: {e}")
     except Exception as e:
         # ❌ 打印全局异常
         print(f"❌ WebSocket Error: {e}")

@@ -105,7 +105,7 @@
             //  ⚠️ 警告：
             //     它的层级（z-index）非常高，必须保证它永远浮在所有窗口的上面，不能被遮住！
             // ================================= -->
-            <div class="start-btn"> <!-- 💖 开始按钮的包裹容器 -->
+            <div class="start-btn" title="Start"> <!-- 💖 开始按钮的包裹容器 -->
                 <svg style="width:20px;fill:currentColor" viewBox="0 0 24 24"> <!-- 💖 绘制一个小房子的图标 -->
                     <path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z" /> <!-- 💖 SVG 路径数据 -->
                 </svg>
@@ -118,7 +118,7 @@
 
             <div style="display:flex; gap:15px; font-size:12px; color:#666; align-items:center;"> <!-- 💖 右侧状态栏容器 -->
                 <!-- 💖 账单按钮区域 -->
-                <div id="btn-billing" style="cursor:pointer; display:flex; align-items:center; gap:4px;"> <!-- 💖 账单点击区域 -->
+                <div id="btn-billing" title="Billing" style="cursor:pointer; display:flex; align-items:center; gap:4px;"> <!-- 💖 账单点击区域 -->
                     <span>💰</span> <!-- 💖 钱袋图标 -->
                     <span id="ai-cost">¥0.00</span> <!-- 💖 实时费用显示 -->
                 </div>
