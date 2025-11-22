@@ -130,7 +130,7 @@ export class TaskManagerApp {
             const closeBtn = item.querySelector('.tm-btn-close'); // 💖 获取终止按钮
             if (closeBtn) {
                 closeBtn.onclick = () => {
-                    wm.closeApp(id); // 💖 调用窗口管理器关闭应用
+                    wm.killApp(id); // 💖 调用窗口管理器强制终止应用
                     this.render(); // 💖 立即刷新列表状态
                 };
             }

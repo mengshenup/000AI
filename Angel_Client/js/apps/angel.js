@@ -1,5 +1,6 @@
 import { bus } from '../event_bus.js';
 import { wm } from '../window_manager.js';
+import { pm } from '../process_manager.js'; // 🛡️ 导入进程管理器
 
 export const config = {
     // =================================
@@ -50,6 +51,7 @@ export const config = {
                 font-size: 14px;
                 color: #333;
                 text-align: center;
+                z-index: 1000;
             }
             .speech-bubble::after {
                 content: '';
@@ -94,7 +96,7 @@ const ANGEL_QUOTES = [
 
 export class AngelApp {
     // =================================
-    //  🎉 小天使应用类 (无参数)
+    //  🎉 小天使应用类
     //
     //  🎨 代码用途：
     //     管理 3D 小天使的生命周期、渲染循环和交互逻辑
@@ -107,6 +109,8 @@ export class AngelApp {
     // =================================
     constructor() {
         this.id = config.id;
+        this.ctx = pm.getContext(this.id);
+        
         this.scene = null; // 💖 3D 场景容器
         this.camera = null; // 💖 观察小天使的摄像机
         this.renderer = null; // 💖 负责把 3D 变成画面的渲染器
@@ -115,12 +119,16 @@ export class AngelApp {
         this.wL = null; // 💖 左翅膀
         this.wR = null; // 💖 右翅膀
         this.state = { r: false, sx: 0, ir: 0 }; // 💖 交互状态：r=旋转中, sx=起始X坐标, ir=初始旋转角度
+        this.isRunning = false; // 💖 运行状态标志
 
         // 绑定 animate
         this.animate = this.animate.bind(this);
 
         // 监听窗口就绪事件
-        bus.on(`app:ready:${this.id}`, () => this.init());
+        this.ctx.on(`app:ready:${this.id}`, () => this.init());
+
+        // 注册清理函数
+        this.ctx.onCleanup(() => this.onDestroy());
     }
 
     // =================================
@@ -144,56 +152,62 @@ export class AngelApp {
             if (this.container && !this.container.contains(this.renderer.domElement)) {
                 this.container.appendChild(this.renderer.domElement);
             }
+            this.isRunning = true;
+            this.animate(); // 确保恢复运行
             return;
         }
 
         // 获取容器
-        this.container = document.getElementById('angel-scene'); // 💖 获取用于渲染 3D 场景的 DOM 元素
-        if (!this.container) return; // 💖 如果找不到容器，直接退出，防止报错
+        this.container = document.getElementById('angel-scene');
+        if (!this.container) return;
 
-        // 检查 THREE.js
-        if (!window.THREE) {
-            console.error("THREE.js not loaded!"); // 💖 打印错误信息，提示库未加载
-            return;
+        // 创建场景
+        this.scene = new THREE.Scene();
+
+        // 创建相机
+        this.camera = new THREE.PerspectiveCamera(45, this.container.clientWidth / this.container.clientHeight, 0.1, 1000);
+        this.camera.position.set(0, 1, 5);
+
+        // 创建渲染器
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // alpha: true 允许背景透明
+        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+        this.container.appendChild(this.renderer.domElement);
+
+        // 添加灯光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        this.scene.add(dirLight);
+
+        // 创建小天使模型
+        this.buildModel();
+
+        // 初始化交互
+        this.initInteraction();
+
+        // 启动动画循环
+        this.isRunning = true;
+        this.animate();
+    }
+
+    // =================================
+    //  🎉 销毁钩子 (覆盖基类)
+    //
+    //  🎨 代码用途：
+    //     清理 WebGL 资源
+    // =================================
+    onDestroy() {
+        this.isRunning = false;
+        if (this.renderer) {
+            this.renderer.dispose();
+            this.renderer.forceContextLoss();
+            this.renderer.domElement = null;
+            this.renderer = null;
         }
-
-        const w = this.container.clientWidth || 300; // 💖 获取容器宽度，默认 300
-        const h = this.container.clientHeight || 400; // 💖 获取容器高度，默认 400
-
-        // 1. 创建场景
-        this.scene = new THREE.Scene(); // 💖 创建一个新的 3D 场景
-        this.scene.add(new THREE.AmbientLight(0xffffff, 0.7)); // 💖 添加环境光，让整体亮起来
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); // 💖 添加平行光，模拟太阳
-        dirLight.position.set(5, 10, 10); // 💖 设置光源位置
-        this.scene.add(dirLight); // 💖 将光源加入场景
-
-        // 2. 创建相机
-        this.camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000); // 💖 创建透视相机，模拟人眼视角
-        this.camera.position.set(0, 1, 10); // 💖 设置相机位置，稍微抬高一点，向后拉一点
-
-        // 3. 创建渲染器
-        this.renderer = new THREE.WebGLRenderer({
-            alpha: true, // 💖 背景透明，让小天使看起来悬浮在桌面上
-            antialias: window.devicePixelRatio <= 1, // 💖 如果屏幕像素密度低，开启抗锯齿
-            powerPreference: "high-performance", // 💖 优先使用高性能显卡
-            precision: "mediump" // 💖 使用中等精度，平衡性能和画质
-        });
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // 💖 限制最大像素比，防止高分屏卡顿
-        this.renderer.setSize(w, h); // 💖 设置渲染尺寸
-        this.container.appendChild(this.renderer.domElement); // 💖 将渲染出的 canvas 添加到页面中
-
-        // 4. 构建模型
-        this.buildModel(); // 💖 调用构建模型函数，拼装小天使
-
-        // 5. 初始化交互
-        this.initInteraction(); // 💖 绑定鼠标事件
-
-        // 6. 开始动画
-        this.animate(); // 💖 启动渲染循环
-        
-        // 7. 自动打开窗口 (如果还没打开)
-        // 注意：因为这是个“桌面挂件”，我们希望它默认就是打开的
-        // 但 WindowManager 可能已经根据 store 状态打开了它
+        this.scene = null;
+        this.camera = null;
+        this.group = null;
     }
 
     // =================================
@@ -282,7 +296,8 @@ export class AngelApp {
     //     这里是性能敏感区，不要在循环里创建新对象或进行复杂计算，否则电脑会变卡哦！
     // =================================
     animate() {
-        requestAnimationFrame(this.animate); // 💖 请求下一帧动画
+        if (!this.isRunning) return; // 💖 如果停止运行则跳过
+        this.ctx.requestAnimationFrame(this.animate); // 💖 请求下一帧动画 (使用 ctx 自动管理)
 
         const now = performance.now(); // 💖 获取当前时间
         if (!this.lastTime) this.lastTime = now; // 💖 初始化上一帧时间
@@ -319,7 +334,7 @@ export class AngelApp {
     //     右键事件被拦截用于旋转模型，所以在这个窗口上不会出现系统菜单。
     // =================================
     initInteraction() {
-        bus.on('system:speak', (msg) => this.showBubble(msg)); // 💖 监听系统说话事件
+        this.ctx.on('system:speak', (msg) => this.showBubble(msg)); // 💖 监听系统说话事件
 
         // 阻止默认右键
         this.container.addEventListener('contextmenu', (e) => e.preventDefault()); // 💖 禁用默认右键菜单
@@ -374,8 +389,8 @@ export class AngelApp {
         if (b) {
             b.innerText = text; // 💖 设置文本
             b.classList.add('show'); // 💖 添加显示类（触发 CSS 动画）
-            if (this.timer) clearTimeout(this.timer); // 💖 清除上一次的定时器
-            this.timer = setTimeout(() => b.classList.remove('show'), 4000); // 💖 4秒后自动隐藏
+            if (this.timer) this.ctx.clearTimeout(this.timer); // 💖 清除上一次的定时器
+            this.timer = this.ctx.setTimeout(() => b.classList.remove('show'), 4000); // 💖 4秒后自动隐藏
         }
     }
 
