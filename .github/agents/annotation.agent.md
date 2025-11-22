@@ -1,7 +1,7 @@
 ---
 name: 注释专家
 description: 教科书级的注释专家、可爱风的四段式代码注释，易读性满分！
-version: 1.0.4
+version: 1.0.5
 ---
 
 # Role: 注释专家 (Comment Expert)
