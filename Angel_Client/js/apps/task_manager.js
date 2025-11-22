@@ -35,8 +35,8 @@ export class TaskManagerApp {
         this.id = 'win-taskmgr';
         this.listContainer = null;
         this.updateInterval = null;
-        // 延迟初始化
-        setTimeout(() => this.init(), 100);
+        // 监听窗口就绪事件，替代 setTimeout
+        bus.on(`app:ready:${config.id}`, () => this.init());
     }
 
     init() {

@@ -49,6 +49,12 @@ export class WindowManager {
 
         this.loadWallpaper();      // 加载上次保存的壁纸
         this.renderDesktopIcons(); // 渲染桌面图标
+        
+        // 动态创建所有应用的窗口 DOM
+        Object.entries(store.apps).forEach(([id, app]) => {
+            this.createWindow(id, app);
+        });
+
         this.updateTaskbar();      // 更新任务栏
         this.initWallpaperApp();   // 初始化壁纸设置 APP 的内容
         this.restoreWindows();     // 恢复上次窗口的位置和状态
@@ -57,7 +63,66 @@ export class WindowManager {
 
     // === 1. 初始化与渲染 ===
 
-    loadWallpaper() {
+    createWindow(id, app) {
+        // ---------------------------------------------------------------- //
+        //  创建窗口(应用ID, 应用配置)
+        //
+        //  函数用处：
+        //     动态创建窗口的 DOM 结构。
+        //
+        //  易懂解释：
+        //     根据图纸（配置）把房子（窗口）盖起来。
+        // ---------------------------------------------------------------- //
+
+        // 如果窗口已存在，不再重复创建
+        if (document.getElementById(id)) return;
+
+        const desktop = document.getElementById('desktop');
+
+        // 创建窗口容器
+        const win = document.createElement('div');
+        win.id = id;
+        win.className = 'window';
+
+        // 创建标题栏
+        const titleBar = document.createElement('div');
+        titleBar.className = 'title-bar';
+
+        // 窗口控制按钮
+        const controls = document.createElement('div');
+        controls.className = 'win-controls';
+        controls.innerHTML = `
+            <button class="win-btn close-btn"></button>
+            <button class="win-btn min-btn"></button>
+        `;
+
+        // 窗口标题
+        const title = document.createElement('div');
+        title.className = 'win-title';
+        title.innerText = app.name || 'Unknown App';
+
+        titleBar.appendChild(controls);
+        titleBar.appendChild(title);
+
+        // 内容区域
+        const content = document.createElement('div');
+        content.className = 'content';
+        if (app.contentStyle) {
+            content.style.cssText = app.contentStyle;
+        }
+        // 注入 HTML 模板
+        content.innerHTML = app.content || '';
+
+        // 组装窗口
+        win.appendChild(titleBar);
+        win.appendChild(content);
+        
+        // 添加到桌面
+        desktop.appendChild(win);
+
+        // 通知应用窗口已就绪 (解决竞态条件)
+        bus.emit(`app:ready:${id}`);
+    }    loadWallpaper() {
         // ---------------------------------------------------------------- //
         //  加载壁纸()
         //
@@ -107,9 +172,11 @@ export class WindowManager {
             el.dataset.type = 'icon'; // 标记类型为图标
 
             // 填充图标内部 HTML (SVG 图标 + 文字)
+            // 兼容 icon 和 iconPath 字段
+            const pathData = app.icon || app.iconPath;
             el.innerHTML = `
                 <svg class="icon-svg" viewBox="0 0 24 24" fill="${app.color}">
-                    <path d="${app.iconPath}"/>
+                    <path d="${pathData}"/>
                 </svg>
                 <div class="icon-text">${app.name}</div>
             `;
@@ -204,233 +271,329 @@ export class WindowManager {
             else if (target.closest('.min-btn')) {
                 const win = target.closest('.window');
                 if (win) this.minimizeApp(win.id); // 最小化窗口
-                //  函数用处：
-                //     结束拖拽，保存新位置，清理事件监听。
-                //
-                //  易懂解释：
-                //     手松开了，东西就放在那里了。
-                //
-                //  警告：
-                //     必须移除 mousemove 和 mouseup 监听器，否则会造成内存泄漏和逻辑错误。
-                // ---------------------------------------------------------------- //
-
-                if (!this.dragState.active) return;
-
-                // 只有真正拖拽过才保存位置
-                if (this.dragState.isDragging) {
-                    // 获取最终位置
-                    const x = parseInt(this.dragState.item.style.left);
-                    const y = parseInt(this.dragState.item.style.top);
-                    // 获取应用 ID (去掉 icon- 前缀)
-                    const id = this.dragState.item.id.replace('icon-', '');
-
-                    // 根据类型保存到 store
-                    if (this.dragState.type === 'window') {
-                        store.updateApp(id, { winPos: { x, y } });
-                    } else if (this.dragState.type === 'icon') {
-                        store.updateApp(id, { pos: { x, y } });
-                    }
-                }
-
-                // 清理状态
-                this.dragState.active = false;
-                this.dragState.isDragging = false;
-                this.dragState.item = null;
-                // 移除监听器
-                document.removeEventListener('mousemove', this.handleMouseMove);
-                document.removeEventListener('mouseup', this.handleMouseUp);
-
-                // 隐藏遮罩层
-                const overlay = document.getElementById('drag-overlay');
-                if (overlay) overlay.style.display = 'none';
+            } else if (target.classList.contains('desktop-icon')) {
+                // 3. 处理图标点击
+                const id = target.dataset.id;
+                this.toggleApp(id); // 切换应用状态
+            } else if (target.classList.contains('task-app')) {
+                // 4. 处理任务栏图标点击
+                const id = target.dataset.id;
+                this.toggleApp(id); // 切换应用状态
             }
+        });
 
-            // === 4. 窗口操作 ===
-
-            openApp(id, speak = true) {
-                // ---------------------------------------------------------------- //
-                //  打开应用(应用ID, 是否说话)
-                //
-                //  函数用处：
-                //     显示指定 ID 的窗口，更新状态，并播放语音。
-                //
-                //  易懂解释：
-                //     双击图标，软件就弹出来了。
-                //
-                //  警告：
-                //     如果 id 对应的 DOM 元素不存在，函数会直接返回。
-                // ---------------------------------------------------------------- //
-
-                const win = document.getElementById(id);
-                if (!win) return;
-
-                win.classList.remove('minimized'); // 移除最小化状态
-                win.classList.add('open');         // 添加打开状态
-                this.bringToFront(id);             // 置顶
-                store.updateApp(id, { isOpen: true }); // 保存状态
-
-                // 播放打开语音
-                if (speak) {
-                    const appInfo = store.getApp(id);
-                    bus.emit('system:speak', appInfo.openMsg || `打开 ${appInfo.name}`);
-                }
-                this.updateTaskbar(); // 更新任务栏
+        // 全局双击委托 (用于桌面图标和任务栏图标的快速打开)
+        document.addEventListener('dblclick', (e) => {
+            const target = e.target;
+            if (target.classList.contains('desktop-icon')) {
+                const id = target.dataset.id;
+                this.openApp(id); // 双击图标时打开应用
+            } else if (target.classList.contains('task-app')) {
+                const id = target.dataset.id;
+                this.openApp(id); // 双击任务栏图标时打开应用
             }
+        });
 
-            closeApp(id) {
-                // ---------------------------------------------------------------- //
-                //  关闭应用(应用ID)
-                //
-                //  函数用处：
-                //     隐藏指定 ID 的窗口，更新状态。
-                //
-                //  易懂解释：
-                //     点那个红叉叉，软件就关掉了。
-                //
-                //  警告：
-                //     只是隐藏了窗口 (display: none 或 opacity: 0)，并没有销毁 DOM 元素。
-                // ---------------------------------------------------------------- //
+        // 全局拖拽相关事件
+        document.addEventListener('mousedown', (e) => {
+            const target = e.target;
+            // 只处理窗口和图标的拖拽
+            if (!target.closest('.window') && !target.classList.contains('desktop-icon')) return;
 
-                const win = document.getElementById(id);
-                if (!win) return;
+            // 记录鼠标按下位置
+            this.dragState.startX = e.clientX;
+            this.dragState.startY = e.clientY;
+            this.dragState.active = true; // 标记为正在拖拽
 
-                win.classList.remove('open', 'minimized'); // 移除所有显示状态
-                store.updateApp(id, { isOpen: false });    // 保存状态
-                this.updateTaskbar(); // 更新任务栏
+            const item = target.closest('.window') || target.closest('.desktop-icon');
+            this.dragState.item = item;
+            this.dragState.type = item.classList.contains('window') ? 'window' : 'icon';
+
+            // 计算鼠标相对于元素的偏移
+            const rect = item.getBoundingClientRect();
+            this.dragState.offsetX = e.clientX - rect.left;
+            this.dragState.offsetY = e.clientY - rect.top;
+
+            // 添加拖拽过程中需要的样式或逻辑
+            item.classList.add('dragging');
+
+            // 显示遮罩层
+            const overlay = document.getElementById('drag-overlay');
+            if (overlay) overlay.style.display = 'block';
+
+            // 绑定鼠标移动和抬起事件
+            document.addEventListener('mousemove', this.handleMouseMove);
+            document.addEventListener('mouseup', this.handleMouseUp);
+        });
+
+        // 任务栏区域的点击事件委托
+        document.getElementById('taskbar-apps').addEventListener('click', (e) => {
+            const target = e.target.closest('.task-app');
+            if (target) {
+                const id = target.dataset.id;
+                this.toggleApp(id); // 切换应用状态
             }
+        });
+    }
 
-            minimizeApp(id) {
-                // ---------------------------------------------------------------- //
-                //  最小化应用(应用ID)
-                //
-                //  函数用处：
-                //     隐藏窗口但保持运行状态，只在任务栏显示。
-                //
-                //  易懂解释：
-                //     点那个黄杠杠，软件就缩到下面去了。
-                //
-                //  警告：
-                //     最小化后窗口依然存在于 DOM 中，只是看不见了。
-                // ---------------------------------------------------------------- //
+    handleMouseMove(e) {
+        // ---------------------------------------------------------------- //
+        //  处理鼠标移动(拖拽中)
+        //
+        //  函数用处：
+        //     更新被拖拽元素的位置，实时反馈拖拽效果。
+        //
+        //  易懂解释：
+        //     你把东西拖到哪儿，管家就把它放到哪儿。
+        // ---------------------------------------------------------------- //
 
-                const win = document.getElementById(id);
-                if (win) win.classList.add('minimized'); // 添加最小化类名 (CSS控制隐藏)
-                this.updateTaskbar();
-            }
+        if (!this.dragState.active) return;
 
-            toggleApp(id) {
-                // ---------------------------------------------------------------- //
-                //  切换应用状态(应用ID)
-                //
-                //  函数用处：
-                //     任务栏点击逻辑：没开就开，最小化就还原，在后台就置顶，在最前就最小化。
-                //
-                //  易懂解释：
-                //     点任务栏上的图标。如果没开就打开；如果开了没显示就显示；如果已经显示了就最小化。
-                //
-                //  警告：
-                //     逻辑比较复杂，涉及四种状态的切换，修改时要小心。
-                // ---------------------------------------------------------------- //
+        const { clientX, clientY } = e;
+        const { item, offsetX, offsetY } = this.dragState;
 
-                const win = document.getElementById(id);
-                if (!win.classList.contains('open')) {
-                    this.openApp(id); // 没开 -> 打开
-                } else if (win.classList.contains('minimized')) {
-                    this.openApp(id); // 最小化 -> 还原
-                } else if (win.style.zIndex >= 100) {
-                    this.minimizeApp(id); // 在最前 -> 最小化
-                } else {
-                    this.bringToFront(id); // 在后台 -> 置顶
-                }
-            }
+        // 计算新的位置
+        const x = clientX - offsetX;
+        const y = clientY - offsetY;
 
-            bringToFront(id) {
-                // ---------------------------------------------------------------- //
-                //  窗口置顶(应用ID)
-                //
-                //  函数用处：
-                //     管理窗口的 z-index，让当前窗口显示在最前面。
-                //
-                //  易懂解释：
-                //     把你要用的那个窗口拿起来，放到所有窗口的最上面。
-                //
-                //  警告：
-                //     目前的逻辑比较简单，只是把其他设为 10，当前设为 100。如果窗口很多，可能需要更复杂的层级管理。
-                // ---------------------------------------------------------------- //
+        // 更新元素位置
+        item.style.left = `${x}px`;
+        item.style.top = `${y}px`;
 
-                // 简单粗暴的 Z-Index 管理：先把所有窗口设为 10
-                document.querySelectorAll('.window').forEach(w => w.style.zIndex = 10);
-                // 再把当前窗口设为 100
-                const current = document.getElementById(id);
-                if (current && current.classList.contains('window')) current.style.zIndex = 100;
-                // 更新任务栏样式 (高亮当前窗口)
-                this.updateTaskbar();
-            }
+        this.dragState.isDragging = true; // 标记为正在拖拽
+    }
 
-            changeWallpaper(url, el) {
-                // ---------------------------------------------------------------- //
-                //  更换壁纸(图片URL, 被点击的元素)
-                //
-                //  函数用处：
-                //     更新 CSS 变量以更换背景图，并保存设置。
-                //
-                //  易懂解释：
-                //     把墙纸撕下来，换一张新的。
-                //
-                //  警告：
-                //     图片加载需要时间，可能会有短暂的空白或延迟。
-                // ---------------------------------------------------------------- //
+    handleMouseUp(e) {
+        // ---------------------------------------------------------------- //
+        //  处理鼠标抬起(拖拽结束)
+        //
+        //  函数用处：
+        //     结束拖拽，保存新位置，清理事件监听。
+        //
+        //  易懂解释：
+        //     手松开了，东西就放在那里了。
+        //
+        //  警告：
+        //     必须移除 mousemove 和 mouseup 监听器，否则会造成内存泄漏和逻辑错误。
+        // ---------------------------------------------------------------- //
 
-                const bgStyle = `url('${url}')`;
-                document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
-                localStorage.setItem('seraphim_wallpaper', bgStyle);
+        if (!this.dragState.active) return;
 
-                // 更新选中状态样式
-                if (el) {
-                    document.querySelectorAll('.wp-item').forEach(i => i.classList.remove('active'));
-                    el.classList.add('active');
-                }
-                bus.emit('system:speak', "壁纸换好啦！🌿");
-            }
+        // 只有真正拖拽过才保存位置
+        if (this.dragState.isDragging) {
+            // 获取最终位置
+            const x = parseInt(this.dragState.item.style.left);
+            const y = parseInt(this.dragState.item.style.top);
+            // 获取应用 ID (去掉 icon- 前缀)
+            const id = this.dragState.item.id.replace('icon-', '');
 
-            updateTaskbar() {
-                // ---------------------------------------------------------------- //
-                //  更新任务栏()
-                //
-                //  函数用处：
-                //     重新渲染任务栏上的应用图标，反映当前的打开/活动状态。
-                //
-                //  易懂解释：
-                //     刷新一下底下的长条，看看哪些灯该亮，哪些灯该灭。
-                //
-                //  警告：
-                //     每次调用都会清空并重绘整个任务栏，频繁调用可能会有性能损耗。
-                // ---------------------------------------------------------------- //
-
-                const container = document.getElementById('taskbar-apps');
-                container.innerHTML = ''; // 清空任务栏
-
-                Object.entries(store.apps).forEach(([id, app]) => {
-                    const win = document.getElementById(id);
-                    // 这里采用一直显示模式 (类似 macOS Dock)
-                    const div = document.createElement('div');
-                    div.className = 'task-app';
-                    div.dataset.id = id;
-                    // 插入图标 SVG
-                    div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${app.iconPath}"/></svg>`;
-
-                    // 如果窗口打开了，添加运行指示灯样式
-                    if (win && win.classList.contains('open')) {
-                        div.classList.add('running');
-                        // 如果窗口处于激活状态 (z-index 高且未最小化)，添加高亮样式
-                        if (!win.classList.contains('minimized') && win.style.zIndex >= 100) {
-                            div.classList.add('active');
-                        }
-                    }
-                    container.appendChild(div);
-                });
+            // 根据类型保存到 store
+            if (this.dragState.type === 'window') {
+                store.updateApp(id, { winPos: { x, y } });
+            } else if (this.dragState.type === 'icon') {
+                store.updateApp(id, { pos: { x, y } });
             }
         }
+
+        // 清理状态
+        this.dragState.active = false;
+        this.dragState.isDragging = false;
+        this.dragState.item = null;
+        // 移除监听器
+        document.removeEventListener('mousemove', this.handleMouseMove);
+        document.removeEventListener('mouseup', this.handleMouseUp);
+
+        // 隐藏遮罩层
+        const overlay = document.getElementById('drag-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    // === 4. 窗口操作 ===
+
+    openApp(id, speak = true) {
+        // ---------------------------------------------------------------- //
+        //  打开应用(应用ID, 是否说话)
+        //
+        //  函数用处：
+        //     显示指定 ID 的窗口，更新状态，并播放语音。
+        //
+        //  易懂解释：
+        //     双击图标，软件就弹出来了。
+        //
+        //  警告：
+        //     如果 id 对应的 DOM 元素不存在，函数会直接返回。
+        // ---------------------------------------------------------------- //
+
+        const win = document.getElementById(id);
+        if (!win) return;
+
+        win.classList.remove('minimized'); // 移除最小化状态
+        win.classList.add('open');         // 添加打开状态
+        this.bringToFront(id);             // 置顶
+        store.updateApp(id, { isOpen: true }); // 保存状态
+
+        // 播放打开语音
+        if (speak) {
+            const appInfo = store.getApp(id);
+            bus.emit('system:speak', appInfo.openMsg || `打开 ${appInfo.name}`);
+        }
+        this.updateTaskbar(); // 更新任务栏
+    }
+
+    closeApp(id) {
+        // ---------------------------------------------------------------- //
+        //  关闭应用(应用ID)
+        //
+        //  函数用处：
+        //     隐藏指定 ID 的窗口，更新状态。
+        //
+        //  易懂解释：
+        //     点那个红叉叉，软件就关掉了。
+        //
+        //  警告：
+        //     只是隐藏了窗口 (display: none 或 opacity: 0)，并没有销毁 DOM 元素。
+        // ---------------------------------------------------------------- //
+
+        const win = document.getElementById(id);
+        if (!win) return;
+
+        win.classList.remove('open', 'minimized'); // 移除所有显示状态
+        store.updateApp(id, { isOpen: false });    // 保存状态
+        this.updateTaskbar(); // 更新任务栏
+    }
+
+    minimizeApp(id) {
+        // ---------------------------------------------------------------- //
+        //  最小化应用(应用ID)
+        //
+        //  函数用处：
+        //     隐藏窗口但保持运行状态，只在任务栏显示。
+        //
+        //  易懂解释：
+        //     点那个黄杠杠，软件就缩到下面去了。
+        //
+        //  警告：
+        //     最小化后窗口依然存在于 DOM 中，只是看不见了。
+        // ---------------------------------------------------------------- //
+
+        const win = document.getElementById(id);
+        if (win) win.classList.add('minimized'); // 添加最小化类名 (CSS控制隐藏)
+        this.updateTaskbar();
+    }
+
+    toggleApp(id) {
+        // ---------------------------------------------------------------- //
+        //  切换应用状态(应用ID)
+        //
+        //  函数用处：
+        //     任务栏点击逻辑：没开就开，最小化就还原，在后台就置顶，在最前就最小化。
+        //
+        //  易懂解释：
+        //     点任务栏上的图标。如果没开就打开；如果开了没显示就显示；如果已经显示了就最小化。
+        //
+        //  警告：
+        //     逻辑比较复杂，涉及四种状态的切换，修改时要小心。
+        // ---------------------------------------------------------------- //
+
+        const win = document.getElementById(id);
+        if (!win.classList.contains('open')) {
+            this.openApp(id); // 没开 -> 打开
+        } else if (win.classList.contains('minimized')) {
+            this.openApp(id); // 最小化 -> 还原
+        } else if (win.style.zIndex >= 100) {
+            this.minimizeApp(id); // 在最前 -> 最小化
+        } else {
+            this.bringToFront(id); // 在后台 -> 置顶
+        }
+    }
+
+    bringToFront(id) {
+        // ---------------------------------------------------------------- //
+        //  窗口置顶(应用ID)
+        //
+        //  函数用处：
+        //     管理窗口的 z-index，让当前窗口显示在最前面。
+        //
+        //  易懂解释：
+        //     把你要用的那个窗口拿起来，放到所有窗口的最上面。
+        //
+        //  警告：
+        //     目前的逻辑比较简单，只是把其他设为 10，当前设为 100。如果窗口很多，可能需要更复杂的层级管理。
+        // ---------------------------------------------------------------- //
+
+        // 简单粗暴的 Z-Index 管理：先把所有窗口设为 10
+        document.querySelectorAll('.window').forEach(w => w.style.zIndex = 10);
+        // 再把当前窗口设为 100
+        const current = document.getElementById(id);
+        if (current && current.classList.contains('window')) current.style.zIndex = 100;
+        // 更新任务栏样式 (高亮当前窗口)
+        this.updateTaskbar();
+    }
+
+    changeWallpaper(url, el) {
+        // ---------------------------------------------------------------- //
+        //  更换壁纸(图片URL, 被点击的元素)
+        //
+        //  函数用处：
+        //     更新 CSS 变量以更换背景图，并保存设置。
+        //
+        //  易懂解释：
+        //     把墙纸撕下来，换一张新的。
+        //
+        //  警告：
+        //     图片加载需要时间，可能会有短暂的空白或延迟。
+        // ---------------------------------------------------------------- //
+
+        const bgStyle = `url('${url}')`;
+        document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
+        localStorage.setItem('seraphim_wallpaper', bgStyle);
+
+        // 更新选中状态样式
+        if (el) {
+            document.querySelectorAll('.wp-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
+        }
+        bus.emit('system:speak', "壁纸换好啦！🌿");
+    }
+
+    updateTaskbar() {
+        // ---------------------------------------------------------------- //
+        //  更新任务栏()
+        //
+        //  函数用处：
+        //     重新渲染任务栏上的应用图标，反映当前的打开/活动状态。
+        //
+        //  易懂解释：
+        //     刷新一下底下的长条，看看哪些灯该亮，哪些灯该灭。
+        //
+        //  警告：
+        //     每次调用都会清空并重绘整个任务栏，频繁调用可能会有性能损耗。
+        // ---------------------------------------------------------------- //
+
+        const container = document.getElementById('taskbar-apps');
+        container.innerHTML = ''; // 清空任务栏
+
+        Object.entries(store.apps).forEach(([id, app]) => {
+            const win = document.getElementById(id);
+            // 这里采用一直显示模式 (类似 macOS Dock)
+            const div = document.createElement('div');
+            div.className = 'task-app';
+            div.dataset.id = id;
+            // 插入图标 SVG (优先使用 icon 字段，兼容 iconPath)
+            const iconPath = app.icon || app.iconPath;
+            div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`;
+
+            // 如果窗口打开了，添加运行指示灯样式
+            if (win && win.classList.contains('open')) {
+                div.classList.add('running');
+                // 如果窗口处于激活状态 (z-index 高且未最小化)，添加高亮样式
+                if (!win.classList.contains('minimized') && win.style.zIndex >= 100) {
+                    div.classList.add('active');
+                }
+            }
+            container.appendChild(div);
+        });
+    }
 }
 
-    export const wm = new WindowManager(); // 导出单例实例
+export const wm = new WindowManager(); // 导出单例实例

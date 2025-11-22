@@ -50,8 +50,8 @@ import { wm } from '../window_manager.js';
 
 class BrowserApp {
     constructor() {
-        // 延迟初始化，等待 DOM 元素被创建
-        setTimeout(() => this.init(), 100);
+        // 监听窗口就绪事件，替代 setTimeout
+        bus.on(`app:ready:${config.id}`, () => this.init());
     }
 
     init() {

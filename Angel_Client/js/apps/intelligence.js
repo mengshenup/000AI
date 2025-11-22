@@ -43,8 +43,8 @@ export const APP_OPEN_MSG = "神谕节点已就绪，等待接收命运的指引
 class IntelligenceApp {
     constructor() {
         this.spots = []; // 初始化为空数组
-        // 延迟初始化，等待 DOM 元素被创建
-        setTimeout(() => this.init(), 100);
+        // 监听窗口就绪事件，替代 setTimeout
+        bus.on(`app:ready:${config.id}`, () => this.init());
     }
 
     init() {

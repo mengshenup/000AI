@@ -91,11 +91,11 @@ window.onload = () => {
     // 使用 Promise.all 确保所有元数据都加载完成后，再初始化窗口管理器
     // 这样可以避免“先渲染了没有名字的图标，然后再更新名字”导致的闪烁或显示错误
     Promise.all([
-        import('./apps/manual.js').then(m => store.setAppMetadata('win-manual', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
-        import('./apps/browser.js').then(m => store.setAppMetadata('win-angel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
-        import('./apps/intelligence.js').then(m => store.setAppMetadata('win-intel', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
-        import('./apps/settings.js').then(m => store.setAppMetadata('win-settings', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG })),
-        import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', { name: m.APP_NAME, openMsg: m.APP_OPEN_MSG }))
+        import('./apps/manual.js').then(m => store.setAppMetadata('win-manual', m.config)),
+        import('./apps/browser.js').then(m => store.setAppMetadata('win-angel', m.config)),
+        import('./apps/intelligence.js').then(m => store.setAppMetadata('win-intel', m.config)),
+        import('./apps/settings.js').then(m => store.setAppMetadata('win-settings', m.config)),
+        import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', m.config))
     ]).then(() => {
         console.log("应用元数据注入完成，启动窗口管理器...");
         wm.init();    // 启动窗口管理器 (此时 store 中已经有了名字)

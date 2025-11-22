@@ -23,23 +23,12 @@ class Store {
         if (saved) {
             // 如果有缓存，解析缓存
             const savedApps = JSON.parse(saved);
-
-            // 初始化为默认配置的深拷贝
-            this.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
-
-            // 仅从 savedApps 中恢复已知 APP 的状态 (位置、是否打开等)
-            // 这样可以自动过滤掉旧版本遗留的、不再使用的 APP (解决图标重复问题)
-            Object.keys(this.apps).forEach(key => {
-                if (savedApps[key]) {
-                    // 过滤掉 name 和 openMsg，防止旧缓存覆盖新代码的配置
-                    const { name, openMsg, ...safeState } = savedApps[key];
-                    // 保留默认配置中的静态属性(如 iconPath, color)，只覆盖动态属性(如 pos, winPos, isOpen)
-                    this.apps[key] = { ...this.apps[key], ...safeState };
-                }
-            });
+            
+            // 初始化为空对象，等待 setAppMetadata 注入
+            this.apps = savedApps; 
         } else {
-            // 如果没有缓存，直接使用默认配置
-            this.apps = JSON.parse(JSON.stringify(DEFAULT_APPS));
+            // 如果没有缓存，初始化为空对象
+            this.apps = {};
         }
     }
 
@@ -112,9 +101,21 @@ class Store {
         //     给户口本上补全名字和照片。
         // ---------------------------------------------------------------- //
         if (this.apps[id]) {
-            this.apps[id] = { ...this.apps[id], ...metadata };
-            // 注意：这里不调用 save()，因为我们不想把代码里的静态配置保存到用户的缓存里
-            // 这样如果下次代码改了名字，用户刷新页面能立刻看到新名字，而不是旧缓存
+            // 修复：优先保留 this.apps[id] 中的用户状态 (如 pos, winPos, isOpen)
+            // metadata 中的默认值只在 this.apps[id] 中不存在时生效
+            this.apps[id] = { ...metadata, ...this.apps[id] };
+            
+            // 确保静态配置 (name, content, icon, color) 总是使用最新的代码版本
+            // 这样即使用户缓存了旧的配置，代码更新后也能看到新界面
+            this.apps[id].name = metadata.name;
+            this.apps[id].content = metadata.content;
+            this.apps[id].icon = metadata.icon;
+            this.apps[id].color = metadata.color;
+            this.apps[id].contentStyle = metadata.contentStyle;
+            this.apps[id].openMsg = metadata.openMsg;
+        } else {
+            // 如果是新应用，直接使用元数据
+            this.apps[id] = metadata;
         }
     }
 }
