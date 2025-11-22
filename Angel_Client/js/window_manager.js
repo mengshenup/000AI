@@ -517,7 +517,7 @@ export class WindowManager {
         // =================================
 
         const win = document.getElementById(id);
-        if (!win.classList.contains('open')) {
+        if (!win || !win.classList.contains('open')) {
             this.openApp(id); // 🚀 没开 -> 打开
         } else if (win.classList.contains('minimized')) {
             this.openApp(id); // 🔼 最小化 -> 还原
