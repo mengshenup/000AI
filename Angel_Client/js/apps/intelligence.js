@@ -12,7 +12,8 @@ export const config = {
     //     数据现在存储在服务器端 (user_data/spots.json)，不再依赖 localStorage。
     // =================================
     id: 'win-intel', // 💖 窗口的唯一标识符
-    name: 'Oracle Node', // 💖 窗口标题栏显示的名称
+    name: '神谕节点', // 💖 窗口标题栏显示的名称
+    description: '情报中心', // 💖 功能描述
     icon: 'M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z', // 💖 SVG 图标路径（消息气泡形状）
     color: '#00b894', // 💖 窗口的主题颜色（青绿色）
     pos: { x: 20, y: 200 }, // 💖 桌面图标的默认位置

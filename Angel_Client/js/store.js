@@ -81,7 +81,7 @@ class Store {
         // =================================
 
         // 定义只保存这些动态字段，过滤掉静态 HTML 内容
-        const DYNAMIC_KEYS = ['pos', 'winPos', 'isOpen', 'zIndex', 'isMinimized', 'isMaximized', 'size']; // 🔑 关键字段列表
+        const DYNAMIC_KEYS = ['pos', 'winPos', 'isOpen', 'zIndex', 'isMinimized', 'isMaximized', 'size', 'customName']; // 🔑 关键字段列表
         
         const stateToSave = {}; // 📦 待保存对象
         Object.entries(this.apps).forEach(([id, app]) => {
@@ -185,7 +185,9 @@ class Store {
             
             // 确保静态配置 (name, content, icon, color) 总是使用最新的代码版本
             // 这样即使用户缓存了旧的配置，代码更新后也能看到新界面
-            this.apps[id].name = metadata.name; // 🏷️ 更新名称
+            // 修复：优先使用用户自定义的名称 (customName)，如果不存在才使用元数据中的默认名称
+            this.apps[id].name = this.apps[id].customName || metadata.name; 
+            this.apps[id].description = metadata.description; // 📝 更新描述
             this.apps[id].content = metadata.content; // 📄 更新内容
             this.apps[id].icon = metadata.icon; // 🖼️ 更新图标
             this.apps[id].color = metadata.color; // 🎨 更新颜色

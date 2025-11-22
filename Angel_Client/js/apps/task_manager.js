@@ -12,7 +12,8 @@ export const config = {
     //     列表容器 ID 为 task-list。
     // =================================
     id: 'win-taskmgr', // 💖 窗口的唯一标识符
-    name: 'Soul Prism', // 💖 窗口标题栏显示的名称
+    name: '灵魂棱镜', // 💖 窗口标题栏显示的名称
+    description: '任务管理', // 💖 功能描述
     icon: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z', // 💖 SVG 图标路径（列表形状）
     color: '#d63031', // 💖 窗口的主题颜色（红色）
     pos: { x: 20, y: 380 }, // 💖 桌面图标的默认位置

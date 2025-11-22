@@ -2,6 +2,7 @@ import { store } from './store.js'; // 📦 导入状态存储
 import { bus } from './event_bus.js'; // 🚌 导入事件总线
 import { WALLPAPERS, DEFAULT_WALLPAPER } from './config.js'; // 🖼️ 导入壁纸配置
 import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器
+import { contextMenuApp } from './apps/context_menu.js'; // 📖 导入右键菜单
 
 export class WindowManager {
     // =================================
@@ -106,10 +107,12 @@ export class WindowManager {
         // 📝 窗口标题
         const title = document.createElement('div');
         title.className = 'win-title';
-        title.innerText = app.name || 'Unknown App';
+        // 组合名称和提示 (如果有)
+        title.innerText = app.description ? `${app.name} · ${app.description}` : app.name;
 
-        titleBar.appendChild(controls);
+        // 交换顺序：标题在左，按钮在右
         titleBar.appendChild(title);
+        titleBar.appendChild(controls);
 
         // 📄 内容区域
         const content = document.createElement('div');
@@ -341,9 +344,50 @@ export class WindowManager {
             }
         });
 
+        // 🖱️ 右键菜单委托
+        document.addEventListener('contextmenu', (e) => {
+            const icon = e.target.closest('.desktop-icon');
+            if (icon) {
+                e.preventDefault(); // 阻止默认右键菜单
+                const id = icon.dataset.id;
+                const app = store.getApp(id);
+                
+                contextMenuApp.show(e.clientX, e.clientY, [
+                    {
+                        label: '打开',
+                        icon: '🚀',
+                        action: () => this.openApp(id)
+                    },
+                    {
+                        label: '重命名',
+                        icon: '✏️',
+                        action: () => {
+                            const newName = prompt('请输入新的应用名称:', app.name);
+                            if (newName && newName.trim() !== '') {
+                                // 保存自定义名称到 customName 字段，并更新 name
+                                store.updateApp(id, { customName: newName.trim(), name: newName.trim() });
+                                this.renderDesktopIcons(); // 重新渲染图标
+                                
+                                // 如果窗口已打开，也更新窗口标题
+                                const winTitle = document.querySelector(`#${id} .win-title`);
+                                if (winTitle) {
+                                    const desc = app.description || '';
+                                    winTitle.innerText = desc ? `${newName.trim()} · ${desc}` : newName.trim();
+                                }
+                            }
+                        }
+                    }
+                ]);
+            }
+        });
+
         // 🚚 全局拖拽相关事件
         document.addEventListener('mousedown', (e) => {
             const target = e.target;
+            
+            // 🛑 如果点击的是窗口控制按钮，则不触发拖拽
+            if (target.closest('.win-btn')) return;
+
             // 🛑 只处理窗口和图标的拖拽
             // 修复：使用 closest 查找图标，支持点击图标内部元素拖拽
             const win = target.closest('.window');
