@@ -15,14 +15,19 @@ export class ContextMenuApp {
     // ---------------------------------------------------------------- //
 
     constructor() {
-        this.menu = document.getElementById('context-menu');
+        this.menu = null; // 稍后在 init 中获取
         this.isVisible = false;
 
         // 绑定 this
         this.hide = this.hide.bind(this);
+        
+        // 自动初始化
+        window.addEventListener('load', () => this.init());
     }
 
     init() {
+        this.menu = document.getElementById('context-menu');
+        
         // ---------------------------------------------------------------- //
         //  初始化()
         //

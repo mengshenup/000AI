@@ -1,7 +1,6 @@
 import { bus } from './event_bus.js';
 import { network as net } from './network.js';
 import { wm } from './window_manager.js';
-import { angel } from './angel.js';
 import { store } from './store.js';
 
 // 导入应用模块以确保它们被加载
@@ -11,6 +10,7 @@ import './apps/manual.js';
 import './apps/intelligence.js';
 import './apps/task_manager.js';
 import './apps/context_menu.js';
+import './apps/angel.js'; // 新增：小天使现在是一个独立应用
 
 function setupBusinessLogic() {
     // ---------------------------------------------------------------- //
@@ -85,7 +85,7 @@ window.onload = () => {
     // ---------------------------------------------------------------- //
 
     // 初始化各个模块
-    angel.init(); // 启动小天使
+    // angel.init(); // 移除：小天使现在作为应用由 WindowManager 初始化
 
     // 注入应用元数据 (解耦名称和配置)
     // 使用 Promise.all 确保所有元数据都加载完成后，再初始化窗口管理器
@@ -95,9 +95,15 @@ window.onload = () => {
         import('./apps/browser.js').then(m => store.setAppMetadata('win-angel', m.config)),
         import('./apps/intelligence.js').then(m => store.setAppMetadata('win-intel', m.config)),
         import('./apps/settings.js').then(m => store.setAppMetadata('win-settings', m.config)),
-        import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', m.config))
+        import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', m.config)),
+        import('./apps/angel.js').then(m => store.setAppMetadata('win-companion', m.config)) // 新增
     ]).then(() => {
         console.log("应用元数据注入完成，启动窗口管理器...");
+        
+        // 清理僵尸数据 (删除那些在 store 中存在但没有被 setAppMetadata 注册的 ID)
+        const registeredIds = ['win-manual', 'win-angel', 'win-intel', 'win-settings', 'win-taskmgr', 'win-companion'];
+        store.prune(registeredIds);
+
         wm.init();    // 启动窗口管理器 (此时 store 中已经有了名字)
         setupBusinessLogic(); // 绑定逻辑
         net.connect(); // 连接服务器
@@ -125,13 +131,13 @@ window.onload = () => {
     // (浏览器控制、视频进度条、远程点击逻辑已移动到 apps/browser.js)
 
     // === 小天使特殊拖拽绑定 ===
-    // 因为小天使不是标准 Window，需要单独绑定拖拽逻辑
-    const angelEl = document.getElementById('angel-companion');
-    if (angelEl) {
-        angelEl.addEventListener('mousedown', (e) => {
-            if (e.button === 0) wm.startDrag(e, angelEl, 'window'); // 复用 window 拖拽逻辑
-        });
-    }
+    // 移除：小天使现在是标准窗口，自动拥有拖拽功能
+    // const angelEl = document.getElementById('angel-companion');
+    // if (angelEl) {
+    //     angelEl.addEventListener('mousedown', (e) => {
+    //         if (e.button === 0) wm.startDrag(e, angelEl, 'window'); // 复用 window 拖拽逻辑
+    //     });
+    // }
 
     // === 账单开关 ===
     document.getElementById('btn-billing')?.addEventListener('click', () => {

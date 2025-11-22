@@ -50,9 +50,12 @@ export class WindowManager {
         this.loadWallpaper();      // 加载上次保存的壁纸
         this.renderDesktopIcons(); // 渲染桌面图标
         
-        // 动态创建所有应用的窗口 DOM
+        // 懒加载：只创建那些状态为“打开”的窗口 DOM
+        // 这样可以避免一次性创建所有 DOM，减少内存占用，并解决“100+应用同时运行”的问题
         Object.entries(store.apps).forEach(([id, app]) => {
-            this.createWindow(id, app);
+            if (app.isOpen) {
+                this.createWindow(id, app);
+            }
         });
 
         this.updateTaskbar();      // 更新任务栏
@@ -419,13 +422,20 @@ export class WindowManager {
         //
         //  易懂解释：
         //     双击图标，软件就弹出来了。
-        //
-        //  警告：
-        //     如果 id 对应的 DOM 元素不存在，函数会直接返回。
         // ---------------------------------------------------------------- //
 
-        const win = document.getElementById(id);
-        if (!win) return;
+        // 懒加载检查：如果 DOM 不存在，先创建
+        let win = document.getElementById(id);
+        if (!win) {
+            const appInfo = store.getApp(id);
+            if (appInfo) {
+                this.createWindow(id, appInfo);
+                win = document.getElementById(id);
+            } else {
+                console.error(`无法打开应用 ${id}: 配置不存在`);
+                return;
+            }
+        }
 
         win.classList.remove('minimized'); // 移除最小化状态
         win.classList.add('open');         // 添加打开状态

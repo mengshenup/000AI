@@ -16,19 +16,64 @@ class Store {
     //     如果用户清除了浏览器缓存，所有保存的设置（如窗口位置）都会丢失，重置为默认值。
     // ---------------------------------------------------------------- //
     constructor() {
+        // ---------------------------------------------------------------- //
+        //  本地数据库 (Local Database)
+        //
+        //  存储位置：
+        //     浏览器的 localStorage。
+        //     Key: 'seraphim_apps_v5'
+        //
+        //  数据结构：
+        //     {
+        //         "win-id-1": {
+        //             pos: {x: 100, y: 100},  // 桌面图标位置
+        //             winPos: {x: 200, y: 200}, // 窗口位置
+        //             isOpen: true,           // 窗口是否打开
+        //             zIndex: 10,             // 层级
+        //             ... (其他动态状态)
+        //         },
+        //         ...
+        //     }
+        //
+        //  注意：
+        //     此数据库仅存储用户界面的“状态”（位置、开关）。
+        //     应用的静态配置（如名称、图标、HTML内容）由代码定义，
+        //     并在运行时通过 setAppMetadata 合并进来。
+        // ---------------------------------------------------------------- //
+
         // 尝试从浏览器缓存中读取上次保存的状态
-        // 版本号 _v5 用于强制重置旧缓存，解决热更新不生效的问题
-        const saved = localStorage.getItem('seraphim_apps_v5');
+        // 使用通用 Key 'seraphim_apps_state'
+        const saved = localStorage.getItem('seraphim_apps_state');
 
         if (saved) {
-            // 如果有缓存，解析缓存
-            const savedApps = JSON.parse(saved);
-            
-            // 初始化为空对象，等待 setAppMetadata 注入
-            this.apps = savedApps; 
+            try {
+                // 如果有缓存，解析缓存
+                const savedApps = JSON.parse(saved);
+                // 初始化为空对象，等待 setAppMetadata 注入
+                this.apps = savedApps; 
+            } catch (e) {
+                console.error("本地数据库损坏，重置中...", e);
+                this.apps = {};
+            }
         } else {
-            // 如果没有缓存，初始化为空对象
-            this.apps = {};
+            // 尝试读取旧版本数据进行迁移 (可选)
+            const oldSaved = localStorage.getItem('seraphim_apps_v5');
+            if (oldSaved) {
+                try {
+                    console.log("检测到旧版本数据，正在迁移...");
+                    this.apps = JSON.parse(oldSaved);
+                    // 迁移后立即保存为新格式并删除旧数据
+                    setTimeout(() => {
+                        this.save();
+                        localStorage.removeItem('seraphim_apps_v5');
+                    }, 1000);
+                } catch (e) {
+                    this.apps = {};
+                }
+            } else {
+                // 如果没有缓存，初始化为空对象
+                this.apps = {};
+            }
         }
     }
 
@@ -38,6 +83,7 @@ class Store {
         //
         //  函数用处：
         //     将当前内存中的状态写入 localStorage。
+        //     只保存关键的动态状态字段，避免数据膨胀。
         //
         //  易懂解释：
         //     把记在脑子里的东西写到硬盘上，防止断电忘记。
@@ -46,7 +92,45 @@ class Store {
         //     localStorage 是同步操作，如果数据量非常大（虽然这里不会），可能会轻微阻塞主线程。
         // ---------------------------------------------------------------- //
 
-        localStorage.setItem('seraphim_apps_v5', JSON.stringify(this.apps));
+        // 定义只保存这些动态字段，过滤掉静态 HTML 内容
+        const DYNAMIC_KEYS = ['pos', 'winPos', 'isOpen', 'zIndex', 'isMinimized', 'isMaximized', 'size'];
+        
+        const stateToSave = {};
+        Object.entries(this.apps).forEach(([id, app]) => {
+            stateToSave[id] = {};
+            DYNAMIC_KEYS.forEach(key => {
+                if (app[key] !== undefined) {
+                    stateToSave[id][key] = app[key];
+                }
+            });
+        });
+
+        // 移除版本号后缀，使用通用 Key，依靠 prune 机制清理旧数据
+        localStorage.setItem('seraphim_apps_state', JSON.stringify(stateToSave));
+    }
+
+    prune(validIds) {
+        // ---------------------------------------------------------------- //
+        //  清理僵尸数据(有效ID列表)
+        //
+        //  函数用处：
+        //     删除那些存在于缓存中但当前代码中已不存在的应用数据。
+        //
+        //  易懂解释：
+        //     大扫除。把那些已经搬走的人（删掉的应用）的户口注销掉。
+        // ---------------------------------------------------------------- //
+        const validSet = new Set(validIds);
+        let changed = false;
+        
+        Object.keys(this.apps).forEach(id => {
+            if (!validSet.has(id)) {
+                console.log(`[Store] 清理僵尸应用数据: ${id}`);
+                delete this.apps[id];
+                changed = true;
+            }
+        });
+
+        if (changed) this.save();
     }
 
     getApp(id) {
