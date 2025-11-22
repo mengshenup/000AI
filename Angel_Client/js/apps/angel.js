@@ -21,6 +21,7 @@ export const config = {
     color: '#ff7675',
     pos: { x: window.innerWidth - 320, y: 100 }, // 💖 默认出生在屏幕右侧，不挡视线
     winPos: { x: window.innerWidth - 320, y: 100 },
+    isOpen: true, // 💖 默认打开小天使窗口
     openMsg: "Seraphim 已上线，随时待命！✨",
     // 💖 这是一个特殊的“透明”窗口，我们通过 CSS 覆盖默认样式
     content: `
@@ -189,6 +190,9 @@ export class AngelApp {
         // 启动动画循环
         this.isRunning = true;
         this.animate();
+
+        // 💖 显示欢迎语
+        this.showBubble(config.openMsg);
     }
 
     // =================================

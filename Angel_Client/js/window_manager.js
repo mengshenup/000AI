@@ -99,8 +99,8 @@ export class WindowManager {
         const controls = document.createElement('div');
         controls.className = 'win-controls';
         controls.innerHTML = `
-            <button class="win-btn close-btn"></button>
-            <button class="win-btn min-btn"></button>
+            <button class="win-btn close-btn" title="关闭"></button>
+            <button class="win-btn min-btn" title="最小化"></button>
         `;
 
         // 📝 窗口标题
@@ -126,6 +126,16 @@ export class WindowManager {
         
         // 📌 添加到桌面
         desktop.appendChild(win);
+
+        // 📍 设置初始位置 (优先使用保存的位置，否则使用默认位置，最后兜底)
+        // 修复：防止因位置信息丢失导致窗口不可见
+        const initialPos = app.winPos || app.pos || { x: 100, y: 100 };
+        // 确保坐标是有效数值
+        const safeX = isNaN(initialPos.x) ? 100 : initialPos.x;
+        const safeY = isNaN(initialPos.y) ? 100 : initialPos.y;
+        
+        win.style.left = `${safeX}px`;
+        win.style.top = `${safeY}px`;
 
         // 📢 通知应用窗口已就绪 (解决竞态条件)
         bus.emit(`app:ready:${id}`);
@@ -171,6 +181,13 @@ export class WindowManager {
 
         // 🔄 遍历 store.apps 中的每一个应用
         Object.entries(store.apps).forEach(([id, app]) => {
+            // 🛡️ 防御性检查：如果没有图标数据，跳过渲染，防止 SVG 报错
+            const pathData = app.icon || app.iconPath;
+            if (!pathData) {
+                console.warn(`[WindowManager] 应用 ${id} 缺少图标数据，跳过渲染。`);
+                return;
+            }
+
             // 📦 创建图标容器 div
             const el = document.createElement('div');
             el.className = 'desktop-icon'; // 🏷️ 设置类名
@@ -182,7 +199,7 @@ export class WindowManager {
 
             // 🎨 填充图标内部 HTML (SVG 图标 + 文字)
             // 兼容 icon 和 iconPath 字段
-            const pathData = app.icon || app.iconPath;
+            // const pathData = app.icon || app.iconPath; // ⬆️ 已在上方定义并检查
             el.innerHTML = `
                 <svg class="icon-svg" viewBox="0 0 24 24" fill="${app.color}">
                     <path d="${pathData}"/>
@@ -241,10 +258,14 @@ export class WindowManager {
             const win = document.getElementById(id); // 🪟 获取窗口 DOM
             if (win) {
                 // 📍 如果有保存的位置，恢复位置
-                if (app.winPos) {
-                    win.style.left = `${app.winPos.x}px`;
-                    win.style.top = `${app.winPos.y}px`;
-                }
+                // 修复：增加对无效位置的检查和兜底
+                const pos = app.winPos || app.pos || { x: 100, y: 100 };
+                const safeX = isNaN(pos.x) ? 100 : pos.x;
+                const safeY = isNaN(pos.y) ? 100 : pos.y;
+                
+                win.style.left = `${safeX}px`;
+                win.style.top = `${safeY}px`;
+
                 // 🔓 如果上次是打开状态，则重新打开
                 if (app.isOpen) this.openApp(id, false); // false 表示不播放语音
             }
@@ -280,26 +301,43 @@ export class WindowManager {
             else if (target.closest('.min-btn')) {
                 const win = target.closest('.window');
                 if (win) this.minimizeApp(win.id); // 🔽 最小化窗口
-            } else if (target.classList.contains('desktop-icon')) {
-                // 3. 处理图标点击
-                const id = target.dataset.id;
-                this.toggleApp(id); // 🔄 切换应用状态
-            } else if (target.classList.contains('task-app')) {
-                // 4. 处理任务栏图标点击
-                const id = target.dataset.id;
-                this.toggleApp(id); // 🔄 切换应用状态
+            } else {
+                // 3. 处理图标点击 (使用 closest 查找父级)
+                const icon = target.closest('.desktop-icon');
+                if (icon) {
+                    const id = icon.dataset.id;
+                    this.toggleApp(id); // 🔄 切换应用状态
+                    return;
+                }
+                
+                // 4. 处理任务栏图标点击 (使用 closest 查找父级)
+                const taskApp = target.closest('.task-app');
+                if (taskApp) {
+                    const id = taskApp.dataset.id;
+                    this.toggleApp(id); // 🔄 切换应用状态
+                    return;
+                }
             }
         });
 
         // 🖱️🖱️ 全局双击委托 (用于桌面图标和任务栏图标的快速打开)
         document.addEventListener('dblclick', (e) => {
             const target = e.target;
-            if (target.classList.contains('desktop-icon')) {
-                const id = target.dataset.id;
+            
+            // 1. 桌面图标双击
+            const icon = target.closest('.desktop-icon');
+            if (icon) {
+                const id = icon.dataset.id;
                 this.openApp(id); // 🚀 双击图标时打开应用
-            } else if (target.classList.contains('task-app')) {
-                const id = target.dataset.id;
+                return;
+            }
+            
+            // 2. 任务栏图标双击
+            const taskApp = target.closest('.task-app');
+            if (taskApp) {
+                const id = taskApp.dataset.id;
                 this.openApp(id); // 🚀 双击任务栏图标时打开应用
+                return;
             }
         });
 
@@ -307,16 +345,20 @@ export class WindowManager {
         document.addEventListener('mousedown', (e) => {
             const target = e.target;
             // 🛑 只处理窗口和图标的拖拽
-            if (!target.closest('.window') && !target.classList.contains('desktop-icon')) return;
+            // 修复：使用 closest 查找图标，支持点击图标内部元素拖拽
+            const win = target.closest('.window');
+            const icon = target.closest('.desktop-icon');
+            
+            if (!win && !icon) return;
 
             // 📍 记录鼠标按下位置
             this.dragState.startX = e.clientX;
             this.dragState.startY = e.clientY;
             this.dragState.active = true; // 🚩 标记为正在拖拽
 
-            const item = target.closest('.window') || target.closest('.desktop-icon');
+            const item = win || icon;
             this.dragState.item = item;
-            this.dragState.type = item.classList.contains('window') ? 'window' : 'icon';
+            this.dragState.type = win ? 'window' : 'icon';
 
             // 📏 计算鼠标相对于元素的偏移
             const rect = item.getBoundingClientRect();
