@@ -33,7 +33,13 @@ function setupBusinessLogic() {
     // === 监听网络事件 -> 更新 UI ===
 
     // 监听网络统计数据更新 (上传/下载速度, 费用)
+    // 优化：节流统计数据更新，每秒最多更新 2 次，减少 DOM 操作开销
+    let lastStatsUpdate = 0;
     bus.on('net:stats', (stats) => {
+        const now = Date.now();
+        if (now - lastStatsUpdate < 500) return; // 500ms 节流
+        lastStatsUpdate = now;
+
         // 辅助函数：安全更新 DOM 文本
         const update = (id, val) => { 
             // 尝试在多个可能的地方更新，因为现在有独立的APP窗口
@@ -64,11 +70,27 @@ function setupBusinessLogic() {
     });
 
     // 监听实时画面帧更新
+    // 优化：使用 requestAnimationFrame 节流渲染，避免高频 DOM 操作导致卡顿
+    let pendingFrame = null;
+    let isRendering = false;
+
+    const renderLoop = () => {
+        if (pendingFrame) {
+            const el = document.getElementById('live-image'); // 📺 实时画面元素
+            if (el) {
+                el.src = pendingFrame; // 🖼️ 更新图片源
+                el.style.display = 'block'; // 👁️ 确保图片显示
+            }
+            pendingFrame = null;
+        }
+        isRendering = false;
+    };
+
     bus.on('net:frame', (imgSrc) => {
-        const el = document.getElementById('live-image'); // 📺 实时画面元素
-        if (el) {
-            el.src = imgSrc; // 🖼️ 更新图片源
-            el.style.display = 'block'; // 👁️ 确保图片显示
+        pendingFrame = imgSrc;
+        if (!isRendering) {
+            isRendering = true;
+            requestAnimationFrame(renderLoop);
         }
     });
 
