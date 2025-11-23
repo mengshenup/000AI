@@ -20,7 +20,7 @@ sys.dont_write_bytecode = True
 
 if __name__ == "__main__":
     # 📢 打印启动信息
-    print(f"🚀 Angel Server (优化版热重载) 正在启动...")
+    print(f"\n🚀 Angel Server (优化版热重载 v1.3.0) 正在启动...")
     print(f"📂 正在监听目录: {os.getcwd()}")
     
     # 🔌 使用 uvicorn.run 直接启动，开启 reload=True

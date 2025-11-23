@@ -42,6 +42,21 @@ from routers.websocket_handler import router as ws_router
 # 🔇 过滤掉 DeprecationWarning 类型的警告，保持控制台整洁
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+# 🛣️ 初始化 FastAPI 应用
+app = FastAPI(
+    title="Angel Server",
+    description="Angel 智能助手后端服务",
+    version="1.0.0"
+)
+
+# 📢 注册启动事件 (热重载时也会触发)
+@app.on_event("startup")
+async def startup_event():
+    print("\n" + "="*40)
+    print("✨ Angel Server 应用核心已加载 (v1.3.0)")
+    print("✨ 中文日志系统: 在线")
+    print("="*40 + "\n")
+
 # =================================
 #  🎉 Windows 事件循环策略配置 ()
 #
