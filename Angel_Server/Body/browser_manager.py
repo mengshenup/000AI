@@ -1,0 +1,91 @@
+import asyncio
+from playwright.async_api import async_playwright
+from playwright_stealth import Stealth
+from Memory.system_config import USER_DATA_DIR, VIEWPORT, BROWSER_CHANNEL
+from Energy.cost_tracker import global_cost_tracker
+from Eye.screenshot_tool import ScreenshotTool
+from Hand.mouse_controller import MouseController
+
+class BrowserManager:
+    # =================================
+    #  🎉 浏览器管理器 (Body/browser_manager.py)
+    #
+    #  🎨 代码用途：
+    #     管理浏览器生命周期，并持有 Eye 和 Hand 实例。
+    # =================================
+    def __init__(self):
+        self.playwright = None
+        self.browser_context = None
+        self.page = None
+        self.eye = None
+        self.hand = None
+
+    async def wake_up(self):
+        """唤醒躯体 (启动浏览器)"""
+        self.playwright = await async_playwright().start()
+        
+        launch_args = [
+            "--disable-blink-features=AutomationControlled",
+            "--disable-infobars",
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-accelerated-2d-canvas",
+            "--disable-gpu",
+        ]
+
+        try:
+            if BROWSER_CHANNEL:
+                print(f"🚀 [Body] Waking up with System Browser ({BROWSER_CHANNEL})...")
+                self.browser_context = await self.playwright.chromium.launch_persistent_context(
+                    USER_DATA_DIR,
+                    headless=True,
+                    channel=BROWSER_CHANNEL,
+                    args=launch_args,
+                    viewport=VIEWPORT
+                )
+            else:
+                print("🚀 [Body] Waking up with Built-in Chromium...")
+                self.browser_context = await self.playwright.chromium.launch_persistent_context(
+                    USER_DATA_DIR,
+                    headless=True,
+                    args=launch_args,
+                    viewport=VIEWPORT
+                )
+        except Exception as e:
+            print(f"❌ [Body] Failed to wake up: {e}")
+            raise e
+
+        self.page = self.browser_context.pages[0] if self.browser_context.pages else await self.browser_context.new_page()
+        
+        # 初始化器官
+        self.eye = ScreenshotTool(self.page)
+        self.hand = MouseController(self.page)
+        
+        # 注入反爬虫 Stealth
+        await Stealth().apply_stealth_async(self.page)
+        
+        # 监听流量
+        self.page.on("response", self._track_response)
+        self.page.on("request", self._track_request)
+
+    async def sleep(self):
+        """休眠 (关闭浏览器)"""
+        if self.browser_context:
+            await self.browser_context.close()
+        if self.playwright:
+            await self.playwright.stop()
+
+    def _track_response(self, response):
+        try:
+            size = int(response.headers.get('content-length', 0))
+            global_cost_tracker.track_browser(rx=size)
+        except: pass
+
+    def _track_request(self, request):
+        try:
+            size = len(request.url) + 800
+            if request.post_data:
+                size += len(request.post_data)
+            global_cost_tracker.track_browser(tx=size)
+        except: pass
