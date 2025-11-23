@@ -20,8 +20,8 @@ sys.dont_write_bytecode = True
 
 if __name__ == "__main__":
     # 📢 打印启动信息
-    print(f"🚀 Angel Server (Optimized Reloader) starting...")
-    print(f"📂 Watching directory: {os.getcwd()}")
+    print(f"🚀 Angel Server (优化版热重载) 正在启动...")
+    print(f"📂 正在监听目录: {os.getcwd()}")
     
     # 🔌 使用 uvicorn.run 直接启动，开启 reload=True
     # 这会自动使用高效的文件系统监听 (watchfiles)，避免轮询造成的卡顿

@@ -52,8 +52,11 @@ async def send_packet(ws: WebSocket, type_str: str, data: dict = None):
     try:
         # 📤 发送文本消息
         await ws.send_text(json_str)
-    except:
-        pass # 🔇 忽略发送失败（通常是因为连接已断开）
+    except Exception as e:
+        # 🔇 忽略发送失败（通常是因为连接已断开）
+        # 打印中文提示，方便调试
+        print(f"⚠️ WebSocket 发送失败 (客户端可能已断开): {e}")
+        pass
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -336,11 +339,11 @@ async def websocket_endpoint(websocket: WebSocket):
                         await asyncio.sleep(sleep_time)
     except Exception as e:
         # ❌ 打印全局异常
-        print(f"❌ WebSocket Error: {e}")
+        print(f"❌ WebSocket 错误: {e}")
 
     finally:
         # 🧹 清理资源
         if receiver_task:
             receiver_task.cancel() # 🛑 取消接收任务
         await browser_service.stop() # 🛑 停止浏览器服务
-        print("🛑 连接断开，资源已释放")
+        print("🛑 WebSocket 连接已断开，资源已释放")
