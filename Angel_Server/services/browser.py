@@ -94,7 +94,81 @@ class AngelBrowser:
         
         # 🕵️ 启用 Stealth 模式 (深度伪装)
         # 抹除 webdriver 属性，伪造插件列表、语言、权限等指纹
+        # 注意：虽然只有一行代码，但它内部封装了十几种反爬虫绕过策略 (Evasions)
         await stealth_async(self.page)
+
+        # 🛡️ [额外增强] 手动注入 JS 补丁，确保万无一失 (双重保险)
+        # 针对某些极高防御的网站，显式覆盖关键指纹，防止 stealth 库失效
+        # 💡 提示：这里使用 Python 的多行字符串 ("""...""") 来包裹 JavaScript 代码
+        # 在 VS Code 中，如果没有安装特定插件，它看起来可能像注释或普通文本，但实际上它是可执行的代码。
+        await self.page.add_init_script("""
+            // 1. 彻底移除 webdriver 标记 (防止被识别为自动化测试工具)
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            
+            // 2. 伪造 Chrome 运行时对象 (Headless 模式通常缺失此对象)
+            window.chrome = { runtime: {} };
+            
+            // 3. 伪造显卡信息 (WebGL Fingerprint)
+            // 许多网站通过检测 GPU 渲染器名称来判断是否为无头浏览器
+            const getParameter = WebGLRenderingContext.prototype.getParameter;
+            WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                // UNMASKED_VENDOR_WEBGL
+                if (parameter === 37445) return 'Intel Inc.';
+                // UNMASKED_RENDERER_WEBGL
+                if (parameter === 37446) return 'Intel Iris OpenGL Engine';
+                return getParameter(parameter);
+            };
+            
+            // 4. 伪造通知权限 (Headless 默认是 denied/prompt，真实用户通常是 granted/default)
+            if (window.navigator.permissions) {
+                const originalQuery = window.navigator.permissions.query;
+                window.navigator.permissions.query = (parameters) => (
+                    parameters.name === 'notifications' ?
+                        Promise.resolve({ state: 'granted', kind: 'permission' }) :
+                        originalQuery(parameters)
+                );
+            }
+            
+            // 5. 伪造插件列表 (Headless 模式默认没有插件)
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5],
+            });
+
+            // 6. [新增] Canvas 指纹噪音 (防止 Canvas Fingerprinting)
+            // 对 Canvas 绘图结果加入微小的随机噪音，使指纹无法被唯一追踪
+            const toBlob = HTMLCanvasElement.prototype.toBlob;
+            const toDataURL = HTMLCanvasElement.prototype.toDataURL;
+            const getImageData = CanvasRenderingContext2D.prototype.getImageData;
+            
+            // 注入噪音函数
+            const noisify = (canvas, context) => {
+                const shift = {
+                    'r': Math.floor(Math.random() * 10) - 5,
+                    'g': Math.floor(Math.random() * 10) - 5,
+                    'b': Math.floor(Math.random() * 10) - 5,
+                    'a': Math.floor(Math.random() * 10) - 5
+                };
+                const width = canvas.width, height = canvas.height;
+                const imageData = getImageData.call(context, 0, 0, width, height);
+                for (let i = 0; i < height; i++) {
+                    for (let j = 0; j < width; j++) {
+                        const n = ((i * (width * 4)) + (j * 4));
+                        imageData.data[n + 0] = imageData.data[n + 0] + shift.r;
+                        imageData.data[n + 1] = imageData.data[n + 1] + shift.g;
+                        imageData.data[n + 2] = imageData.data[n + 2] + shift.b;
+                        imageData.data[n + 3] = imageData.data[n + 3] + shift.a;
+                    }
+                }
+                context.putImageData(imageData, 0, 0);
+            };
+
+            // 覆盖 toDataURL
+            HTMLCanvasElement.prototype.toDataURL = function() {
+                const context = this.getContext('2d');
+                if (context) noisify(this, context);
+                return toDataURL.apply(this, arguments);
+            };
+        """)
         
         # 📡 绑定流量监听事件
         self.page.on("response", self._track_response) # 📥 监听响应
