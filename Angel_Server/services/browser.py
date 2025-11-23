@@ -5,6 +5,7 @@ import json
 import io
 from PIL import Image
 from playwright.async_api import async_playwright, Page
+from playwright_stealth import stealth_async
 from config import USER_DATA_DIR, VIEWPORT, TARGET_SEARCH_URL
 from services.billing import global_billing
 
@@ -72,8 +73,16 @@ class AngelBrowser:
             self.browser_context = await self.playwright.chromium.launch_persistent_context(
                 USER_DATA_DIR, # 📂 用户数据目录
                 headless=True, # 👻 无头模式（不显示界面）
-                # channel="chrome", # 🖥️ 使用系统安装的 Chrome (已注释，改用 bundled chromium)
-                args=["--disable-blink-features=AutomationControlled"], # 🕵️ 隐藏自动化特征
+                channel="chrome", # 🖥️ 使用系统安装的 Chrome (已启用，解决黑屏问题)
+                args=[
+                    "--disable-blink-features=AutomationControlled", # 🕵️ 隐藏自动化特征
+                    "--disable-infobars", # 🚫 隐藏信息栏
+                    "--no-sandbox", # 🛡️ 禁用沙箱 (某些环境需要)
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage", # 💾 避免 /dev/shm 内存不足
+                    "--disable-accelerated-2d-canvas", # 🎨 禁用硬件加速 Canvas (有时会导致黑屏)
+                    "--disable-gpu", # 🚫 禁用 GPU (Headless 模式下通常更稳定)
+                ],
                 viewport=VIEWPORT # 📏 设置窗口大小
             )
         except Exception as e:
@@ -82,6 +91,10 @@ class AngelBrowser:
             raise e
         # 📄 获取第一个页面，如果没有则新建一个
         self.page = self.browser_context.pages[0] if self.browser_context.pages else await self.browser_context.new_page()
+        
+        # 🕵️ 启用 Stealth 模式 (深度伪装)
+        # 抹除 webdriver 属性，伪造插件列表、语言、权限等指纹
+        await stealth_async(self.page)
         
         # 📡 绑定流量监听事件
         self.page.on("response", self._track_response) # 📥 监听响应
