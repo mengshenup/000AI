@@ -39,6 +39,8 @@ export const config = {
                 box-shadow: none !important;
                 border: none !important;
                 overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */
+                backdrop-filter: none !important; /* 🚫 移除毛玻璃效果 */
+                -webkit-backdrop-filter: none !important;
             }
             #win-companion .title-bar {
                 display: none !important; /* 💖 隐藏标题栏，让它看起来像悬浮在桌面上 */
@@ -216,7 +218,7 @@ export class AngelApp {
     // =================================
     buildModel() {
         this.group = new THREE.Group(); // 💖 创建一个组，把所有部件打包在一起
-        this.group.scale.set(0.7, 0.7, 0.7); // 💖 缩小模型尺寸
+        this.group.scale.set(0.45, 0.45, 0.45); // 💖 缩小模型尺寸 (0.7 / 1.5 ≈ 0.46)
         const matSkin = new THREE.MeshLambertMaterial({ color: 0xffe0bd }); // 💖 皮肤材质
         const matDress = new THREE.MeshLambertMaterial({ color: 0xffffff }); // 💖 衣服材质
         const matHair = new THREE.MeshLambertMaterial({ color: 0xffb6c1 }); // 💖 头发材质

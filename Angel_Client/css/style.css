@@ -120,16 +120,16 @@ body {
     bottom: 100%; /* 📍 位于容器顶部 */
     left: 50%; /* 📍 水平居中 */
     transform: translateX(-50%) translateY(-10px); /* 📍 微调位置，向上偏移 */
-    margin-bottom: 20px; /* 📏 距离头顶的间距 */
+    margin-bottom: 5px; /* 📏 减小距离头顶的间距 (原20px) */
     background: white; /* ⚪ 白色背景 */
-    padding: 12px 18px; /* 📏 增加内边距 */
-    border-radius: 16px; /* 📏 增加圆角 */
+    padding: 8px 12px; /* 📏 减小内边距 */
+    border-radius: 12px; /* 📏 增加圆角 */
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* 🌑 更柔和的阴影 */
-    font-size: 14px; /* 🔤 字体大小 */
-    line-height: 1.5; /* 📏 增加行高 */
-    max-width: 240px; /* 📏 最大宽度 */
+    font-size: 12px; /* 🔤 减小字体大小 */
+    line-height: 1.4; /* 📏 减小行高 */
+    max-width: 180px; /* 📏 减小最大宽度 */
     width: max-content; /* 📏 自适应宽度 */
-    min-width: 60px; /* 📏 最小宽度 */
+    min-width: 40px; /* 📏 最小宽度 */
     opacity: 0; /* 👻 默认隐藏 */
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 🎬 弹性动画 */
     pointer-events: none; /* 🚫 气泡不阻挡鼠标点击 */
@@ -360,7 +360,7 @@ body {
 
 /* 
 // =================================
-//  🎉 任务栏样式 ()
+//  🎉 任务栏样式 (Windows 风格)
 //
 //  🎨 代码用途：
 //     定义底部任务栏的外观和布局。
@@ -374,24 +374,22 @@ body {
 */
 #taskbar {
     position: fixed; /* 📍 固定定位 */
-    bottom: 10px; /* 📍 悬浮在底部 */
-    left: 50%; /* 📍 居中 */
-    transform: translateX(-50%); /* 📍 修正居中 */
-    width: auto; /* 📏 宽度自适应 */
-    min-width: 60%; /* 📏 最小宽度 */
-    max-width: 90%; /* 📏 最大宽度 */
-    height: 56px; /* 📏 增加高度 */
-    background: rgba(255, 255, 255, 0.25); /* 🌫️ 极简磨砂白 */
-    -webkit-backdrop-filter: blur(20px) saturate(180%); /* 🍎 强力毛玻璃 */
-    backdrop-filter: blur(20px) saturate(180%); /* 🌫️ 强力毛玻璃 */
+    bottom: 0; /* 📍 底部对齐 */
+    left: 0; /* 📍 左侧对齐 */
+    width: 100%; /* 📏 宽度占满 */
+    height: 48px; /* 📏 高度 */
+    background: rgba(20, 20, 30, 0.85); /* 🌑 深色半透明背景 */
+    -webkit-backdrop-filter: blur(15px); /* 🍎 Safari 兼容 */
+    backdrop-filter: blur(15px); /* 🌫️ 毛玻璃效果 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
-    justify-content: space-between; /* ↔️ 两端对齐 */
-    padding: 0 20px; /* 📏 内边距 */
+    justify-content: flex-start; /* ↔️ 左对齐 */
+    padding: 0 10px; /* 📏 内边距 */
     z-index: 1000; /* 📚 确保任务栏永远在最上面 */
-    border: 1px solid rgba(255, 255, 255, 0.3); /* 📏 玻璃边框 */
-    border-radius: 28px; /* 📏 大圆角 */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* 🌑 悬浮阴影 */
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* 📏 顶部微光边框 */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2); /* 🌑 阴影 */
+    border-radius: 0; /* 🚫 无圆角 */
+    transform: none; /* 🚫 移除居中变换 */
 }
 
 .start-btn {
@@ -401,77 +399,88 @@ body {
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
     justify-content: center;
-    width: 40px; /* 📏 圆形按钮 */
-    height: 40px; /* 📏 圆形按钮 */
-    background: linear-gradient(135deg, #0984e3, #74b9ff); /* 🌈 蓝色渐变 */
-    border-radius: 50%; /* ⭕ 圆形 */
-    box-shadow: 0 4px 12px rgba(9, 132, 227, 0.4); /* 🌑 阴影 */
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 🎬 弹性动画 */
+    width: 36px; /* 📏 按钮宽度 */
+    height: 36px; /* 📏 按钮高度 */
+    background: transparent; /* 🚫 透明背景 */
+    border-radius: 4px; /* 📏 小圆角 */
+    box-shadow: none; /* 🚫 无阴影 */
+    transition: background 0.2s; /* 🎬 背景过渡 */
     font-size: 0; /* 🚫 隐藏文字 */
+    margin-right: 10px; /* 📏 右侧间距 */
 }
 
 /* 🎨 开始按钮图标 (使用伪元素绘制简单的 Windows 风格图标) */
 .start-btn::before {
     content: '';
-    width: 18px;
-    height: 18px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z'/%3E%3C/svg%3E");
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300adef'%3E%3Cpath d='M3 12V3h9v9H3zm9 9v-9H3v9h9zm1-9h9V3h-9v9zm9 9h-9v-9h9v9z'/%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;
+    filter: drop-shadow(0 0 2px rgba(0,173,239,0.5));
 }
 
 .start-btn:hover {
-    transform: scale(1.15) rotate(90deg); /* 🚀 悬停放大并旋转 */
-    box-shadow: 0 8px 20px rgba(9, 132, 227, 0.6); /* ✨ 悬停发光 */
+    background: rgba(255, 255, 255, 0.1); /* ✨ 悬停背景色 */
+    transform: none; /* 🚫 移除缩放 */
+    box-shadow: none; /* 🚫 移除阴影 */
 }
 
 .start-btn:active {
+    background: rgba(255, 255, 255, 0.2); /* 📉 点击背景色 */
     transform: scale(0.95); /* 📉 点击缩小 */
 }
 
 /* 📋 任务栏应用列表 */
 #taskbar-apps {
     display: flex; /* 📦 弹性布局 */
-    gap: 12px; /* 📏 增加间距 */
-    padding: 0 15px;
-    border-left: 1px solid rgba(255,255,255,0.2);
-    border-right: 1px solid rgba(255,255,255,0.2);
-    margin: 0 15px;
+    gap: 4px; /* 📏 紧凑间距 */
+    padding: 0;
+    border: none;
+    margin: 0;
+    height: 100%;
 }
 
 .task-app {
-    width: 40px; /* 📏 增大图标 */
-    height: 40px; /* 📏 增大图标 */
-    border-radius: 10px; /* 📏 圆角 */
+    width: 40px; /* 📏 宽度 */
+    height: 40px; /* 📏 高度 */
+    border-radius: 4px; /* 📏 小圆角 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
     justify-content: center; /* ↔️ 水平居中 */
     cursor: pointer; /* 👆 鼠标变成手型 */
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 🎬 弹性动画 */
+    transition: all 0.2s; /* 🎬 过渡动画 */
     position: relative; /* 📍 相对定位 */
-    background: rgba(255,255,255,0.1); /* 🌫️ 默认微弱背景 */
+    background: transparent; /* 🚫 透明背景 */
+    margin-top: 4px; /* 📏 垂直居中微调 */
 }
 
 .task-app:hover {
-    background: rgba(255, 255, 255, 0.3); /* ✨ 悬停背景色 */
-    transform: translateY(-5px); /* 🚀 悬停上浮 */
+    background: rgba(255, 255, 255, 0.1); /* ✨ 悬停背景色 */
+    transform: none; /* 🚫 移除上浮 */
 }
 
 .task-app.active {
-    background: rgba(255, 255, 255, 0.5); /* 💡 当前激活窗口高亮 */
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background: rgba(255, 255, 255, 0.15); /* 💡 当前激活窗口高亮 */
+    box-shadow: inset 0 -2px 0 var(--primary-color); /* 📏 底部高亮条 */
 }
 
 /* 🟢 运行指示灯 (图标下方的小点) */
 .task-app.running::after {
     content: '';
     position: absolute;
-    bottom: -6px; /* 📍 移到图标外面 */
-    width: 5px;
-    height: 5px;
-    background: var(--text-color);
-    border-radius: 50%;
-    opacity: 0.6;
+    bottom: 0; /* 📍 底部 */
+    width: 16px; /* 📏 宽度 */
+    height: 3px; /* 📏 高度 */
+    background: #ccc; /* ⚪ 灰色 */
+    border-radius: 2px;
+    opacity: 0.8;
+}
+
+.task-app.active::after {
+    background: var(--primary-color); /* 🔵 激活时变蓝 */
+    width: 100%; /* 📏 激活时占满宽度 */
+    border-radius: 0;
 }
 
 /* 
@@ -509,8 +518,13 @@ body {
 }
 
 #win-companion {
-    width: 300px; /* 📏 宽度 */
-    height: 400px; /* 📏 高度 */
+    width: 200px; /* 📏 缩小宽度 (原300px) */
+    height: 266px; /* 📏 缩小高度 (原400px) */
+}
+
+#win-taskmgr {
+    width: 300px; /* 📏 缩小宽度 */
+    height: 400px; /* 📏 缩小高度 */
 }
 
 #win-traffic, #win-billing {
