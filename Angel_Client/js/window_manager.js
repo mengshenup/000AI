@@ -412,6 +412,26 @@ export class WindowManager {
                     return;
                 }
                 */
+
+                // 6. 🆕 点击空白处自动关闭胶囊窗口 (如流量、账单详情)
+                const capsuleWindows = ['win-traffic', 'win-billing'];
+                capsuleWindows.forEach(id => {
+                    const win = document.getElementById(id);
+                    // 如果窗口存在且已打开
+                    if (win && win.classList.contains('open')) {
+                        // 检查点击是否在窗口内部
+                        if (win.contains(target)) return;
+                        
+                        // 检查点击是否在对应的胶囊按钮上 (防止点击按钮时刚打开就被关闭)
+                        // 假设胶囊ID规则为 bar-xxx (win-traffic -> bar-traffic)
+                        const capsuleId = id.replace('win-', 'bar-');
+                        const capsule = document.getElementById(capsuleId);
+                        if (capsule && capsule.contains(target)) return;
+
+                        // 如果既不在窗口内，也不在按钮上，则关闭
+                        this.closeApp(id);
+                    }
+                });
             }
         });
 
@@ -505,6 +525,9 @@ export class WindowManager {
 
         // 🚚 全局拖拽相关事件
         document.addEventListener('mousedown', (e) => {
+            // 🛑 只响应左键点击
+            if (e.button !== 0) return;
+
             const target = e.target;
             
             // 🛑 如果点击的是窗口控制按钮，则不触发拖拽
@@ -601,6 +624,7 @@ export class WindowManager {
             
             // 🚀 确认开始拖拽
             this.dragState.isDragging = true;
+            e.preventDefault(); // 🛑 防止选中文本或其他默认行为
             
             // 🎨 添加拖拽样式 (延迟到这里才添加)
             if (this.dragState.item) {

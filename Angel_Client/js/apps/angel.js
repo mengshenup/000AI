@@ -36,6 +36,7 @@ export const config = {
                 background: transparent !important;
                 box-shadow: none !important;
                 border: none !important;
+                overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */
             }
             #win-companion .title-bar {
                 display: none !important; /* 💖 隐藏标题栏，让它看起来像悬浮在桌面上 */
