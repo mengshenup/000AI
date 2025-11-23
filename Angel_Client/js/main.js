@@ -166,26 +166,61 @@ window.onload = () => {
 
     // === 特定 UI 绑定 (非通用部分) ===
 
+    // 辅助函数：在胶囊上方打开窗口
+    const toggleCapsuleWindow = (capsuleId, appId) => {
+        const app = store.getApp(appId);
+        if (app && app.isOpen) {
+            wm.closeApp(appId);
+        } else {
+            // 1. 先打开应用，确保 DOM 存在
+            wm.openApp(appId, false);
+            
+            // 2. 计算位置
+            const capsule = document.getElementById(capsuleId);
+            const win = document.getElementById(appId);
+            
+            if (capsule && win) {
+                const cRect = capsule.getBoundingClientRect();
+                const wRect = win.getBoundingClientRect(); // 获取实际渲染尺寸，比配置更准
+                
+                // 计算水平居中位置
+                let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
+                // 计算垂直位置 (胶囊上方 10px)
+                let top = cRect.top - wRect.height - 10;
+
+                // 🛡️ 防超出逻辑
+                // 右边界检查
+                if (left + wRect.width > window.innerWidth) {
+                    left = window.innerWidth - wRect.width - 10;
+                }
+                // 左边界检查
+                if (left < 10) {
+                    left = 10;
+                }
+                // 上边界检查
+                if (top < 10) {
+                    top = 10;
+                }
+
+                // 应用位置
+                win.style.left = `${left}px`;
+                win.style.top = `${top}px`;
+                win.style.right = 'auto';
+                win.style.bottom = 'auto';
+                
+                // 强制更新 store 中的位置，防止下次打开错位 (虽然这里是动态计算的)
+                store.updateApp(appId, { winPos: { x: left, y: top } });
+            }
+        }
+    };
+
     // 绑定任务栏胶囊点击事件 -> 打开详情窗口
     document.getElementById('bar-traffic')?.addEventListener('click', () => {
-        // 切换显示/隐藏
-        const id = 'win-traffic';
-        const app = store.getApp(id);
-        if (app && app.isOpen) {
-            wm.closeApp(id);
-        } else {
-            wm.openApp(id, false);
-        }
+        toggleCapsuleWindow('bar-traffic', 'win-traffic');
     });
 
     document.getElementById('bar-billing')?.addEventListener('click', () => {
-        const id = 'win-billing';
-        const app = store.getApp(id);
-        if (app && app.isOpen) {
-            wm.closeApp(id);
-        } else {
-            wm.openApp(id, false);
-        }
+        toggleCapsuleWindow('bar-billing', 'win-billing');
     });
 
     // 绑定扫描按钮点击事件 (保留在这里，因为它可能属于全局工具栏，或者也可以移到 browser.js，但目前先保留)

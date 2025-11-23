@@ -8,11 +8,11 @@ export const config = {
     showDesktopIcon: false, // 💖 不显示桌面图标
     showTaskbarIcon: false, // 💖 不显示任务栏图标
     frameless: true, // 💖 无边框窗口
-    fixed: true, // 💖 固定位置
+    fixed: false, // 💖 取消固定，允许动态定位
     width: 200, // 📏 详情窗宽度
     height: 200, // 📏 详情窗高度
     pos: { x: 0, y: 0 },
-    winPos: { right: 10, bottom: 50 }, // 📍 固定在右下角 (任务栏上方)
+    // winPos: { right: 10, bottom: 50 }, // 📍 移除固定位置，由点击事件动态计算
     isOpen: false, // 默认关闭
     openMsg: "",
     content: `

@@ -58,7 +58,7 @@ export class WindowManager {
 
         this.loadWallpaper();      // 🖼️ 加载上次保存的壁纸
         this.renderDesktopIcons(); // 📱 渲染桌面图标
-        this.renderTrayIcons();    // 📡 渲染托盘图标
+        // this.renderTrayIcons();    // 📡 渲染托盘图标 (已移除)
         
         // ⚡ 懒加载：只创建那些状态为“打开”的窗口 DOM
         // 这样可以避免一次性创建所有 DOM，减少内存占用，并解决“100+应用同时运行”的问题
@@ -403,13 +403,15 @@ export class WindowManager {
                     return;
                 }
 
-                // 5. 处理托盘图标点击
+                // 5. 处理托盘图标点击 (已移除)
+                /*
                 const trayIcon = target.closest('.tray-icon');
                 if (trayIcon) {
                     const id = trayIcon.dataset.id;
                     this.toggleApp(id);
                     return;
                 }
+                */
             }
         });
 
@@ -556,12 +558,15 @@ export class WindowManager {
             const target = e.target.closest('.task-app');
             if (target) {
                 // ⏳ 节流检查：防止快速点击导致窗口闪烁 (0.1秒冷却)
+                // 💖 移除节流，确保单击响应灵敏
+                /*
                 const now = Date.now();
                 if (now - this.lastClickTime < 100) {
                     // console.log("点击过快，已忽略");
                     return;
                 }
                 this.lastClickTime = now;
+                */
 
                 const id = target.dataset.id;
                 this.toggleApp(id); // 🔄 切换应用状态
