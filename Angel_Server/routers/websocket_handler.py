@@ -84,7 +84,9 @@ async def websocket_endpoint(websocket: WebSocket):
         await send_packet(websocket, "log", {"msg": "✨ Angel 系统已模块化启动！"})
 
         # 📨 创建异步队列，用于在接收循环和处理循环之间传递消息
-        queue = asyncio.Queue()
+        # 🛡️ 安全修复: 设置 maxsize=100 防止内存溢出攻击
+        # 如果攻击者发送速度超过处理速度，put() 会阻塞，从而触发 TCP 背压，物理层面上阻止攻击者发送
+        queue = asyncio.Queue(maxsize=100)
 
         # ⏱️ 帧率控制 (FPS)
         # 默认配置
@@ -96,6 +98,9 @@ async def websocket_endpoint(websocket: WebSocket):
         MIN_FPS = 1
 
         last_frame_time = 0
+        
+        # 🛡️ 日志节流: 防止配置更新泛洪导致 DoS
+        last_config_log_time = 0
 
         # 🔄 定义内部接收循环函数
         async def receive_loop():
@@ -147,11 +152,15 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 # ⚙️ 处理配置更新指令 (画质/帧率)
                 elif cmd_type == "config_update":
+                    should_log = False
+                    now = time.time()
+                    
                     # 1. 更新画质
                     new_quality = command.get("quality")
                     if new_quality in ['low', 'medium', 'high']:
-                        current_quality = new_quality
-                        await send_packet(websocket, "log", {"msg": f"🎨 画质已切换为: {current_quality.upper()}"})
+                        if current_quality != new_quality:
+                            current_quality = new_quality
+                            should_log = True
 
                     # 2. 更新帧率 (带安全检查)
                     new_fps = command.get("fps")
@@ -159,11 +168,20 @@ async def websocket_endpoint(websocket: WebSocket):
                         try:
                             new_fps = int(new_fps)
                             # 🛡️ 安全钳位: 确保 FPS 在 [MIN, MAX] 范围内
-                            # 防止前端恶意请求超高帧率导致拒绝服务攻击 (DoS)
-                            current_fps = max(MIN_FPS, min(new_fps, MAX_FPS))
-                            await send_packet(websocket, "log", {"msg": f"⏱️ 帧率已设置为: {current_fps} FPS"})
+                            clamped_fps = max(MIN_FPS, min(new_fps, MAX_FPS))
+                            if current_fps != clamped_fps:
+                                current_fps = clamped_fps
+                                should_log = True
                         except:
                             pass
+                    
+                    # 🛡️ 日志节流: 只有在真正变化且距离上次日志超过 1 秒时才发送
+                    # 这彻底防御了“每秒切换1000万次”导致的日志泛洪攻击
+                    if should_log and (now - last_config_log_time > 1.0):
+                        await send_packet(websocket, "log", {
+                            "msg": f"⚙️ 配置更新: 画质={current_quality.upper()}, 帧率={current_fps} FPS"
+                        })
+                        last_config_log_time = now
 
                 # 🌍 处理浏览器导航指令
                 elif cmd_type == "browser_navigate":
