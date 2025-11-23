@@ -217,7 +217,10 @@ export class WindowManager {
         }
         
         // 🎨 设置 CSS 变量 --bg-wallpaper，这会立即改变页面背景
-        document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
+        // document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
+        // 🐛 修复：直接设置 #desktop 背景，避免 CSS 变量解析相对路径时的 404 问题 (crbug/css-variables)
+        const desktop = document.getElementById('desktop');
+        if (desktop) desktop.style.backgroundImage = bgStyle;
     }
 
     renderDesktopIcons() {
@@ -942,7 +945,9 @@ export class WindowManager {
         }
 
         // 🎨 应用样式
-        document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
+        // document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
+        const desktop = document.getElementById('desktop');
+        if (desktop) desktop.style.backgroundImage = bgStyle;
         localStorage.setItem('seraphim_wallpaper', bgStyle); // 💾 保存完整的 url(...) 字符串
 
         // 🎨 更新选中状态样式

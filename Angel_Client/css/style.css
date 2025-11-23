@@ -71,7 +71,7 @@ body {
 #desktop {
     width: 100%; /* 📏 宽度占满 */
     height: calc(100% - 40px); /* 📏 减去任务栏高度 */
-    background-image: var(--bg-wallpaper); /* 🖼️ 使用变量里的壁纸 */
+    /* background-image: var(--bg-wallpaper); */ /* 🖼️ 使用变量里的壁纸 (已改为 JS 直接设置，避免路径解析错误) */
     background-size: cover; /* 🖼️ 图片铺满 */
     background-position: center; /* 📍 图片居中 */
     position: relative; /* 📍 作为子元素定位的参考系 */
@@ -256,6 +256,7 @@ body {
     background: transparent !important; /* 强制透明背景 */
     border: none !important; /* 强制无边框 */
     box-shadow: none !important; /* 强制无阴影 */
+    -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important; /* 移除毛玻璃，由内容自己控制 */
 }
 
