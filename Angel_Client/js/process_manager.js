@@ -17,7 +17,7 @@ class ProcessManager {
     constructor() {
         // 📖 账本：Map<AppID, ResourceQueue>
         this.queues = new Map();
-        // 📊 性能统计：Map<AppID, { cpuTime: number, lastActive: number, startTime: number }>
+        // 📊 性能统计：Map<AppID, { cpuTime: number, lastActive: number, startTime: number, longTasks: number, longTaskTime: number, logs: Array }>
         this.stats = new Map();
     }
 
@@ -26,7 +26,14 @@ class ProcessManager {
      */
     getAppStats(appId) {
         if (!this.stats.has(appId)) {
-            return { cpuTime: 0, lastActive: 0, startTime: Date.now() };
+            return { 
+                cpuTime: 0, 
+                lastActive: 0, 
+                startTime: Date.now(),
+                longTasks: 0,
+                longTaskTime: 0,
+                logs: []
+            };
         }
         return this.stats.get(appId);
     }
@@ -52,6 +59,22 @@ class ProcessManager {
     }
 
     /**
+     * 📝 记录日志
+     */
+    _log(appId, type, message) {
+        if (!this.stats.has(appId)) {
+            this.stats.set(appId, { 
+                cpuTime: 0, lastActive: Date.now(), startTime: Date.now(),
+                longTasks: 0, longTaskTime: 0, logs: []
+            });
+        }
+        const stat = this.stats.get(appId);
+        const time = new Date().toLocaleTimeString();
+        stat.logs.unshift(`[${time}] [${type}] ${message}`);
+        if (stat.logs.length > 50) stat.logs.pop(); // 限制日志长度
+    }
+
+    /**
      * ⏱️ 记录执行时间 (内部辅助)
      */
     _measure(appId, fn) {
@@ -63,11 +86,21 @@ class ProcessManager {
             const duration = end - start;
             
             if (!this.stats.has(appId)) {
-                this.stats.set(appId, { cpuTime: 0, lastActive: end, startTime: start });
+                this.stats.set(appId, { 
+                    cpuTime: 0, lastActive: end, startTime: start,
+                    longTasks: 0, longTaskTime: 0, logs: []
+                });
             }
             const stat = this.stats.get(appId);
             stat.cpuTime += duration;
             stat.lastActive = end;
+
+            // 🐢 检测长任务 (卡顿)
+            if (duration > 50) {
+                stat.longTasks++;
+                stat.longTaskTime += duration;
+                // this._log(appId, 'WARN', `检测到长任务: ${duration.toFixed(1)}ms`);
+            }
         }
     }
 
@@ -86,6 +119,7 @@ class ProcessManager {
                 busListeners: [], // 🚌 事件总线监听
                 cleanups: []      // 🧹 自定义清理函数
             });
+            this._log(appId, 'INFO', '进程上下文已创建');
         }
 
         // 返回一组封装好的 API
@@ -97,6 +131,7 @@ class ProcessManager {
                 const wrappedCallback = () => this._measure(appId, callback);
                 const id = window.setInterval(wrappedCallback, delay);
                 this._getQueue(appId).intervals.add(id);
+                this._log(appId, 'RES', `申请定时器 (ID: ${id}, Delay: ${delay}ms)`);
                 return id;
             },
             
@@ -108,6 +143,7 @@ class ProcessManager {
                 };
                 const id = window.setTimeout(wrappedCallback, delay);
                 this._getQueue(appId).timeouts.add(id);
+                this._log(appId, 'RES', `申请延时器 (ID: ${id}, Delay: ${delay}ms)`);
                 return id;
             },
 
@@ -119,6 +155,7 @@ class ProcessManager {
                 };
                 const id = window.requestAnimationFrame(wrappedCallback);
                 this._getQueue(appId).animations.add(id);
+                // 动画帧太频繁，不记录日志以免刷屏
                 return id;
             },
 
@@ -126,11 +163,8 @@ class ProcessManager {
             addEventListener: (target, type, listener, options) => {
                 const wrappedListener = (e) => this._measure(appId, () => listener(e));
                 target.addEventListener(type, wrappedListener, options);
-                // 注意：这里存的是 wrappedListener，以便 removeEventListener 能正确工作
-                // 但为了简单起见，我们这里存原始引用可能无法移除 wrappedListener
-                // 这是一个简化的实现，通常需要 Map 来映射 original -> wrapped
-                // 鉴于 PM 主要用于 kill 时的暴力清理，这里暂不处理 removeEventListener 的精确匹配
                 this._getQueue(appId).events.push({ target, type, listener: wrappedListener, options });
+                this._log(appId, 'RES', `监听 DOM 事件 (${type})`);
             },
 
             // 🚌 申请 EventBus 监听
@@ -138,21 +172,25 @@ class ProcessManager {
                 const wrappedCallback = (data) => this._measure(appId, () => callback(data));
                 bus.on(event, wrappedCallback);
                 this._getQueue(appId).busListeners.push({ event, callback: wrappedCallback });
+                this._log(appId, 'RES', `订阅总线事件 (${event})`);
             },
 
             // 🧹 注册自定义清理函数
             onCleanup: (callback) => {
                 this._getQueue(appId).cleanups.push(callback);
+                this._log(appId, 'INFO', `注册清理钩子`);
             },
 
             // 🗑️ 手动清理（如果需要）
             clearInterval: (id) => {
                 window.clearInterval(id);
                 this._getQueue(appId).intervals.delete(id);
+                this._log(appId, 'FREE', `释放定时器 (ID: ${id})`);
             },
             clearTimeout: (id) => {
                 window.clearTimeout(id);
                 this._getQueue(appId).timeouts.delete(id);
+                this._log(appId, 'FREE', `释放延时器 (ID: ${id})`);
             },
             cancelAnimationFrame: (id) => {
                 window.cancelAnimationFrame(id);
@@ -163,6 +201,7 @@ class ProcessManager {
                 // 从列表中移除 (简单过滤)
                 const q = this._getQueue(appId);
                 q.busListeners = q.busListeners.filter(l => l.event !== event || l.callback !== callback);
+                this._log(appId, 'FREE', `取消订阅事件 (${event})`);
             }
         };
     }
@@ -175,6 +214,7 @@ class ProcessManager {
         const queue = this.queues.get(appId);
         if (!queue) return; // 户头不存在，直接返回
 
+        this._log(appId, 'WARN', `正在强制终止进程...`);
         console.log(`[ProcessManager] 正在清理进程 ${appId} 的资源队列...`);
 
         // 1. 执行自定义清理函数 (最先执行，以便应用有机会做最后的操作)
@@ -186,6 +226,7 @@ class ProcessManager {
 
         // 2. 清理定时器
         queue.intervals.forEach(id => window.clearInterval(id));
+        const timerCount = queue.intervals.size + queue.timeouts.size;
         queue.intervals.clear();
 
         // 3. 清理延时器
@@ -202,6 +243,7 @@ class ProcessManager {
                 target.removeEventListener(type, listener, options);
             }
         });
+        const eventCount = queue.events.length + queue.busListeners.length;
         queue.events = [];
 
         // 6. 清理 EventBus 监听
@@ -213,6 +255,8 @@ class ProcessManager {
         // 7. 删除户头
         this.queues.delete(appId);
         
+        // 记录最后一条日志 (虽然户头删了，但 stats 还在)
+        this._log(appId, 'SUCCESS', `进程已终止，回收资源: 定时器 ${timerCount}, 监听器 ${eventCount}`);
         console.log(`[ProcessManager] 进程 ${appId} 清理完毕 ✨`);
     }
 
