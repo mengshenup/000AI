@@ -40,8 +40,8 @@ echo.
 for /f "usebackq tokens=*" %%i in (`powershell -command "(Get-CimInstance Win32_Process -Filter \"ProcessId = $PID\").ParentProcessId"`) do set BAT_PID=%%i
 echo [DEBUG] 当前 BAT 脚本 (start_server.bat) 的 PID: %BAT_PID%
 
-:: 🟢 注意：这里改为运行 run.py
-python Nerve/server_runner.py
+:: 🟢 注意：这里改为运行 main.py
+python Brain/main.py
 
 :: === 4. 错误处理与自动重启 ===
 :: 如果是用户按 Ctrl+C (退出码通常非0)，或者被 debug 脚本杀掉 (退出码 1)

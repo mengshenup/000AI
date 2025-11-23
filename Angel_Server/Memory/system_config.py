@@ -14,7 +14,7 @@ import os
 # =================================
 
 # 📂 设置用户数据存储目录的相对路径，所有的照片和记录都存在这里
-USER_DATA_DIR = "./user_data"
+USER_DATA_DIR = "./Memory/BrowserData"
 
 # 🖥️ 定义浏览器窗口的宽度和高度，给机器人配的“显示器”大小 (800x600)
 VIEWPORT = {'width': 800, 'height': 600}
