@@ -93,59 +93,104 @@ export class TaskManagerApp {
         const apps = store.apps; // 💖 从全局状态中获取所有应用信息
         this.listContainer.innerHTML = ''; // 💖 清空列表
 
-        Object.entries(apps).forEach(([id, app]) => { // 💖 遍历所有应用
-            const item = document.createElement('div'); // 💖 创建列表项容器
-            item.style.display = 'flex'; // 💖 Flex 布局
-            item.style.alignItems = 'center'; // 💖 垂直居中
-            item.style.justifyContent = 'space-between'; // 💖 两端对齐
-            item.style.padding = '10px'; // 💖 内边距
-            item.style.marginBottom = '5px'; // 💖 底部间距
-            item.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'; // 💖 半透明背景
-            item.style.borderRadius = '4px'; // 💖 圆角
-
-            const statusColor = app.isOpen ? '#55efc4' : '#b2bec3'; // 💖 根据状态决定颜色（绿色/灰色）
-            const statusText = app.isOpen ? '运行中' : '休眠中'; // 💖 根据状态决定文本
-
-            item.innerHTML = `
-                <div style="display:flex; alignItems:center; gap:10px;">
-                    <!-- 💖 应用图标 -->
-                    <svg style="width:20px; height:20px; fill:${app.color}" viewBox="0 0 24 24">
-                        <path d="${app.iconPath}"/>
-                    </svg>
-                    <div>
-                        <div style="font-weight:bold;">${app.name}</div> <!-- 💖 应用名称 -->
-                        <div style="font-size:12px; color:${statusColor};">${statusText}</div> <!-- 💖 状态文本 -->
-                    </div>
-                </div>
-                <div style="display:flex; gap:5px;">
-                    ${app.isOpen ?
-                    // 💖 如果运行中，显示“终止”按钮
-                    `<button class="tm-btn-close" data-id="${id}" style="padding:4px 8px; background:#ff7675; border:none; border-radius:4px; color:white; cursor:pointer;">终止</button>` :
-                    // 💖 如果休眠中，显示“唤醒”按钮
-                    `<button class="tm-btn-open" data-id="${id}" style="padding:4px 8px; background:#0984e3; border:none; border-radius:4px; color:white; cursor:pointer;">唤醒</button>`
-                }
-                </div>
-            `;
-
-            // 绑定按钮事件
-            const closeBtn = item.querySelector('.tm-btn-close'); // 💖 获取终止按钮
-            if (closeBtn) {
-                closeBtn.onclick = () => {
-                    wm.killApp(id); // 💖 调用窗口管理器强制终止应用
-                    this.render(); // 💖 立即刷新列表状态
-                };
+        // 💖 分组应用
+        const systemApps = [];
+        const userApps = [];
+        Object.entries(apps).forEach(([id, app]) => {
+            if (app.system) {
+                systemApps.push({ id, ...app });
+            } else {
+                userApps.push({ id, ...app });
             }
-
-            const openBtn = item.querySelector('.tm-btn-open'); // 💖 获取唤醒按钮
-            if (openBtn) {
-                openBtn.onclick = () => {
-                    wm.openApp(id); // 💖 调用窗口管理器打开应用
-                    this.render(); // 💖 立即刷新列表状态
-                };
-            }
-
-            this.listContainer.appendChild(item); // 💖 将列表项添加到容器
         });
+
+        // 💖 辅助渲染函数
+        const renderGroup = (title, list) => {
+            if (list.length === 0) return;
+            
+            const header = document.createElement('div');
+            header.style.padding = '5px 10px';
+            header.style.fontSize = '12px';
+            header.style.color = '#aaa';
+            header.style.backgroundColor = 'rgba(255,255,255,0.05)';
+            header.style.marginTop = '10px';
+            header.style.borderRadius = '4px';
+            header.innerText = `${title} (${list.length})`;
+            this.listContainer.appendChild(header);
+
+            list.forEach(app => {
+                const id = app.id;
+                const item = document.createElement('div'); // 💖 创建列表项容器
+                item.style.display = 'flex'; // 💖 Flex 布局
+                item.style.alignItems = 'center'; // 💖 垂直居中
+                item.style.justifyContent = 'space-between'; // 💖 两端对齐
+                item.style.padding = '8px'; // 💖 内边距
+                item.style.borderBottom = '1px solid rgba(255,255,255,0.1)'; // 💖 分隔线
+
+                // 左侧：图标和名称
+                const left = document.createElement('div');
+                left.style.display = 'flex';
+                left.style.alignItems = 'center';
+                left.style.gap = '10px';
+                
+                // 图标
+                const iconPath = app.icon || app.iconPath;
+                left.innerHTML = `
+                    <svg style="width:20px; height:20px; fill:${app.color}" viewBox="0 0 24 24">
+                        <path d="${iconPath}"/>
+                    </svg>
+                    <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:bold; color:#eee;">${app.name}</span>
+                        <span style="font-size:10px; color:#888;">ID: ${id}</span>
+                    </div>
+                `;
+
+                // 右侧：状态和操作按钮
+                const right = document.createElement('div');
+                right.style.display = 'flex';
+                right.style.alignItems = 'center';
+                right.style.gap = '10px';
+
+                // 状态指示灯
+                const status = document.createElement('div');
+                const isOpen = app.isOpen;
+                status.style.width = '8px';
+                status.style.height = '8px';
+                status.style.borderRadius = '50%';
+                status.style.backgroundColor = isOpen ? '#2ecc71' : '#95a5a6'; // 💚 绿色运行，🩶 灰色停止
+                status.title = isOpen ? '运行中' : '已停止';
+
+                // 操作按钮
+                const btn = document.createElement('button');
+                btn.style.border = 'none';
+                btn.style.background = 'transparent';
+                btn.style.cursor = 'pointer';
+                btn.style.color = isOpen ? '#e74c3c' : '#2ecc71'; // 🔴 红色停止，💚 绿色启动
+                btn.innerHTML = isOpen 
+                    ? '<svg style="width:16px;fill:currentColor" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>' // 垃圾桶图标
+                    : '<svg style="width:16px;fill:currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'; // 播放图标
+                
+                btn.onclick = () => {
+                    if (isOpen) {
+                        wm.closeApp(id); // ❌ 关闭应用
+                    } else {
+                        wm.openApp(id); // 🚀 启动应用
+                    }
+                    // 状态更新会通过 store 监听触发重新渲染，或者我们可以手动刷新
+                    setTimeout(() => this.render(), 100); 
+                };
+
+                right.appendChild(status);
+                right.appendChild(btn);
+
+                item.appendChild(left);
+                item.appendChild(right);
+                this.listContainer.appendChild(item);
+            });
+        };
+
+        renderGroup('用户应用', userApps);
+        renderGroup('系统应用', systemApps);
     }
 
     // =================================

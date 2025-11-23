@@ -153,6 +153,10 @@ export class AngelApp {
             this.container = document.getElementById('angel-scene');
             if (this.container && !this.container.contains(this.renderer.domElement)) {
                 this.container.appendChild(this.renderer.domElement);
+                // 💖 重新设置尺寸，防止窗口大小变化导致变形
+                const width = this.container.clientWidth || 300;
+                const height = this.container.clientHeight || 400;
+                this.renderer.setSize(width, height);
             }
             this.isRunning = true;
             this.animate(); // 确保恢复运行
@@ -232,6 +236,7 @@ export class AngelApp {
     // =================================
     buildModel() {
         this.group = new THREE.Group(); // 💖 创建一个组，把所有部件打包在一起
+        this.group.scale.set(0.7, 0.7, 0.7); // 💖 缩小模型尺寸
         const matSkin = new THREE.MeshLambertMaterial({ color: 0xffe0bd }); // 💖 皮肤材质
         const matDress = new THREE.MeshLambertMaterial({ color: 0xffffff }); // 💖 衣服材质
         const matHair = new THREE.MeshLambertMaterial({ color: 0xffb6c1 }); // 💖 头发材质

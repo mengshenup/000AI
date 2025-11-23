@@ -58,6 +58,7 @@ export class WindowManager {
 
         this.loadWallpaper();      // 🖼️ 加载上次保存的壁纸
         this.renderDesktopIcons(); // 📱 渲染桌面图标
+        this.renderTrayIcons();    // 📡 渲染托盘图标
         
         // ⚡ 懒加载：只创建那些状态为“打开”的窗口 DOM
         // 这样可以避免一次性创建所有 DOM，减少内存占用，并解决“100+应用同时运行”的问题
@@ -201,6 +202,9 @@ export class WindowManager {
                 return;
             }
 
+            // 💖 过滤掉不显示桌面图标的应用 (如系统应用)
+            if (app.showDesktopIcon === false) return;
+
             // 📦 创建图标容器 div
             const el = document.createElement('div');
             el.className = 'desktop-icon'; // 🏷️ 设置类名
@@ -319,7 +323,8 @@ export class WindowManager {
                 const icon = target.closest('.desktop-icon');
                 if (icon) {
                     const id = icon.dataset.id;
-                    this.toggleApp(id); // 🔄 切换应用状态
+                    // 💖 修改为单击打开应用
+                    this.openApp(id); 
                     return;
                 }
                 
@@ -330,34 +335,19 @@ export class WindowManager {
                     this.toggleApp(id); // 🔄 切换应用状态
                     return;
                 }
+
+                // 5. 处理托盘图标点击
+                const trayIcon = target.closest('.tray-icon');
+                if (trayIcon) {
+                    const id = trayIcon.dataset.id;
+                    this.toggleApp(id);
+                    return;
+                }
             }
         });
 
-        // 🖱️🖱️ 全局双击委托 (用于桌面图标和任务栏图标的快速打开)
-        document.addEventListener('dblclick', (e) => {
-            const target = e.target;
-            
-            // 1. 桌面图标双击
-            const icon = target.closest('.desktop-icon');
-            if (icon) {
-                const id = icon.dataset.id;
-                this.openApp(id); // 🚀 双击图标时打开应用
-                return;
-            }
-            
-            // 2. 任务栏图标双击 (如果用户习惯双击)
-            const taskApp = target.closest('.task-app');
-            if (taskApp) {
-                const id = taskApp.dataset.id;
-                // 如果已经打开且未最小化，双击可能意味着“置顶”或“无操作”，这里保持打开逻辑
-                // 但为了避免与单击冲突，通常任务栏是单击操作。
-                // 如果用户坚持双击，这里可以保留，但单击事件也会触发。
-                // 实际上，单击 toggleApp 已经涵盖了打开功能。
-                // 为了响应用户“无法双击打开”的反馈，我们确保双击也能打开（如果单击没生效或用户手快）
-                this.openApp(id); 
-                return;
-            }
-        });
+        // 🖱️🖱️ 全局双击委托 (已废弃，改为单击打开)
+        // document.addEventListener('dblclick', (e) => { ... });
 
         // 🖱️ 右键菜单委托
         document.addEventListener('contextmenu', (e) => {
@@ -839,6 +829,9 @@ export class WindowManager {
         container.innerHTML = ''; // 🧹 清空任务栏
 
         Object.entries(store.apps).forEach(([id, app]) => {
+            // 💖 过滤掉不显示任务栏图标的应用 (如系统应用)
+            if (app.showTaskbarIcon === false) return;
+
             const win = document.getElementById(id);
             // ⚓ 这里采用一直显示模式 (类似 macOS Dock)
             const div = document.createElement('div');
@@ -858,6 +851,47 @@ export class WindowManager {
                 }
             }
             container.appendChild(div);
+        });
+    }
+
+    renderTrayIcons() {
+        // =================================
+        //  🎉 渲染托盘图标 ()
+        //
+        //  🎨 代码用途：
+        //     在任务栏右下角渲染系统应用图标 (如流量、计费)。
+        //
+        //  💡 易懂解释：
+        //     把那些默默工作的小助手放在角落里，不占地方，但随时能找到！📡
+        // =================================
+
+        const container = document.getElementById('tray-icons');
+        if (!container) return;
+        container.innerHTML = ''; // 🧹 清空
+
+        Object.entries(store.apps).forEach(([id, app]) => {
+            // 💖 只渲染标记为系统应用且未明确禁止显示的应用
+            if (app.system === true) {
+                const div = document.createElement('div');
+                div.className = 'tray-icon';
+                div.dataset.id = id;
+                div.title = app.name;
+                div.style.cursor = 'pointer';
+                div.style.width = '20px';
+                div.style.height = '20px';
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+                div.style.justifyContent = 'center';
+                
+                // 🎨 插入图标 SVG
+                const iconPath = app.icon || app.iconPath;
+                div.innerHTML = `<svg style="width:16px; height:16px; fill:${app.color || '#ccc'}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`;
+                
+                // 🖱️ 绑定点击事件
+                div.onclick = () => this.toggleApp(id);
+                
+                container.appendChild(div);
+            }
         });
     }
 }
