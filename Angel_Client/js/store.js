@@ -49,6 +49,30 @@ class Store {
         }
     }
 
+    // 🆕 动态版本检查：计算当前配置的指纹
+    checkVersion(metadataMap) {
+        // 生成指纹：所有 App ID 排序后的字符串
+        const currentFingerprint = Object.keys(metadataMap).sort().join('|');
+        const savedFingerprint = localStorage.getItem('seraphim_fingerprint');
+
+        if (savedFingerprint !== currentFingerprint) {
+            console.log(`[Store] 检测到应用结构变更 (${savedFingerprint} -> ${currentFingerprint})，执行智能清理...`);
+            
+            // 策略：保留位置信息，重置打开状态 (防止新旧逻辑冲突导致卡死)
+            Object.keys(this.apps).forEach(id => {
+                if (this.apps[id]) {
+                    this.apps[id].isOpen = false; // 🔒 强制关闭所有窗口
+                    this.apps[id].isMinimized = false;
+                    // 如果 ID 已经不存在于新配置中，prune 方法稍后会处理
+                }
+            });
+            
+            // 更新指纹
+            localStorage.setItem('seraphim_fingerprint', currentFingerprint);
+            this.save();
+        }
+    }
+
     save() {
         // =================================
         //  🎉 保存 (无参数)

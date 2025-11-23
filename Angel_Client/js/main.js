@@ -11,6 +11,8 @@ import './apps/intelligence.js'; // 🧠 情报应用
 import './apps/task_manager.js'; // 📊 任务管理器
 import './apps/context_menu.js'; // 🖱️ 右键菜单
 import './apps/angel.js'; // 👼 小天使应用
+import './apps/traffic.js'; // 📡 流量监控
+import './apps/billing.js'; // 💰 账单助手
 
 function setupBusinessLogic() {
     // =================================
@@ -32,19 +34,25 @@ function setupBusinessLogic() {
     // 监听网络统计数据更新 (上传/下载速度, 费用)
     bus.on('net:stats', (stats) => {
         // 辅助函数：安全更新 DOM 文本
-        const update = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; }; // 🛠️ 辅助更新函数
+        const update = (id, val) => { 
+            // 尝试在多个可能的地方更新，因为现在有独立的APP窗口
+            const els = document.querySelectorAll(`#${id}`);
+            els.forEach(el => el.innerText = val);
+        }; 
         update('tx-stat', stats.net.up);    // ⬆️ 更新上传速度
         update('rx-stat', stats.net.down);  // ⬇️ 更新下载速度
         update('ai-cost', stats.grand_total); // 💰 更新总费用
         update('pop-net', stats.net.cost);    // 💸 更新弹窗里的流量费
         update('pop-total', stats.grand_total); // 💵 更新弹窗里的总费用
 
-        // 更新账单详情列表
-        const mb = document.getElementById('pop-models'); // 🧾 账单详情容器
-        if (mb && stats.ai.details.length) {
-            // 将详情数组转换为 HTML 字符串并插入
-            mb.innerHTML = stats.ai.details.map(t => `<div class="bill-row bill-sub"><span>${t.split(': ')[0]}</span><span>${t.split(': ')[1]}</span></div>`).join(''); // 📝 生成账单HTML
-        }
+        // 更新账单详情列表 (支持多个实例)
+        const mbs = document.querySelectorAll('#pop-models'); // 🧾 账单详情容器
+        mbs.forEach(mb => {
+            if (stats.ai.details.length) {
+                // 将详情数组转换为 HTML 字符串并插入
+                mb.innerHTML = stats.ai.details.map(t => `<div class="bill-row bill-sub"><span>${t.split(': ')[0]}</span><span>${t.split(': ')[1]}</span></div>`).join(''); // 📝 生成账单HTML
+            }
+        });
     });
 
     // 监听实时画面帧更新
@@ -89,20 +97,34 @@ window.onload = () => {
 
     // 注入应用元数据 (解耦名称和配置)
     // 使用 Promise.all 确保所有元数据都加载完成后，再初始化窗口管理器
-    // 这样可以避免“先渲染了没有名字的图标，然后再更新名字”导致的闪烁或显示错误
     Promise.all([
-        import('./apps/manual.js').then(m => store.setAppMetadata('win-manual', m.config)), // 📖 加载说明书配置
-        import('./apps/browser.js').then(m => store.setAppMetadata('win-angel', m.config)), // 🌍 加载浏览器配置
-        import('./apps/intelligence.js').then(m => store.setAppMetadata('win-intel', m.config)), // 🧠 加载情报配置
-        import('./apps/settings.js').then(m => store.setAppMetadata('win-settings', m.config)), // ⚙️ 加载设置配置
-        import('./apps/task_manager.js').then(m => store.setAppMetadata('win-taskmgr', m.config)), // 📊 加载任务管理器配置
-        import('./apps/angel.js').then(m => store.setAppMetadata('win-companion', m.config)) // 👼 加载小天使配置
-    ]).then(() => {
+        import('./apps/manual.js').then(m => ({id: 'win-manual', config: m.config})),
+        import('./apps/browser.js').then(m => ({id: 'win-angel', config: m.config})),
+        import('./apps/intelligence.js').then(m => ({id: 'win-intel', config: m.config})),
+        import('./apps/settings.js').then(m => ({id: 'win-settings', config: m.config})),
+        import('./apps/task_manager.js').then(m => ({id: 'win-taskmgr', config: m.config})),
+        import('./apps/angel.js').then(m => ({id: 'win-companion', config: m.config})),
+        import('./apps/traffic.js').then(m => ({id: 'win-traffic', config: m.config})),
+        import('./apps/billing.js').then(m => ({id: 'win-billing', config: m.config}))
+    ]).then((modules) => {
         console.log("应用元数据注入完成，启动窗口管理器..."); // 📝 日志记录
         
-        // 清理僵尸数据 (删除那些在 store 中存在但没有被 setAppMetadata 注册的 ID)
-        const registeredIds = ['win-manual', 'win-angel', 'win-intel', 'win-settings', 'win-taskmgr', 'win-companion']; // 📋 已注册的应用ID列表
-        store.prune(registeredIds); // 🧹 清理无效数据
+        // 1. 收集所有配置
+        const metadataMap = {};
+        modules.forEach(({id, config}) => {
+            metadataMap[id] = config;
+        });
+
+        // 2. 执行动态版本检查 (在注入之前)
+        store.checkVersion(metadataMap);
+
+        // 3. 注入元数据
+        modules.forEach(({id, config}) => {
+            store.setAppMetadata(id, config);
+        });
+
+        // 4. 清理僵尸数据
+        store.prune(modules.map(m => m.id));
 
         wm.init();    // 🚀 启动窗口管理器 (此时 store 中已经有了名字)
         setupBusinessLogic(); // 🔗 绑定业务逻辑

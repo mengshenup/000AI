@@ -349,24 +349,41 @@ body {
     bottom: 0; /* 📍 底部对齐 */
     left: 0; /* 📍 左侧对齐 */
     width: 100%; /* 📏 宽度占满 */
-    height: 40px; /* 📏 任务栏高度 */
-    background: rgba(255, 255, 255, 0.8); /* 🌫️ 半透明背景 */
-    -webkit-backdrop-filter: blur(10px); /* 🍎 Safari 兼容 */
-    backdrop-filter: blur(10px); /* 🌫️ 毛玻璃效果 */
+    height: 48px; /* 📏 增加高度 */
+    background: rgba(20, 20, 30, 0.85); /* 🌑 深色半透明背景 */
+    -webkit-backdrop-filter: blur(15px); /* 🍎 Safari 兼容 */
+    backdrop-filter: blur(15px); /* 🌫️ 毛玻璃效果 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
     justify-content: space-between; /* ↔️ 两端对齐 */
     padding: 0 15px; /* 📏 内边距 */
     z-index: 1000; /* 📚 确保任务栏永远在最上面 */
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* 📏 顶部微光边框 */
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5); /* 🌑 阴影 */
 }
 
 .start-btn {
     font-weight: bold; /* 🔤 字体加粗 */
-    color: var(--primary-color); /* 🔵 文字颜色 */
+    color: #fff; /* ⚪ 白色文字 */
     cursor: pointer; /* 👆 鼠标变成手型 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
-    gap: 5px; /* 📏 元素间距 */
+    gap: 8px; /* 📏 元素间距 */
+    background: linear-gradient(135deg, #6c5ce7, #a29bfe); /* 🌈 渐变背景 */
+    padding: 6px 16px; /* 📏 内边距 */
+    border-radius: 20px; /* 📏 圆角 */
+    box-shadow: 0 2px 10px rgba(108, 92, 231, 0.4); /* 🌑 阴影 */
+    transition: transform 0.1s, box-shadow 0.2s; /* 🎬 动画 */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2); /* 🌑 文字阴影 */
+}
+
+.start-btn:hover {
+    transform: scale(1.05); /* 🚀 悬停放大 */
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.6); /* ✨ 悬停发光 */
+}
+
+.start-btn:active {
+    transform: scale(0.95); /* 📉 点击缩小 */
 }
 
 /* 📋 任务栏应用列表 */
@@ -438,6 +455,17 @@ body {
 #win-settings {
     width: 500px; /* 📏 宽度 */
     height: 400px; /* 📏 高度 */
+}
+
+#win-companion {
+    width: 300px; /* 📏 宽度 */
+    height: 400px; /* 📏 高度 */
+}
+
+#win-traffic, #win-billing {
+    width: 300px;
+    height: auto;
+    min-height: 200px;
 }
 
 /* 

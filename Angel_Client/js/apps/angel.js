@@ -22,7 +22,7 @@ export const config = {
     color: '#ff7675',
     pos: { x: window.innerWidth - 320, y: 100 }, // 💖 默认出生在屏幕右侧，不挡视线
     winPos: { x: window.innerWidth - 320, y: 100 },
-    isOpen: false, // 💖 默认关闭小天使窗口
+    isOpen: true, // 💖 默认打开小天使窗口
     openMsg: "Seraphim 已上线，随时待命！✨",
     // 💖 这是一个特殊的“透明”窗口，我们通过 CSS 覆盖默认样式
     content: `
@@ -172,7 +172,10 @@ export class AngelApp {
 
         // 创建渲染器
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // alpha: true 允许背景透明
-        this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+        // 确保容器有尺寸
+        const width = this.container.clientWidth || 300;
+        const height = this.container.clientHeight || 400;
+        this.renderer.setSize(width, height);
         this.container.appendChild(this.renderer.domElement);
 
         // 添加灯光

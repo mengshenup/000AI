@@ -65,33 +65,6 @@
             // ================================= -->
         </div>
 
-        <div id="billing-popover">
-            <!-- =================================
-            //  🎉 账单小助手 (Billing Popover)
-            //
-            //  🎨 代码用途：
-            //     悬浮显示 AI 服务的实时费用估算和模型调用详情。
-            //
-            //  💡 易懂解释：
-            //     你的贴心小账本！帮你盯着每一分钱花在哪里，虽然是估算的，但也很有参考价值哦！💰
-            //
-            //  ⚠️ 警告：
-            //     这里的数据是前端估算的，仅供参考，实际扣费要看服务端的账单哦！
-            // ================================= -->
-            <div class="bill-row bill-total"> <!-- 💖 账单总计行容器 -->
-                <span>本月总消费</span> <!-- 💖 显示标题文本 -->
-                <span id="pop-total">¥0.00</span> <!-- 💖 显示总金额的数字 -->
-            </div>
-            <div class="bill-row"> <!-- 💖 网络流量费行容器 -->
-                <span>网络流量费</span> <!-- 💖 显示标题文本 -->
-                <span id="pop-net">¥0.00</span> <!-- 💖 显示流量费用的数字 -->
-            </div>
-            <div style="margin-top:10px; font-weight:bold; color:#444;">模型调用详情</div> <!-- 💖 详情标题，使用内联样式设置间距和字体 -->
-            <div id="pop-models" style="margin-top:5px; max-height:100px; overflow-y:auto;"> <!-- 💖 模型详情列表容器，设置最大高度和滚动条 -->
-                <!-- 💖 详情内容将由 JS 动态填充 -->
-            </div>
-        </div>
-
     </div> <!-- End of desktop -->
 
     <div id="taskbar">
