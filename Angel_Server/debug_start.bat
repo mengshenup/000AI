@@ -33,6 +33,11 @@ echo [完成] 端口清理完毕。
 :: 4. 启动调试脚本
 echo [启动] 正在启动调试器 (debug_run.py)...
 echo --------------------------------------------------------
+
+:: 打印当前 BAT 文件的 PID (通过 PowerShell 获取父进程 ID)
+for /f "usebackq tokens=*" %%i in (`powershell -command "(Get-CimInstance Win32_Process -Filter \"ProcessId = $PID\").ParentProcessId"`) do set BAT_PID=%%i
+echo [DEBUG] 当前 BAT 脚本 (debug_start.bat) 的 PID: %BAT_PID%
+
 python debug_run.py
 
 :: 5. 退出处理

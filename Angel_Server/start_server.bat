@@ -36,6 +36,10 @@ echo [信息] 后端运行在: http://localhost:8000
 echo [状态] 热更新已开启 (支持修改代码自动重启)
 echo.
 
+:: 打印当前 BAT 文件的 PID (通过 PowerShell 获取父进程 ID)
+for /f "usebackq tokens=*" %%i in (`powershell -command "(Get-CimInstance Win32_Process -Filter \"ProcessId = $PID\").ParentProcessId"`) do set BAT_PID=%%i
+echo [DEBUG] 当前 BAT 脚本 (start_server.bat) 的 PID: %BAT_PID%
+
 :: 🟢 注意：这里改为运行 run.py
 python run.py
 

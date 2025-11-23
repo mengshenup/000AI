@@ -36,6 +36,10 @@ echo.
 echo [注意] 修改前端代码后，只需在浏览器按 F5 刷新，无需重启此窗口。
 echo.
 
+:: 打印当前 BAT 文件的 PID (通过 PowerShell 获取父进程 ID)
+for /f "usebackq tokens=*" %%i in (`powershell -command "(Get-CimInstance Win32_Process -Filter \"ProcessId = $PID\").ParentProcessId"`) do set BAT_PID=%%i
+echo [DEBUG] 当前 BAT 脚本 (start_client.bat) 的 PID: %BAT_PID%
+
 :: 使用 Python 内置 HTTP 服务器，如果报错跳转到错误处理
 python -m http.server 5500
 if %errorlevel% neq 0 goto :error
