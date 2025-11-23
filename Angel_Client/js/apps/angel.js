@@ -39,6 +39,11 @@ export const config = {
                     <button id="btn-voice" class="chat-btn" title="语音输入">
                         <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
                     </button>
+                    <!-- 💖 新增：静音按钮 -->
+                    <button id="btn-mute" class="chat-btn" title="开启/关闭语音">
+                        <svg id="icon-sound-on" viewBox="0 0 24 24" style="display:block"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+                        <svg id="icon-sound-off" viewBox="0 0 24 24" style="display:none"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                    </button>
                     <button id="btn-send" class="chat-btn" title="发送">
                         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                     </button>
@@ -132,6 +137,7 @@ export class AngelApp {
         this.wR = null; // 💖 右翅膀
         this.state = { r: false, sx: 0, ir: 0 }; // 💖 交互状态：r=旋转中, sx=起始X坐标, ir=初始旋转角度
         this.isRunning = false; // 💖 运行状态标志
+        this.isMuted = false; // 💖 默认开启语音
 
         // 绑定 animate
         this.animate = this.animate.bind(this);
@@ -438,6 +444,7 @@ export class AngelApp {
         const input = document.getElementById('angel-input');
         const btnSend = document.getElementById('btn-send');
         const btnVoice = document.getElementById('btn-voice');
+        const btnMute = document.getElementById('btn-mute'); // 💖 获取静音按钮
 
         if (!input || !btnSend || !btnVoice) return;
 
@@ -451,6 +458,56 @@ export class AngelApp {
 
         // 语音按钮点击
         btnVoice.addEventListener('click', () => this.toggleVoiceRecognition());
+
+        // 静音按钮点击
+        if (btnMute) {
+            btnMute.addEventListener('click', () => this.toggleMute());
+        }
+    }
+
+    // =================================
+    //  🎉 切换静音状态
+    // =================================
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        const iconOn = document.getElementById('icon-sound-on');
+        const iconOff = document.getElementById('icon-sound-off');
+        
+        if (this.isMuted) {
+            if (iconOn) iconOn.style.display = 'none';
+            if (iconOff) iconOff.style.display = 'block';
+            window.speechSynthesis.cancel(); // 立即停止发声
+        } else {
+            if (iconOn) iconOn.style.display = 'block';
+            if (iconOff) iconOff.style.display = 'none';
+            this.speak("语音功能已开启");
+        }
+    }
+
+    // =================================
+    //  🎉 文字转语音 (TTS)
+    // =================================
+    speak(text) {
+        if (this.isMuted || !window.speechSynthesis) return;
+
+        // 停止之前的语音
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-CN';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.2; // 稍微高一点，像女声
+
+        // 尝试获取中文语音包
+        const voices = window.speechSynthesis.getVoices();
+        // 优先找包含 "Google" 或 "Microsoft" 的中文语音，通常质量好一点
+        const zhVoice = voices.find(v => v.lang.includes('zh') && (v.name.includes('Google') || v.name.includes('Microsoft') || v.name.includes('Xiaoxiao'))) || voices.find(v => v.lang.includes('zh'));
+        
+        if (zhVoice) {
+            utterance.voice = zhVoice;
+        }
+
+        window.speechSynthesis.speak(utterance);
     }
 
     // =================================
@@ -585,6 +642,9 @@ export class AngelApp {
             b.classList.add('show'); // 💖 添加显示类（触发 CSS 动画）
             if (this.timer) this.ctx.clearTimeout(this.timer); // 💖 清除上一次的定时器
             this.timer = this.ctx.setTimeout(() => b.classList.remove('show'), 4000); // 💖 4秒后自动隐藏
+            
+            // 💖 播放语音
+            this.speak(text);
         }
     }
 
