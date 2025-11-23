@@ -16,7 +16,7 @@ export const config = {
     isOpen: false, // 默认关闭
     openMsg: "",
     content: `
-        <div style="padding: 15px; background: rgba(45, 52, 54, 0.95); color: #dfe6e9; border-radius: 8px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column;">
+        <div style="padding: 15px; background: rgba(45, 52, 54, 0.95); color: #dfe6e9; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column;">
             <div style="font-size: 12px; color: #fdcb6e; margin-bottom: 10px; font-weight: bold;">BILLING DETAILS</div>
             
             <div style="flex: 1; overflow-y: auto; margin-bottom: 10px;">

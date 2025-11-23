@@ -117,7 +117,7 @@ body {
 */
 .speech-bubble {
     position: absolute; /* 📍 绝对定位 */
-    top: 20px; /* 📍 距离顶部固定距离，确保在头顶 */
+    top: 10px; /* 📍 距离顶部固定距离，确保在头顶 */
     left: 50%; /* 📍 水平居中 */
     transform: translateX(-50%); /* 📍 修正居中 */
     background: white; /* ⚪ 白色背景 */
@@ -377,7 +377,7 @@ body {
     left: 0; /* 📍 左侧对齐 */
     width: 100%; /* 📏 宽度占满 */
     height: 48px; /* 📏 高度 */
-    background: rgba(20, 20, 30, 0.85); /* 🌑 深色半透明背景 */
+    background: rgba(40, 40, 50, 0.7); /* 🌑 深色半透明背景 (调亮) */
     -webkit-backdrop-filter: blur(15px); /* 🍎 Safari 兼容 */
     backdrop-filter: blur(15px); /* 🌫️ 毛玻璃效果 */
     display: grid; /* 📦 网格布局 */
@@ -701,6 +701,7 @@ body {
     text-align: center;
     min-width: 100px;
     display: none; /* 默认隐藏 */
+    -webkit-backdrop-filter: blur(5px);
     backdrop-filter: blur(5px);
 }
 
@@ -710,7 +711,7 @@ body {
 // =================================
 */
 .status-capsule {
-    background: rgba(255, 255, 255, 0.5); /* 浅灰色半透明背景 */
+    background: rgba(255, 255, 255, 0.8); /* 浅灰色半透明背景 (调亮) */
     padding: 4px 10px;
     border-radius: 12px; /* 胶囊圆角 */
     display: flex;
@@ -718,7 +719,7 @@ body {
     gap: 5px;
     font-family: 'Segoe UI', monospace;
     font-size: 11px;
-    color: #333;
+    color: #000; /* 加深文字颜色 */
     cursor: pointer;
     transition: background 0.2s;
     border: 1px solid rgba(255, 255, 255, 0.3);
@@ -747,10 +748,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px;
+    padding: 8px; /* 紧凑型内边距 */
     background: rgba(255, 255, 255, 0.6);
     border-radius: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 4px; /* 紧凑型间距 */
     transition: all 0.2s;
     border: 1px solid rgba(255,255,255,0.5);
 }
@@ -784,14 +785,14 @@ body {
 }
 
 .task-name {
-    font-weight: 600;
-    color: #333;
+    font-weight: 700; /* 加粗 */
+    color: #000; /* 纯黑文字 */
     font-size: 14px;
 }
 
 .task-status {
     font-size: 11px;
-    color: #888;
+    color: #444; /* 加深颜色 */
     display: flex;
     align-items: center;
     gap: 4px;

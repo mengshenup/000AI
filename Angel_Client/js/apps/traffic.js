@@ -16,7 +16,7 @@ export const config = {
     isOpen: false, // 默认关闭，点击胶囊才显示
     openMsg: "", // 不播放语音
     content: `
-        <div style="padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%;">
+        <div style="padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%;">
             <div style="font-size: 12px; color: #00cec9; margin-bottom: 10px; font-weight: bold;">NETWORK MONITOR</div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                 <span style="color: #aaa; font-size: 11px;">UPLOAD</span>

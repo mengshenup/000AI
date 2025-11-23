@@ -202,17 +202,22 @@ export class WindowManager {
         //     如果 localStorage 中的 URL 无效，背景可能会变白。
         // =================================
 
-        // 💾 尝试获取保存的壁纸，如果没有则使用默认值
+        // 💾 尝试获取保存的壁纸
         let savedWp = localStorage.getItem('seraphim_wallpaper');
+        
+        // 🛡️ 如果没有保存过，使用默认壁纸 (注意：DEFAULT_WALLPAPER 是纯路径)
         if (!savedWp) {
-            savedWp = `url('${DEFAULT_WALLPAPER}')`;
-        } else if (!savedWp.startsWith('url')) {
-            // 如果保存的只是路径，补全 url()
-            savedWp = `url('${savedWp}')`;
+            savedWp = DEFAULT_WALLPAPER;
+        }
+
+        // 🎨 统一格式化：确保是 url(...) 格式
+        let bgStyle = savedWp.trim();
+        if (!bgStyle.startsWith('url(')) {
+            bgStyle = `url('${bgStyle}')`;
         }
         
         // 🎨 设置 CSS 变量 --bg-wallpaper，这会立即改变页面背景
-        document.documentElement.style.setProperty('--bg-wallpaper', savedWp);
+        document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
     }
 
     renderDesktopIcons() {
@@ -925,8 +930,18 @@ export class WindowManager {
         //     图片加载需要时间，可能会有短暂的空白或延迟。
         // =================================
 
-        // 修复：如果 url 已经包含 url(...)，则不再包裹
-        const bgStyle = url.startsWith('url') ? url : `url('${url}')`;
+        // 🛡️ 容错处理：确保 url 是字符串
+        if (!url) return;
+        
+        // 🎨 统一格式化：确保是 url(...) 格式
+        // 如果传入的是纯路径 (如 assets/wp.jpg)，则包裹 url('')
+        // 如果传入的已经是 url(...)，则保持不变
+        let bgStyle = url.trim();
+        if (!bgStyle.startsWith('url(')) {
+            bgStyle = `url('${bgStyle}')`;
+        }
+
+        // 🎨 应用样式
         document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
         localStorage.setItem('seraphim_wallpaper', bgStyle); // 💾 保存完整的 url(...) 字符串
 

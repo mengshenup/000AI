@@ -39,8 +39,8 @@ export const config = {
                 box-shadow: none !important;
                 border: none !important;
                 overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */
-                backdrop-filter: none !important; /* 🚫 移除毛玻璃效果 */
                 -webkit-backdrop-filter: none !important;
+                backdrop-filter: none !important; /* 🚫 移除毛玻璃效果 */
             }
             #win-companion .title-bar {
                 display: none !important; /* 💖 隐藏标题栏，让它看起来像悬浮在桌面上 */
