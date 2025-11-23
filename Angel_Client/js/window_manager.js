@@ -38,6 +38,8 @@ export class WindowManager {
         this.zIndexCounter = 100;
         // 🆔 当前激活的窗口 ID
         this.activeWindowId = null;
+        // ⏳ 点击节流记录 (防止双击导致窗口闪烁)
+        this.lastClickTime = 0;
     }
 
     init() {
@@ -491,6 +493,14 @@ export class WindowManager {
         document.getElementById('taskbar-apps').addEventListener('click', (e) => {
             const target = e.target.closest('.task-app');
             if (target) {
+                // ⏳ 节流检查：防止快速点击导致窗口闪烁 (0.5秒冷却)
+                const now = Date.now();
+                if (now - this.lastClickTime < 500) {
+                    console.log("点击过快，已忽略");
+                    return;
+                }
+                this.lastClickTime = now;
+
                 const id = target.dataset.id;
                 this.toggleApp(id); // 🔄 切换应用状态
             }

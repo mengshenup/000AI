@@ -129,6 +129,19 @@ window.onload = () => {
         wm.init();    // 🚀 启动窗口管理器 (此时 store 中已经有了名字)
         setupBusinessLogic(); // 🔗 绑定业务逻辑
         net.connect(); // 🔌 连接服务器
+
+        // 🌟 启动系统级应用 (优先加载)
+        // 这些应用默认应该在后台或前台运行
+        const SYSTEM_APPS = ['win-companion', 'win-traffic', 'win-billing'];
+        SYSTEM_APPS.forEach(id => {
+            // 如果没有打开，则强制打开
+            // 注意：openApp 会检查是否已存在，不会重复创建
+            // 传递 false 表示不播放语音，避免启动时太吵
+            if (!store.apps[id]?.isOpen) {
+                wm.openApp(id, false);
+            }
+        });
+
     }).catch(err => {
         console.error("应用元数据加载失败:", err); // ❌ 错误日志
         // 即使失败也尝试启动，避免完全白屏
@@ -160,13 +173,6 @@ window.onload = () => {
     //         if (e.button === 0) wm.startDrag(e, angelEl, 'window'); // 复用 window 拖拽逻辑
     //     });
     // }
-
-    // === 账单开关 ===
-    document.getElementById('btn-billing')?.addEventListener('click', () => {
-        const el = document.getElementById('billing-popover'); // 🧾 账单弹窗
-        // 切换显示/隐藏
-        el.style.display = el.style.display === 'block' ? 'none' : 'block'; // 🔄 切换显示状态
-    });
 
     // (自定义壁纸按钮逻辑已移动到 apps/settings.js)
 };
