@@ -120,16 +120,21 @@ body {
     bottom: 140px; /* 📍 调整气泡位置，适应缩小后的小天使 (原280px) */
     right: 30px; /* 📍 距离右侧距离 (原50px) */
     background: white; /* ⚪ 白色背景 */
-    padding: 8px 12px; /* 📏 缩小内边距 */
-    border-radius: 10px; /* 📏 缩小圆角 */
+    padding: 10px 15px; /* 📏 增加内边距 */
+    border-radius: 12px; /* 📏 增加圆角 */
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* 🌑 阴影效果 */
-    font-size: 12px; /* 🔤 缩小字体 */
-    max-width: 150px; /* 📏 缩小最大宽度 */
+    font-size: 13px; /* 🔤 稍微增大字体 */
+    line-height: 1.4; /* 📏 增加行高 */
+    max-width: 220px; /* 📏 增加最大宽度 */
+    width: max-content; /* 📏 自适应宽度 */
+    min-width: 50px; /* 📏 最小宽度 */
     opacity: 0; /* 👻 默认隐藏 */
     transform: translateY(10px); /* 📍 默认向下偏移 */
     transition: all 0.3s ease; /* 🎬 动画过渡 */
     pointer-events: none; /* 🚫 气泡不阻挡鼠标点击 */
     z-index: 51; /* 📚 层级高于小天使 */
+    white-space: pre-wrap; /* 📝 保留换行 */
+    word-wrap: break-word; /* 📝 自动换行 */
 }
 
 /* 🗨️ 气泡的小尾巴 */
@@ -291,16 +296,27 @@ body {
 
 .win-controls {
     display: flex;
-    gap: 6px;
+    gap: 8px; /* 📏 增加按钮间距 */
+    z-index: 10; /* 📚 确保按钮在最上层，不被标题栏遮挡 */
+    position: relative; /* 📍 配合 z-index */
 }
 
 /* 🎮 窗口控制按钮 (红黄绿) */
 .win-btn {
-    width: 12px; /* 📏 按钮宽度 */
-    height: 12px; /* 📏 按钮高度 */
+    width: 14px; /* 📏 增大按钮宽度 */
+    height: 14px; /* 📏 增大按钮高度 */
     border-radius: 50%; /* ⭕ 圆形按钮 */
     border: none; /* 🚫 无边框 */
     cursor: pointer; /* 👆 鼠标变成手型 */
+    transition: transform 0.1s; /* 🎬 增加点击反馈 */
+}
+
+.win-btn:hover {
+    transform: scale(1.1); /* 🚀 悬停放大 */
+}
+
+.win-btn:active {
+    transform: scale(0.9); /* 📉 点击缩小 */
 }
 
 .close-btn {

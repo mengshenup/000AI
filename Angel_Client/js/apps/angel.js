@@ -20,6 +20,8 @@ export const config = {
     description: '智能伴侣',
     icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z',
     color: '#ff7675',
+    showDesktopIcon: false, // 💖 不显示桌面图标
+    showTaskbarIcon: false, // 💖 不显示任务栏图标
     pos: { x: window.innerWidth - 320, y: 100 }, // 💖 默认出生在屏幕右侧，不挡视线
     winPos: { x: window.innerWidth - 320, y: 100 },
     isOpen: true, // 💖 默认打开小天使窗口
@@ -28,7 +30,7 @@ export const config = {
     content: `
         <div id="angel-container" style="width:100%; height:100%; position:relative;">
             <div id="angel-scene" style="width:100%; height:100%;"></div>
-            <div id="angel-speech" class="speech-bubble" style="position:absolute; top:-60px; left:50%; transform:translateX(-50%); width:200px; pointer-events:none; opacity:0; transition:opacity 0.3s;">...</div>
+            <div id="angel-speech" class="speech-bubble" style="position:absolute; top:-60px; left:50%; transform:translateX(-50%); pointer-events:none; opacity:0; transition:opacity 0.3s;">...</div>
         </div>
         <style>
             /* 💖 特殊样式：让这个窗口背景透明，去掉边框和阴影 */

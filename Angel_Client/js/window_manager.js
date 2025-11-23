@@ -577,24 +577,28 @@ export class WindowManager {
         // 📊 任务栏区域的点击事件委托
         // 使用 mousedown 而不是 click，以避免与其他事件冲突，并提高响应速度
         // 但为了兼容性，还是保留 click，确保逻辑正确
+        // 💖 修复：移除此处的事件监听，因为 document 上的全局委托已经处理了任务栏点击 (case 4)
+        // 重复监听会导致 toggleApp 被调用两次，从而导致“最小化后立即恢复”的 bug
+        /*
         document.getElementById('taskbar-apps').addEventListener('click', (e) => {
             const target = e.target.closest('.task-app');
             if (target) {
                 // ⏳ 节流检查：防止快速点击导致窗口闪烁 (0.1秒冷却)
                 // 💖 移除节流，确保单击响应灵敏
-                /*
-                const now = Date.now();
-                if (now - this.lastClickTime < 100) {
-                    // console.log("点击过快，已忽略");
-                    return;
-                }
-                this.lastClickTime = now;
-                */
+                
+                // const now = Date.now();
+                // if (now - this.lastClickTime < 100) {
+                //     // console.log("点击过快，已忽略");
+                //     return;
+                // }
+                // this.lastClickTime = now;
+                
 
                 const id = target.dataset.id;
                 this.toggleApp(id); // 🔄 切换应用状态
             }
         });
+        */
     }
 
     handleMouseMove(e) {
