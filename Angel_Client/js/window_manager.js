@@ -816,6 +816,12 @@ export class WindowManager {
         const isOpen = app ? app.isOpen : (win && win.classList.contains('open'));
         const isMinimized = app ? app.isMinimized : (win && win.classList.contains('minimized'));
 
+        // 💖 修复逻辑：
+        // 1. 如果没打开 -> 打开
+        // 2. 如果已最小化 -> 恢复
+        // 3. 如果已打开且在最前面 -> 最小化
+        // 4. 如果已打开但被挡住 -> 置顶
+
         if (!isOpen) {
             // 1. 如果没打开，则打开
             this.openApp(id);
@@ -826,6 +832,14 @@ export class WindowManager {
         } else {
             // 3. 如果已打开且未最小化
             // 检查是否是当前最顶层窗口
+            // ⚠️ 注意：activeWindowId 可能不准确，或者被其他操作干扰
+            // 这里增加一个判断：如果点击的是当前激活窗口，则最小化；否则置顶
+            
+            // 获取当前最高层级的窗口ID (简单判断 zIndex)
+            const currentZ = parseInt(win.style.zIndex || 0);
+            // 简单的启发式判断：如果它的 zIndex 是最大的，那它就是激活的
+            // 但为了稳健，我们还是依赖 activeWindowId，并确保 bringToFront 正确更新它
+            
             if (this.activeWindowId === id) {
                 this.minimizeApp(id);
             } else {
@@ -847,15 +861,15 @@ export class WindowManager {
         //  ⚠️ 警告：
         //     zIndexCounter 会无限增加，理论上可能溢出，但实际上很难达到 Number.MAX_SAFE_INTEGER。
         // =================================
-
+        
         const win = document.getElementById(id);
         if (win) {
-            this.zIndexCounter++; // 🔢 计数器加一
-            win.style.zIndex = this.zIndexCounter; // 📚 设置层级
-            store.updateApp(id, { zIndex: this.zIndexCounter }); // 💾 保存状态
+            this.zIndexCounter++;
+            win.style.zIndex = this.zIndexCounter;
+            this.activeWindowId = id; // 💖 确保更新激活窗口 ID
             
-            // 记录当前激活窗口
-            this.activeWindowId = id;
+            // 同时更新 store 中的 zIndex (可选，用于持久化层级)
+            store.updateApp(id, { zIndex: this.zIndexCounter });
             
             // 更新任务栏高亮
             this.updateTaskbar();
