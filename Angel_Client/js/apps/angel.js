@@ -31,6 +31,19 @@ export const config = {
         <div id="angel-container" style="width:100%; height:100%; position:relative;">
             <div id="angel-scene" style="width:100%; height:100%;"></div>
             <div id="angel-speech" class="speech-bubble">...</div>
+            
+            <!-- 💖 新增：聊天交互框 -->
+            <div id="angel-chat" class="angel-chat-box">
+                <div class="chat-input-wrapper">
+                    <input type="text" id="angel-input" class="angel-input" placeholder="输入指令或聊天..." autocomplete="off">
+                    <button id="btn-voice" class="chat-btn" title="语音输入">
+                        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                    </button>
+                    <button id="btn-send" class="chat-btn" title="发送">
+                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
+            </div>
         </div>
         <style>
             /* 💖 特殊样式：让这个窗口背景透明，去掉边框和阴影 */
@@ -404,12 +417,136 @@ export class AngelApp {
 
         this.container.addEventListener('mousedown', (e) => {
             if (e.button === 0) { // 💖 左键点击
-                this.chat(); // 💖 触发对话
+                // 🛑 如果点击的是聊天框内部，不要触发 toggleChat
+                if (e.target.closest('#angel-chat')) return;
+                
+                this.toggleChat(); // 💖 切换聊天框显示
                 // 拖拽逻辑由 WindowManager 全局接管，无需手动调用
             } else if (e.button === 2) { // 💖 右键点击
                 this.handleRightClick(e); // 💖 处理旋转逻辑
             }
         });
+
+        // 💖 绑定聊天框事件
+        this.bindChatEvents();
+    }
+
+    // =================================
+    //  🎉 绑定聊天事件
+    // =================================
+    bindChatEvents() {
+        const input = document.getElementById('angel-input');
+        const btnSend = document.getElementById('btn-send');
+        const btnVoice = document.getElementById('btn-voice');
+
+        if (!input || !btnSend || !btnVoice) return;
+
+        // 发送按钮点击
+        btnSend.addEventListener('click', () => this.handleSend());
+
+        // 回车键发送
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') this.handleSend();
+        });
+
+        // 语音按钮点击
+        btnVoice.addEventListener('click', () => this.toggleVoiceRecognition());
+    }
+
+    // =================================
+    //  🎉 切换聊天框
+    // =================================
+    toggleChat() {
+        const chatBox = document.getElementById('angel-chat');
+        const input = document.getElementById('angel-input');
+        
+        if (chatBox) {
+            chatBox.classList.toggle('active');
+            if (chatBox.classList.contains('active')) {
+                this.chat(); // 💖 打开时也说句话
+                setTimeout(() => input && input.focus(), 100); // 💖 自动聚焦
+            }
+        }
+    }
+
+    // =================================
+    //  🎉 处理发送逻辑
+    // =================================
+    handleSend() {
+        const input = document.getElementById('angel-input');
+        if (!input) return;
+
+        const text = input.value.trim();
+        if (!text) return;
+
+        // 💖 处理指令
+        if (text === '重置' || text.toLowerCase() === 'reset') {
+            this.showBubble("正在重置系统... 🔄");
+            setTimeout(() => {
+                localStorage.clear(); // 🧹 清空缓存
+                location.reload(); // 🔄 刷新页面
+            }, 1000);
+            input.value = '';
+            return;
+        }
+
+        // 💖 普通对话 (暂时只回显)
+        this.showBubble(`收到：${text} (功能开发中...)`);
+        input.value = '';
+    }
+
+    // =================================
+    //  🎉 语音识别功能
+    // =================================
+    toggleVoiceRecognition() {
+        const btnVoice = document.getElementById('btn-voice');
+        const input = document.getElementById('angel-input');
+
+        // 检查浏览器支持
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            this.showBubble("抱歉，你的浏览器不支持语音识别 🎤");
+            return;
+        }
+
+        if (this.isRecording) {
+            // 停止录音
+            if (this.recognition) this.recognition.stop();
+            return;
+        }
+
+        // 开始录音
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = new SpeechRecognition();
+        this.recognition.lang = 'zh-CN'; // 设置语言为中文
+        this.recognition.interimResults = false; // 不需要临时结果
+        this.recognition.maxAlternatives = 1;
+
+        this.recognition.onstart = () => {
+            this.isRecording = true;
+            btnVoice.classList.add('recording');
+            this.showBubble("正在听你说... 👂");
+        };
+
+        this.recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (input) {
+                input.value = transcript;
+                // 可选：自动发送
+                // this.handleSend(); 
+            }
+        };
+
+        this.recognition.onerror = (event) => {
+            console.error('语音识别错误:', event.error);
+            this.showBubble("没听清，请再说一遍 🙉");
+        };
+
+        this.recognition.onend = () => {
+            this.isRecording = false;
+            btnVoice.classList.remove('recording');
+        };
+
+        this.recognition.start();
     }
 
     // =================================
