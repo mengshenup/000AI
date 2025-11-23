@@ -5,7 +5,7 @@ import json
 import io
 from PIL import Image
 from playwright.async_api import async_playwright, Page
-from playwright_stealth import stealth_async
+from playwright_stealth import Stealth
 from config import USER_DATA_DIR, VIEWPORT, TARGET_SEARCH_URL
 from services.billing import global_billing
 
@@ -95,7 +95,7 @@ class AngelBrowser:
         # 🕵️ 启用 Stealth 模式 (深度伪装)
         # 抹除 webdriver 属性，伪造插件列表、语言、权限等指纹
         # 注意：虽然只有一行代码，但它内部封装了十几种反爬虫绕过策略 (Evasions)
-        await stealth_async(self.page)
+        await Stealth().apply_stealth_async(self.page)
 
         # 🛡️ [额外增强] 手动注入 JS 补丁，确保万无一失 (双重保险)
         # 针对某些极高防御的网站，显式覆盖关键指纹，防止 stealth 库失效
