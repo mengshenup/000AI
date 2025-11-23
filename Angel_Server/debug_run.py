@@ -1,0 +1,53 @@
+import uvicorn
+import sys
+import functools
+import traceback
+import asyncio
+
+# =================================
+#  🕵️‍♂️ 调试专用启动器 (Monkey Patch 模式)
+#
+#  🎨 代码用途：
+#     在不修改源码的情况下，动态注入调试逻辑，捕获异常并打印详细堆栈。
+# =================================
+
+# 1. 导入目标模块
+# 注意：必须在导入 main:app 之前进行 Patch
+from routers import websocket_handler
+
+# 2. 定义装饰器/Wrapper
+def debug_send_packet_wrapper(original_func):
+    @functools.wraps(original_func)
+    async def wrapper(*args, **kwargs):
+        try:
+            # 调用原始函数
+            return await original_func(*args, **kwargs)
+        except Exception as e:
+            # 捕获异常并打印
+            print(f"\n[DEBUG] 🚨 send_packet 捕获到异常:")
+            print(f"  Type: {type(e).__name__}")
+            print(f"  Message: {str(e)}")
+            # 打印堆栈，帮助定位是谁调用的
+            traceback.print_exc()
+            # 保持原有逻辑：吞掉异常，不让服务器崩溃
+            pass 
+    return wrapper
+
+# 3. 应用 Patch (偷梁换柱)
+print("💉 正在注入调试探针...")
+original_send_packet = websocket_handler.send_packet
+websocket_handler.send_packet = debug_send_packet_wrapper(original_send_packet)
+print("✅ send_packet 已被调试版替换")
+
+# 4. 启动服务器
+if __name__ == "__main__":
+    print("🚀 启动调试版服务器...")
+    # 注意：这里不能用 reload=True，因为 reload 会重新加载模块，导致 Patch 失效
+    # 如果需要调试，请手动重启此脚本
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False, 
+        workers=1
+    )

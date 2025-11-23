@@ -52,11 +52,8 @@ async def send_packet(ws: WebSocket, type_str: str, data: dict = None):
     try:
         # 📤 发送文本消息
         await ws.send_text(json_str)
-    except Exception as e:
-        # 🔇 忽略发送失败（通常是因为连接已断开）
-        # 在调试阶段打印错误有助于排查
-        print(f"⚠️ WS Send Error: {e}")
-        pass
+    except:
+        pass # 🔇 忽略发送失败（通常是因为连接已断开）
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
