@@ -109,6 +109,18 @@ class ProcessManager {
      * 应用通过这个 Context 申请资源，无需手动管理清理
      */
     getContext(appId) {
+        // ♻️ 生命周期管理：每次获取 Context 视为应用(重)启动
+        // 强制重置性能统计，确保新进程从零开始记录
+        this.stats.set(appId, { 
+            cpuTime: 0, 
+            lastActive: Date.now(), 
+            startTime: Date.now(),
+            longTasks: 0, 
+            longTaskTime: 0, 
+            logs: [] 
+        });
+        this._log(appId, 'SYS', '进程启动，性能统计已重置');
+
         // 如果是第一次来，先建个户头
         if (!this.queues.has(appId)) {
             this.queues.set(appId, {
@@ -264,9 +276,10 @@ class ProcessManager {
     _getQueue(appId) {
         let queue = this.queues.get(appId);
         if (!queue) {
-            // 如果队列不存在（可能已被 kill），返回一个临时对象防止报错
-            // 但不保存到 map 中，因为进程已经死了
-            return {
+            // ♻️ 自动复活机制：
+            // 如果队列不存在（已被 kill），但应用又尝试申请资源（说明是单例应用再次打开）
+            // 我们需要重建队列，否则资源将无法被追踪和清理（导致内存泄漏）
+            queue = {
                 intervals: new Set(),
                 timeouts: new Set(),
                 animations: new Set(),
@@ -274,6 +287,8 @@ class ProcessManager {
                 busListeners: [],
                 cleanups: []
             };
+            this.queues.set(appId, queue);
+            this._log(appId, 'INFO', '进程上下文已重建 (复活)');
         }
         return queue;
     }

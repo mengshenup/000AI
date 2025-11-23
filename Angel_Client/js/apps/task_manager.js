@@ -50,13 +50,18 @@ export class TaskManagerApp {
     // =================================
     constructor() {
         this.id = 'win-taskmgr'; // 💖 应用 ID
-        this.listContainer = null; // 💖 列表容器 DOM 元素，稍后获取
+        this.listContainer = null; // 💖 列表容器 DOM 元素
         this.updateInterval = null; // 💖 自动刷新定时器 ID
         this.ctx = pm.getContext(this.id); // 💖 获取进程上下文
-        this.selectedAppId = null; // 💖 当前选中的应用 ID (用于详情页)
+        this.selectedAppId = null; // 💖 当前选中的应用 ID
         
-        // 监听窗口就绪事件，替代 setTimeout
-        bus.on(`app:ready:${config.id}`, () => this.init()); // 💖 注册初始化回调
+        // 🚀 性能优化：DOM 缓存池
+        // Map<AppId, { el: HTMLElement, refs: Object }>
+        // 用于增量更新，避免每秒重建 DOM 导致 1000+ 进程时卡死
+        this.domCache = new Map();
+
+        // 监听窗口就绪事件
+        bus.on(`app:ready:${config.id}`, () => this.init());
         
         // 注册清理
         this.ctx.onCleanup(() => this.onClose());
@@ -76,146 +81,180 @@ export class TaskManagerApp {
     // =================================
     init() {
         this.listContainer = document.getElementById('task-list'); // 💖 获取列表容器 DOM
+        this.domCache.clear(); // 🧹 初始化时清空缓存，防止引用失效 DOM
         // 启动自动刷新
         this.onOpen(); // 💖 立即执行一次打开逻辑
     }
 
+    // ...existing code...
+
     // =================================
-    //  🎉 渲染列表 (无参数)
+    //  🎉 渲染列表 (高性能版)
     //
     //  🎨 代码用途：
-    //     读取 store 中的应用状态，动态生成并更新任务列表 DOM
+    //     使用增量更新策略渲染任务列表
     //
     //  💡 易懂解释：
-    //     把花名册上的名字一个个念出来，看看谁是绿灯（运行中），谁是灰灯（睡觉中）~ 🚦
-    //
-    //  ⚠️ 警告：
-    //     频繁操作 DOM，如果应用数量非常多可能会有性能压力。
+    //     不再每次把花名册撕了重写，而是只改动有变化的数据！
+    //     这样就算有 1000 个员工，也能瞬间更新状态。⚡
     // =================================
     render() {
-        if (!this.listContainer) this.listContainer = document.getElementById('task-list'); // 💖 再次尝试获取容器
-        if (!this.listContainer) return; // 💖 容器不存在则返回
+        if (!this.listContainer) this.listContainer = document.getElementById('task-list');
+        if (!this.listContainer) return;
 
-        // 💖 如果有选中的应用，渲染详情页
+        // 💖 如果有选中的应用，渲染详情页 (详情页结构简单，全量刷新无妨)
         if (this.selectedAppId) {
             this.renderDetails(this.selectedAppId);
             return;
         }
 
-        const apps = store.apps; // 💖 从全局状态中获取所有应用信息
-        this.listContainer.innerHTML = ''; // 💖 清空列表
+        // 🛡️ 视图状态检查：如果容器为空（刚打开）或包含详情页元素（刚返回），强制重置
+        // 这解决了“返回按钮失效”和“列表空白”的问题
+        if (this.listContainer.children.length === 0 || this.listContainer.querySelector('#btn-back')) {
+            this.listContainer.innerHTML = ''; // 清理可能存在的详情页
+            this.domCache.clear(); // 清空缓存，强制重建列表
+        }
 
-        // 💖 分组应用
-        const systemApps = [];
-        const userApps = [];
-        Object.entries(apps).forEach(([id, app]) => {
-            if (app.system) {
-                systemApps.push({ id, ...app });
-            } else {
-                userApps.push({ id, ...app });
-            }
+        const apps = store.apps;
+        const activeIds = new Set(); // 记录本次渲染存在的 ID
+
+        // 1. 准备数据列表 (合并系统和用户应用)
+        const allApps = [];
+        Object.entries(apps).forEach(([id, app]) => allApps.push({ id, ...app }));
+        
+        // 排序：系统应用在前，然后按 ID 排序
+        allApps.sort((a, b) => {
+            if (a.system !== b.system) return a.system ? -1 : 1;
+            return a.id.localeCompare(b.id);
         });
 
-        // 💖 辅助函数：生成列表项 HTML
-        const createItem = (app) => {
-            const statusColor = app.isOpen ? '#2ecc71' : '#b2bec3'; // 🟢 运行中 / ⚪ 已停止
-            const statusText = app.isOpen ? '运行中' : '已停止';
-            
-            // 📊 获取性能数据 (添加容错，防止旧版缓存导致崩溃)
-            let stats = { cpuTime: 0, startTime: Date.now(), longTasks: 0 };
-            let resCount = { total: 0 };
-            
-            if (pm) {
-                if (typeof pm.getAppStats === 'function') stats = pm.getAppStats(app.id);
-                if (typeof pm.getAppResourceCount === 'function') resCount = pm.getAppResourceCount(app.id);
-            }
-            
-            const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(1) : '0.0';
-            
-            // 💾 真实资源占用：显示持有的句柄数 (定时器+监听器)
-            const resUsage = app.isOpen ? resCount.total : 0;
-            
-            // 🐢 卡顿指标
-            const lagIndicator = stats.longTasks > 0 ? `<span style="color:#e17055; font-weight:bold;">⚠ ${stats.longTasks}</span>` : `<span style="color:#00b894;">✓</span>`;
+        // 2. 增量更新 DOM
+        allApps.forEach(app => {
+            activeIds.add(app.id);
+            this.updateRow(app);
+        });
 
+        // 3. 清理已移除的应用 DOM
+        for (const [id, cache] of this.domCache) {
+            if (!activeIds.has(id)) {
+                cache.el.remove();
+                this.domCache.delete(id);
+            }
+        }
+    }
+
+    /**
+     * 🔄 更新单行数据 (核心优化)
+     */
+    updateRow(app) {
+        // 📊 计算数据
+        let stats = { cpuTime: 0, startTime: Date.now(), longTasks: 0 };
+        let resCount = { total: 0 };
+        if (pm) {
+            if (typeof pm.getAppStats === 'function') stats = pm.getAppStats(app.id);
+            if (typeof pm.getAppResourceCount === 'function') resCount = pm.getAppResourceCount(app.id);
+        }
+        
+        const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(1) : '0.0';
+        const resUsage = app.isOpen ? resCount.total : 0;
+        const statusColor = app.isOpen ? '#2ecc71' : '#b2bec3';
+        const btnColor = app.isOpen ? '#ff7675' : '#0984e3';
+        const btnText = app.isOpen ? '结束' : '启动';
+        
+        // 🐢 卡顿指标 HTML
+        const lagHtml = stats.longTasks > 0 
+            ? `<span style="color:#e17055; font-weight:bold;">⚠ ${stats.longTasks}</span>` 
+            : `<span style="color:#00b894;">✓</span>`;
+
+        // 🅰️ 情况 A: DOM 不存在 -> 创建
+        if (!this.domCache.has(app.id)) {
             const item = document.createElement('div');
             item.style.cssText = `
-                display: flex;
-                align-items: center;
-                padding: 10px;
-                border-bottom: 1px solid #eee;
-                background: white;
-                margin-bottom: 5px;
-                border-radius: 5px;
-                cursor: pointer;
+                display: flex; align-items: center; padding: 10px;
+                border-bottom: 1px solid #eee; background: white;
+                margin-bottom: 5px; border-radius: 5px; cursor: pointer;
                 transition: background 0.2s;
             `;
             item.onmouseover = () => item.style.background = '#f8f9fa';
             item.onmouseout = () => item.style.background = 'white';
             item.onclick = (e) => {
-                // 如果点击的是按钮，不进入详情
                 if (e.target.tagName === 'BUTTON') return;
                 this.selectedAppId = app.id;
-                this.render(); // 重新渲染以显示详情
+                this.render();
             };
-            
+
+            // 使用 innerHTML 填充结构，并保存关键节点的引用
             item.innerHTML = `
-                <div style="width:10px; height:10px; border-radius:50%; background:${statusColor}; margin-right:10px;" title="${statusText}"></div>
+                <div data-ref="status" style="width:10px; height:10px; border-radius:50%; background:${statusColor}; margin-right:10px;"></div>
                 <div style="flex:1;">
                     <div style="font-weight:bold; color:#2d3436; display:flex; justify-content:space-between;">
                         <span>${app.customName || app.name}</span>
-                        <span style="font-size:0.8em; color:#636e72; font-weight:normal;">CPU: ${cpuUsage}%</span>
+                        <span data-ref="cpu" style="font-size:0.8em; color:#636e72; font-weight:normal;">CPU: ${cpuUsage}%</span>
                     </div>
                     <div style="font-size:0.75em; color:#999; margin-top:4px; display:flex; gap:15px;">
-                        <span title="持有的资源句柄数">资源: ${resUsage}</span>
-                        <span title="长任务(卡顿)次数">卡顿: ${lagIndicator}</span>
+                        <span data-ref="res">资源: ${resUsage}</span>
+                        <span data-ref="lag">卡顿: ${lagHtml}</span>
                     </div>
                 </div>
-                <button class="task-action-btn" style="
-                    padding: 4px 12px;
-                    border: none;
-                    border-radius: 4px;
-                    background: ${app.isOpen ? '#ff7675' : '#0984e3'};
-                    color: white;
-                    cursor: pointer;
-                    font-size: 0.8em;
-                    margin-left: 10px;
-                ">${app.isOpen ? '结束' : '启动'}</button>
+                <button data-ref="btn" class="task-action-btn" style="
+                    padding: 4px 12px; border: none; border-radius: 4px;
+                    background: ${btnColor}; color: white; cursor: pointer;
+                    font-size: 0.8em; margin-left: 10px;
+                ">${btnText}</button>
             `;
 
             // 绑定按钮事件
-            const btn = item.querySelector('.task-action-btn');
+            const btn = item.querySelector('[data-ref="btn"]');
             btn.onclick = (e) => {
-                e.stopPropagation(); // 阻止冒泡
-                if (app.isOpen) {
-                    wm.closeApp(app.id); // ❌ 关闭
-                } else {
-                    wm.openApp(app.id); // 🚀 启动
-                }
-                setTimeout(() => this.render(), 100); 
+                e.stopPropagation();
+                if (app.isOpen) wm.closeApp(app.id);
+                else wm.openApp(app.id);
+                setTimeout(() => this.render(), 100);
             };
 
-            return item;
-        };
+            this.listContainer.appendChild(item);
 
-        // 渲染系统应用
-        if (systemApps.length > 0) {
-            const title = document.createElement('div');
-            title.innerText = '系统进程';
-            title.style.cssText = 'font-size:0.8em; color:#999; margin:10px 0 5px 0; font-weight:bold;';
-            this.listContainer.appendChild(title);
-            systemApps.forEach(app => this.listContainer.appendChild(createItem(app)));
-        }
+            // 缓存引用
+            this.domCache.set(app.id, {
+                el: item,
+                refs: {
+                    status: item.querySelector('[data-ref="status"]'),
+                    cpu: item.querySelector('[data-ref="cpu"]'),
+                    res: item.querySelector('[data-ref="res"]'),
+                    lag: item.querySelector('[data-ref="lag"]'),
+                    btn: btn
+                },
+                lastState: { cpuUsage, resUsage, lagHtml, isOpen: app.isOpen } // 用于对比
+            });
+        } 
+        // 🅱️ 情况 B: DOM 已存在 -> 更新
+        else {
+            const cache = this.domCache.get(app.id);
+            const { refs, lastState } = cache;
 
-        // 渲染用户应用
-        if (userApps.length > 0) {
-            const title = document.createElement('div');
-            title.innerText = '用户应用';
-            title.style.cssText = 'font-size:0.8em; color:#999; margin:15px 0 5px 0; font-weight:bold;';
-            this.listContainer.appendChild(title);
-            userApps.forEach(app => this.listContainer.appendChild(createItem(app)));
+            // 仅当数据变化时才操作 DOM (极致性能)
+            if (lastState.cpuUsage !== cpuUsage) {
+                refs.cpu.innerText = `CPU: ${cpuUsage}%`;
+                lastState.cpuUsage = cpuUsage;
+            }
+            if (lastState.resUsage !== resUsage) {
+                refs.res.innerText = `资源: ${resUsage}`;
+                lastState.resUsage = resUsage;
+            }
+            if (lastState.lagHtml !== lagHtml) {
+                refs.lag.innerHTML = `卡顿: ${lagHtml}`;
+                lastState.lagHtml = lagHtml;
+            }
+            if (lastState.isOpen !== app.isOpen) {
+                refs.status.style.background = statusColor;
+                refs.btn.style.background = btnColor;
+                refs.btn.innerText = btnText;
+                lastState.isOpen = app.isOpen;
+            }
         }
     }
+
+    // ...existing code...
 
     // =================================
     //  🎉 渲染详情页
@@ -227,6 +266,11 @@ export class TaskManagerApp {
             this.render();
             return;
         }
+
+        // 💾 保存滚动位置 (防止刷新时跳动)
+        const mainScroll = this.listContainer.scrollTop;
+        const logContainer = this.listContainer.querySelector('.log-container');
+        const logScroll = logContainer ? logContainer.scrollTop : 0;
 
         let stats = { cpuTime: 0, startTime: Date.now(), longTasks: 0, longTaskTime: 0, logs: [] };
         let resCount = { timers: 0, events: 0, animations: 0, total: 0 };
@@ -271,11 +315,16 @@ export class TaskManagerApp {
                 </div>
 
                 <h4 style="margin:10px 0; border-bottom:1px solid #eee; padding-bottom:5px;">资源操作日志 (最近50条)</h4>
-                <div style="background:#2d3436; color:#dfe6e9; padding:10px; border-radius:5px; height:200px; overflow-y:auto; font-family:monospace; font-size:0.8em;">
+                <div class="log-container" style="background:#2d3436; color:#dfe6e9; padding:10px; border-radius:5px; height:200px; overflow-y:auto; font-family:monospace; font-size:0.8em;">
                     ${stats.logs.length > 0 ? stats.logs.map(log => `<div>${log}</div>`).join('') : '<div style="color:#636e72; text-align:center; margin-top:20px;">暂无日志</div>'}
                 </div>
             </div>
         `;
+
+        // 🔄 恢复滚动位置
+        this.listContainer.scrollTop = mainScroll;
+        const newLogContainer = this.listContainer.querySelector('.log-container');
+        if (newLogContainer) newLogContainer.scrollTop = logScroll;
 
         document.getElementById('btn-back').onclick = () => {
             this.selectedAppId = null;
