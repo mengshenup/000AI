@@ -16,8 +16,8 @@ import os
 # 📂 设置用户数据存储目录的相对路径，所有的照片和记录都存在这里
 USER_DATA_DIR = "./user_data"
 
-# 🖥️ 定义浏览器窗口的宽度和高度，给机器人配的“显示器”大小 (720P)
-VIEWPORT = {'width': 1280, 'height': 720}
+# 🖥️ 定义浏览器窗口的宽度和高度，给机器人配的“显示器”大小 (800x600)
+VIEWPORT = {'width': 800, 'height': 600}
 
 # 🔗 定义默认的目标搜索 URL，机器人的“主页”，一打开浏览器就去这里
 TARGET_SEARCH_URL = "https://www.douyin.com/search/三角洲行动_零号大坝_老六点位"

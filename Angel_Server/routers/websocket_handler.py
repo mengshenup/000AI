@@ -102,6 +102,7 @@ async def websocket_endpoint(websocket: WebSocket):
         # 🛡️ 日志节流: 防止配置更新泛洪导致 DoS
         last_config_log_time = 0
         last_nav_log_time = 0 # 🛡️ 导航日志节流
+        last_resize_time = 0 # 🛡️ 调整大小节流
 
         # 🔗 定义 URL 变更回调
         async def on_url_change(new_url):
@@ -247,6 +248,23 @@ async def websocket_endpoint(websocket: WebSocket):
                         await send_packet(websocket, "analysis_result", {"result": result})
                     else:
                         await send_packet(websocket, "log", {"msg": f"🤔 分析完成: {result.get('summary')}"})
+
+                # 📏 处理调整窗口大小指令
+                elif cmd_type == "browser_resize":
+                    now = time.time()
+                    # 🛡️ 节流：防止频繁调整大小 (每 0.5 秒最多一次)
+                    if now - last_resize_time > 0.5:
+                        width = command.get("width", 800)
+                        height = command.get("height", 600)
+                        
+                        # 🛡️ 安全检查：限制分辨率范围，防止内存耗尽或异常
+                        # 最小 320x240，最大 2560x1440 (2K)
+                        width = max(320, min(width, 2560))
+                        height = max(240, min(height, 1440))
+                        
+                        await browser_service.set_viewport(width, height)
+                        last_resize_time = now
+                        # await send_packet(websocket, "log", {"msg": f"📏 分辨率已调整为 {width}x{height}"})
 
                 # ⏩ 处理视频跳转指令 (angt)
                 elif cmd_type == "video_jump":

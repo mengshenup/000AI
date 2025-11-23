@@ -152,6 +152,16 @@ export class WindowManager {
         if (app.width) win.style.width = typeof app.width === 'number' ? `${app.width}px` : app.width;
         if (app.height) win.style.height = typeof app.height === 'number' ? `${app.height}px` : app.height;
 
+        // 📏 启用调整大小 (如果配置允许)
+        if (app.resizable) {
+            win.style.resize = 'both';
+            // 注意：resize 属性通常需要 overflow 不为 visible 才能生效
+            // .window 类默认 overflow: hidden，所以这里不需要额外设置
+            // 但为了更好的体验，可能需要设置最小宽高
+            win.style.minWidth = '320px';
+            win.style.minHeight = '240px';
+        }
+
         // 📍 设置初始位置 (优先使用保存的位置，否则使用默认位置，最后兜底)
         // 修复：防止因位置信息丢失导致窗口不可见
         // 💖 强制修正：如果是固定窗口 (fixed)，则忽略 store 中的历史位置，强制使用配置中的位置

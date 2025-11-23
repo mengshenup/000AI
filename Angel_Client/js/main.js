@@ -87,7 +87,8 @@ function setupBusinessLogic() {
     };
 
     bus.on('net:frame', (imgSrc) => {
-        pendingFrame = imgSrc;
+        // 🛠️ 修复：后端返回的是纯 Base64 字符串，需要添加 Data URI 前缀才能被 img 标签识别
+        pendingFrame = `data:image/jpeg;base64,${imgSrc}`;
         if (!isRendering) {
             isRendering = true;
             requestAnimationFrame(renderLoop);

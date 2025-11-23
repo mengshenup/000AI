@@ -18,6 +18,9 @@ export const config = {
     color: '#6c5ce7', // 💖 窗口的主题颜色（紫色）
     pos: { x: 20, y: 110 }, // 💖 桌面图标的默认位置
     winPos: { x: 400, y: 100 }, // 💖 窗口打开时的默认屏幕坐标
+    width: 800, // 💖 窗口默认宽度
+    height: 600, // 💖 窗口默认高度
+    resizable: true, // 💖 允许用户调整窗口大小
     // openMsg: "探索之窗已开启，准备好发现新世界了吗？🌍", // 💖 已移除，统一由 angel.js 管理
     content: `
         <!-- 💖 浏览器地址栏容器 -->
@@ -133,6 +136,50 @@ class BrowserApp {
         this.isDestroyed = false; // 💖 重置销毁标志
         this.bindEvents(); // 💖 绑定基础按钮事件（如前往、分析）
         this.setupRemoteControl(); // 💖 设置远程控制逻辑（如点击画面、拖动进度条）
+        
+        // 📏 监听窗口大小变化，同步调整后端分辨率
+        // 使用 ResizeObserver 监听窗口 DOM 元素
+        const win = document.getElementById(config.id);
+        if (win) {
+            let resizeTimeout;
+            const observer = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    // 🛡️ 防抖：避免频繁发送请求 (300ms)
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        if (this.isDestroyed) return;
+                        
+                        const rect = entry.contentRect;
+                        // 计算内容区域大小 (减去地址栏高度约80px)
+                        // 注意：contentRect 是内容区域，不包含边框
+                        // 但我们的 browser.js 里的 content 包含了地址栏，所以要减去地址栏高度
+                        // 地址栏高度固定约 80px (padding 8*2 + input 30 + gap 8 + controls 20)
+                        // 简单估算为 80px，或者动态获取
+                        const addressBar = win.querySelector('.content > div:first-child');
+                        const addressBarHeight = addressBar ? addressBar.offsetHeight : 80;
+                        
+                        const newWidth = Math.round(rect.width);
+                        const newHeight = Math.round(rect.height - addressBarHeight);
+                        
+                        if (newWidth > 0 && newHeight > 0) {
+                            network.send({
+                                type: 'browser_resize',
+                                width: newWidth,
+                                height: newHeight
+                            });
+                            // console.log(`📏 窗口调整: ${newWidth}x${newHeight}`);
+                        }
+                    }, 300);
+                }
+            });
+            observer.observe(win.querySelector('.content')); // 监听 content 区域变化
+            
+            // 注册清理逻辑
+            bus.on(`app:closed:${config.id}`, () => {
+                observer.disconnect();
+                clearTimeout(resizeTimeout);
+            });
+        }
     }
 
     // =================================
@@ -242,6 +289,10 @@ class BrowserApp {
         // === 远程点击逻辑 ===
         if (remoteScreen) { // 💖 确保遮罩层存在
             remoteScreen.addEventListener('click', (e) => {
+                // 🛠️ 优化：只有当窗口处于激活状态（最前端）时，才发送点击事件
+                // 防止用户在操作其他窗口时误触后台的浏览器画面，同时也节省带宽
+                if (wm.activeWindowId !== config.id) return;
+
                 // 如果点击的是进度条，不触发远程点击（双重保险）
                 if (e.target.closest('#video-progress-bar')) return; // 💖 如果点击目标是进度条内部，直接返回
 

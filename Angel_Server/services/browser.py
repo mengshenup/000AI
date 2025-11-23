@@ -69,26 +69,38 @@ class AngelBrowser:
         # 🚀 启动 Playwright 服务
         self.playwright = await async_playwright().start()
         # 🍪 启动持久化浏览器上下文（保持登录状态和缓存）
+        # 定义通用启动参数
+        launch_args = [
+            "--disable-blink-features=AutomationControlled", # 🕵️ 隐藏自动化特征
+            "--disable-infobars", # 🚫 隐藏信息栏
+            "--no-sandbox", # 🛡️ 禁用沙箱 (某些环境需要)
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage", # 💾 避免 /dev/shm 内存不足
+            "--disable-accelerated-2d-canvas", # 🎨 禁用硬件加速 Canvas (有时会导致黑屏)
+            "--disable-gpu", # 🚫 禁用 GPU (Headless 模式下通常更稳定)
+        ]
+
         try:
+            # 1️⃣ 尝试启动系统 Chrome (最佳抗指纹 & 解码能力)
+            print("🚀 尝试启动系统 Chrome...")
             self.browser_context = await self.playwright.chromium.launch_persistent_context(
-                USER_DATA_DIR, # 📂 用户数据目录
-                headless=True, # 👻 无头模式（不显示界面）
-                channel="chrome", # 🖥️ 使用系统安装的 Chrome (已启用，解决黑屏问题)
-                args=[
-                    "--disable-blink-features=AutomationControlled", # 🕵️ 隐藏自动化特征
-                    "--disable-infobars", # 🚫 隐藏信息栏
-                    "--no-sandbox", # 🛡️ 禁用沙箱 (某些环境需要)
-                    "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage", # 💾 避免 /dev/shm 内存不足
-                    "--disable-accelerated-2d-canvas", # 🎨 禁用硬件加速 Canvas (有时会导致黑屏)
-                    "--disable-gpu", # 🚫 禁用 GPU (Headless 模式下通常更稳定)
-                ],
-                viewport=VIEWPORT # 📏 设置窗口大小
+                USER_DATA_DIR,
+                headless=True,
+                channel="chrome", # 👈 指定使用 Chrome
+                args=launch_args,
+                viewport=VIEWPORT
             )
-        except Exception as e:
-            print(f"❌ Browser launch failed: {e}")
-            # Fallback or re-raise
-            raise e
+        except Exception as e_chrome:
+            print(f"❌ 系统 Chrome 启动失败: {e_chrome}")
+            print("==================================================")
+            print("🚨 严重错误：未检测到 Google Chrome 浏览器！")
+            print("💡 为了确保视频解码和反爬虫能力，必须使用系统 Chrome。")
+            print("👉 请前往 https://www.google.com/chrome/ 下载并安装。")
+            print("==================================================")
+            # 🚫 拒绝降级，直接抛出异常终止启动，防止用户在不知情的情况下使用阉割版 Chromium
+            raise e_chrome
+
+        # 📄 获取第一个页面，如果没有则新建一个
         # 📄 获取第一个页面，如果没有则新建一个
         self.page = self.browser_context.pages[0] if self.browser_context.pages else await self.browser_context.new_page()
         
@@ -454,3 +466,16 @@ class AngelBrowser:
             except Exception as e:
                 print(f"Scan error: {e}")
         return count
+
+    async def set_viewport(self, width, height):
+        # =================================
+        #  🎉 设置视口大小 (宽, 高)
+        #
+        #  🎨 代码用途：
+        #     动态调整浏览器的分辨率。
+        #
+        #  💡 易懂解释：
+        #     把显示器变大变小！🖥️
+        # =================================
+        if self.page:
+            await self.page.set_viewport_size({"width": width, "height": height})
