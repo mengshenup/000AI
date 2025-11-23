@@ -30,6 +30,7 @@ export const config = {
 import { store } from '../store.js'; // 💖 导入全局状态存储
 import { bus } from '../event_bus.js'; // 💖 导入事件总线
 import { wm } from '../window_manager.js'; // 💖 导入窗口管理器
+import { pm } from '../process_manager.js'; // 💖 导入进程管理器
 
 export const APP_NAME = 'Vitality Source'; // 💖 导出应用名称常量
 // export const APP_OPEN_MSG = "活力源泉已启动，系统能量充沛！💪"; // 💖 已移除
@@ -51,8 +52,13 @@ export class TaskManagerApp {
         this.id = 'win-taskmgr'; // 💖 应用 ID
         this.listContainer = null; // 💖 列表容器 DOM 元素，稍后获取
         this.updateInterval = null; // 💖 自动刷新定时器 ID
+        this.ctx = pm.getContext(this.id); // 💖 获取进程上下文
+        
         // 监听窗口就绪事件，替代 setTimeout
         bus.on(`app:ready:${config.id}`, () => this.init()); // 💖 注册初始化回调
+        
+        // 注册清理
+        this.ctx.onCleanup(() => this.onClose());
     }
 
     // =================================
@@ -104,72 +110,106 @@ export class TaskManagerApp {
             }
         });
 
-        // 💖 辅助渲染函数
-        const renderGroup = (title, list) => {
-            if (list.length === 0) return '';
-            return `
-                <div class="task-group-title">${title}</div>
-                ${list.map(app => `
-                    <div class="task-item">
-                        <div class="task-info">
-                            <div class="task-icon">
-                                <svg style="width:20px;height:20px;fill:${app.color}" viewBox="0 0 24 24"><path d="${app.icon || app.iconPath}"/></svg>
-                            </div>
-                            <div class="task-details">
-                                <div class="task-name">${app.name}</div>
-                                <div class="task-status">
-                                    <span class="status-dot ${app.isOpen ? 'active' : ''}"></span>
-                                    ${app.isOpen ? '运行中' : '休眠'}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="task-actions">
-                            ${app.isOpen ? 
-                                `<button class="task-btn btn-kill" onclick="window.wm.killApp('${app.id}')">结束</button>` : 
-                                `<button class="task-btn btn-switch" onclick="window.wm.openApp('${app.id}')">启动</button>`
-                            }
-                        </div>
-                    </div>
-                `).join('')}
+        // 💖 辅助函数：生成列表项 HTML
+        const createItem = (app) => {
+            const statusColor = app.isOpen ? '#2ecc71' : '#b2bec3'; // 🟢 运行中 / ⚪ 已停止
+            const statusText = app.isOpen ? '运行中' : '已停止';
+            
+            // 📊 获取性能数据 (添加容错，防止旧版缓存导致崩溃)
+            let stats = { cpuTime: 0, startTime: Date.now() };
+            if (pm && typeof pm.getAppStats === 'function') {
+                stats = pm.getAppStats(app.id);
+            } else {
+                // console.warn("ProcessManager 版本过旧，无法获取统计数据");
+            }
+            
+            const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(1) : '0.0';
+            const memUsage = app.isOpen ? (Math.random() * 20 + 10).toFixed(0) : '0'; // 模拟内存 (MB)
+            const gpuUsage = (app.id === 'win-companion' && app.isOpen) ? '高' : '低'; // 模拟 GPU
+
+            const item = document.createElement('div');
+            item.style.cssText = `
+                display: flex;
+                align-items: center;
+                padding: 8px;
+                border-bottom: 1px solid #eee;
+                background: white;
+                margin-bottom: 5px;
+                border-radius: 5px;
             `;
+            
+            item.innerHTML = `
+                <div style="width:10px; height:10px; border-radius:50%; background:${statusColor}; margin-right:10px;" title="${statusText}"></div>
+                <div style="flex:1;">
+                    <div style="font-weight:bold; color:#2d3436;">${app.customName || app.name}</div>
+                    <div style="font-size:0.8em; color:#636e72;">${app.description || '无描述'}</div>
+                    <div style="font-size:0.75em; color:#999; margin-top:2px; display:flex; gap:10px;">
+                        <span>CPU: ${cpuUsage}%</span>
+                        <span>MEM: ${memUsage}MB</span>
+                        <span>GPU: ${gpuUsage}</span>
+                    </div>
+                </div>
+                <button class="task-action-btn" style="
+                    padding: 4px 8px;
+                    border: none;
+                    border-radius: 4px;
+                    background: ${app.isOpen ? '#ff7675' : '#0984e3'};
+                    color: white;
+                    cursor: pointer;
+                    font-size: 0.8em;
+                ">${app.isOpen ? '结束' : '启动'}</button>
+            `;
+
+            // 绑定按钮事件
+            const btn = item.querySelector('.task-action-btn');
+            btn.onclick = () => {
+                if (app.isOpen) {
+                    wm.closeApp(app.id); // ❌ 关闭
+                } else {
+                    wm.openApp(app.id); // 🚀 启动
+                }
+                // 重新渲染会在下一次定时器触发时自动进行，或者可以通过事件触发
+                setTimeout(() => this.render(), 100); 
+            };
+
+            return item;
         };
 
-        this.listContainer.innerHTML = renderGroup('用户应用', userApps) + renderGroup('系统进程', systemApps);
+        // 渲染系统应用
+        if (systemApps.length > 0) {
+            const title = document.createElement('div');
+            title.innerText = '系统进程';
+            title.style.cssText = 'font-size:0.8em; color:#999; margin:10px 0 5px 0;';
+            this.listContainer.appendChild(title);
+            systemApps.forEach(app => this.listContainer.appendChild(createItem(app)));
+        }
+
+        // 渲染用户应用
+        if (userApps.length > 0) {
+            const title = document.createElement('div');
+            title.innerText = '用户应用';
+            title.style.cssText = 'font-size:0.8em; color:#999; margin:10px 0 5px 0;';
+            this.listContainer.appendChild(title);
+            userApps.forEach(app => this.listContainer.appendChild(createItem(app)));
+        }
     }
 
     // =================================
-    //  🎉 开启自动刷新 (无参数)
-    //
-    //  🎨 代码用途：
-    //     启动定时器，定期刷新任务列表状态
-    //
-    //  💡 易懂解释：
-    //     管家婆每隔一秒钟就看一眼花名册，确保信息是最新的！⏱️
-    //
-    //  ⚠️ 警告：
-    //     需要在窗口打开时调用。
+    //  🎉 打开时触发
     // =================================
     onOpen() {
-        this.render(); // 💖 立即渲染一次
-        // 开启自动刷新 (每秒刷新一次状态)
-        if (this.updateInterval) clearInterval(this.updateInterval); // 💖 清除旧的定时器
-        this.updateInterval = setInterval(() => this.render(), 1000); // 💖 设置新的定时器
+        this.render(); // 立即渲染一次
+        // 使用 ctx.setInterval 自动管理
+        this.updateInterval = this.ctx.setInterval(() => this.render(), 1000); // 每秒刷新一次
     }
 
     // =================================
-    //  🎉 关闭自动刷新 (无参数)
-    //
-    //  🎨 代码用途：
-    //     清除定时器，停止刷新
-    //
-    //  💡 易懂解释：
-    //     管家婆下班啦，不再盯着花名册看了~ 💤
-    //
-    //  ⚠️ 警告：
-    //     需要在窗口关闭时调用，防止内存泄漏。
+    //  🎉 关闭时触发
     // =================================
     onClose() {
-        if (this.updateInterval) clearInterval(this.updateInterval); // 💖 清除定时器
+        // 这里的清理工作由 pm 自动完成 (clearInterval)
+        // 但为了逻辑清晰，我们也可以手动置空
+        this.updateInterval = null;
     }
 }
 

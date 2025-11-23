@@ -36,6 +36,24 @@ export const config = {
                 <button id="btn-custom-wp" style="padding:5px 10px;">应用</button>
             </div>
         </div>
+        <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
+        <h4>系统性能设置</h4>
+        <div style="margin-top:10px;">
+            <label style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                <input type="radio" name="perf-mode" value="high" checked>
+                <div>
+                    <b>🚀 高性能模式</b>
+                    <div style="font-size:0.8em; color:#666;">60 FPS，开启抗锯齿，画质优先</div>
+                </div>
+            </label>
+            <label style="display:flex; align-items:center; gap:10px;">
+                <input type="radio" name="perf-mode" value="low">
+                <div>
+                    <b>🍃 节能模式</b>
+                    <div style="font-size:0.8em; color:#666;">30 FPS，关闭特效，适合低配设备</div>
+                </div>
+            </label>
+        </div>
     `
 };
 
@@ -43,7 +61,32 @@ import { wm } from '../window_manager.js'; // 💖 导入窗口管理器
 import { bus } from '../event_bus.js'; // 💖 导入事件总线
 
 export const APP_NAME = 'Workshop'; // 💖 导出应用名称常量
-// export const APP_OPEN_MSG = "欢迎来到美好工坊，来打造你的专属空间吧！🎨"; // 💖 已移除
+
+// =================================
+//  🎉 配置管理器 (ConfigManager)
+//  🎨 负责统一管理系统配置的读取与保存
+// =================================
+class ConfigManager {
+    constructor() {
+        this.config = {
+            perfMode: localStorage.getItem('angel_performance_mode') || 'high'
+        };
+    }
+
+    set(key, value) {
+        this.config[key] = value;
+        if (key === 'perfMode') {
+            localStorage.setItem('angel_performance_mode', value);
+            bus.emit('config:changed', { key, value });
+        }
+    }
+
+    get(key) {
+        return this.config[key];
+    }
+}
+
+export const configManager = new ConfigManager();
 
 class SettingsApp {
     // =================================
@@ -78,6 +121,26 @@ class SettingsApp {
     init() {
         this.bindEvents(); // 💖 绑定事件
         this.initWallpaperGrid(); // 💖 初始化壁纸网格
+        this.initPerfSettings(); // 💖 初始化性能设置
+    }
+
+    // =================================
+    //  🎉 初始化性能设置
+    // =================================
+    initPerfSettings() {
+        const currentMode = configManager.get('perfMode');
+        const radios = document.getElementsByName('perf-mode');
+        
+        radios.forEach(radio => {
+            if (radio.value === currentMode) radio.checked = true;
+            
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    configManager.set('perfMode', e.target.value);
+                    bus.emit('system:speak', `已切换至${e.target.value === 'high' ? '高性能' : '节能'}模式`);
+                }
+            });
+        });
     }
 
     // =================================

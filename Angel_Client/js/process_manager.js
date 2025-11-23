@@ -17,6 +17,38 @@ class ProcessManager {
     constructor() {
         // 📖 账本：Map<AppID, ResourceQueue>
         this.queues = new Map();
+        // 📊 性能统计：Map<AppID, { cpuTime: number, lastActive: number, startTime: number }>
+        this.stats = new Map();
+    }
+
+    /**
+     * 📊 获取应用性能统计数据
+     */
+    getAppStats(appId) {
+        if (!this.stats.has(appId)) {
+            return { cpuTime: 0, lastActive: 0, startTime: Date.now() };
+        }
+        return this.stats.get(appId);
+    }
+
+    /**
+     * ⏱️ 记录执行时间 (内部辅助)
+     */
+    _measure(appId, fn) {
+        const start = performance.now();
+        try {
+            fn();
+        } finally {
+            const end = performance.now();
+            const duration = end - start;
+            
+            if (!this.stats.has(appId)) {
+                this.stats.set(appId, { cpuTime: 0, lastActive: end, startTime: start });
+            }
+            const stat = this.stats.get(appId);
+            stat.cpuTime += duration;
+            stat.lastActive = end;
+        }
     }
 
     /**
@@ -42,41 +74,50 @@ class ProcessManager {
             
             // 🕒 申请定时器
             setInterval: (callback, delay) => {
-                const id = window.setInterval(callback, delay);
+                const wrappedCallback = () => this._measure(appId, callback);
+                const id = window.setInterval(wrappedCallback, delay);
                 this._getQueue(appId).intervals.add(id);
                 return id;
             },
             
             // ⏱️ 申请延时器 (自动防泄漏)
             setTimeout: (callback, delay) => {
-                const id = window.setTimeout(() => {
+                const wrappedCallback = () => {
                     this._getQueue(appId).timeouts.delete(id); // 执行后自动移除
-                    callback();
-                }, delay);
+                    this._measure(appId, callback);
+                };
+                const id = window.setTimeout(wrappedCallback, delay);
                 this._getQueue(appId).timeouts.add(id);
                 return id;
             },
 
             // 🎬 申请动画帧 (自动防泄漏)
             requestAnimationFrame: (callback) => {
-                const id = window.requestAnimationFrame((t) => {
+                const wrappedCallback = (t) => {
                     this._getQueue(appId).animations.delete(id); // 执行后自动移除
-                    callback(t);
-                });
+                    this._measure(appId, () => callback(t));
+                };
+                const id = window.requestAnimationFrame(wrappedCallback);
                 this._getQueue(appId).animations.add(id);
                 return id;
             },
 
             // 👂 申请 DOM 事件监听
             addEventListener: (target, type, listener, options) => {
-                target.addEventListener(type, listener, options);
-                this._getQueue(appId).events.push({ target, type, listener, options });
+                const wrappedListener = (e) => this._measure(appId, () => listener(e));
+                target.addEventListener(type, wrappedListener, options);
+                // 注意：这里存的是 wrappedListener，以便 removeEventListener 能正确工作
+                // 但为了简单起见，我们这里存原始引用可能无法移除 wrappedListener
+                // 这是一个简化的实现，通常需要 Map 来映射 original -> wrapped
+                // 鉴于 PM 主要用于 kill 时的暴力清理，这里暂不处理 removeEventListener 的精确匹配
+                this._getQueue(appId).events.push({ target, type, listener: wrappedListener, options });
             },
 
             // 🚌 申请 EventBus 监听
             on: (event, callback) => {
-                bus.on(event, callback);
-                this._getQueue(appId).busListeners.push({ event, callback });
+                const wrappedCallback = (data) => this._measure(appId, () => callback(data));
+                bus.on(event, wrappedCallback);
+                this._getQueue(appId).busListeners.push({ event, callback: wrappedCallback });
             },
 
             // 🧹 注册自定义清理函数

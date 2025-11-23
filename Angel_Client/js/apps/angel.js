@@ -168,11 +168,17 @@ export class AngelApp {
             this.isMuted = savedMute === 'true';
         }
 
-        // 💖 读取性能配置 (新增)
+        // 💖 读取性能配置 (通过事件总线监听变更)
+        // 初始值读取
         const savedPerf = localStorage.getItem('angel_performance_mode');
-        this.perfMode = savedPerf || 'high'; // high, low
-        this.targetFPS = this.perfMode === 'low' ? 30 : 60;
-        this.frameInterval = 1000 / this.targetFPS;
+        this.setPerfMode(savedPerf || 'high');
+
+        // 监听配置变更
+        this.ctx.on('config:changed', (data) => {
+            if (data.key === 'perfMode') {
+                this.setPerfMode(data.value);
+            }
+        });
 
         // 🛑 防止重复初始化导致多个渲染循环
         if (this.renderer) {
@@ -253,6 +259,20 @@ export class AngelApp {
         // 💖 显示欢迎语 (使用统一的消息库)
         const msg = APP_OPEN_MESSAGES['win-companion'] || APP_OPEN_MESSAGES['default'];
         this.showBubble(msg);
+    }
+
+    // =================================
+    //  🎉 设置性能模式
+    // =================================
+    setPerfMode(mode) {
+        this.perfMode = mode; // high, low
+        this.targetFPS = this.perfMode === 'low' ? 30 : 60;
+        this.frameInterval = 1000 / this.targetFPS;
+        
+        // 如果渲染器已存在，动态调整参数
+        if (this.renderer) {
+            this.renderer.setPixelRatio(this.perfMode === 'low' ? 1 : window.devicePixelRatio);
+        }
     }
 
     // =================================

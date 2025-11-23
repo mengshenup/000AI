@@ -1,4 +1,5 @@
 import { bus } from './event_bus.js'; // 🚌 导入事件总线
+import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器 (确保优先加载)
 import { network as net } from './network.js'; // 🌐 导入网络模块
 import { wm } from './window_manager.js'; // 🪟 导入窗口管理器
 import { store } from './store.js'; // 💾 导入状态存储
