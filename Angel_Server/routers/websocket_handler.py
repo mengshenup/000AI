@@ -87,10 +87,14 @@ async def websocket_endpoint(websocket: WebSocket):
         queue = asyncio.Queue()
 
         # ⏱️ 帧率控制 (FPS)
-        # 限制为 15 FPS，既能保证流畅度，又能大幅降低流量和 CPU 占用
-        # 60 FPS 对于 Base64 传输来说太高了，会导致网络拥塞和前端解析卡顿
-        TARGET_FPS = 15
-        FRAME_INTERVAL = 1.0 / TARGET_FPS
+        # 默认配置
+        current_fps = 15
+        current_quality = 'high'
+        
+        # 安全限制
+        MAX_FPS = 30
+        MIN_FPS = 1
+
         last_frame_time = 0
 
         # 🔄 定义内部接收循环函数
@@ -141,6 +145,26 @@ async def websocket_endpoint(websocket: WebSocket):
                 if cmd_type == "disconnect":
                     break
                 
+                # ⚙️ 处理配置更新指令 (画质/帧率)
+                elif cmd_type == "config_update":
+                    # 1. 更新画质
+                    new_quality = command.get("quality")
+                    if new_quality in ['low', 'medium', 'high']:
+                        current_quality = new_quality
+                        await send_packet(websocket, "log", {"msg": f"🎨 画质已切换为: {current_quality.upper()}"})
+
+                    # 2. 更新帧率 (带安全检查)
+                    new_fps = command.get("fps")
+                    if new_fps:
+                        try:
+                            new_fps = int(new_fps)
+                            # 🛡️ 安全钳位: 确保 FPS 在 [MIN, MAX] 范围内
+                            # 防止前端恶意请求超高帧率导致拒绝服务攻击 (DoS)
+                            current_fps = max(MIN_FPS, min(new_fps, MAX_FPS))
+                            await send_packet(websocket, "log", {"msg": f"⏱️ 帧率已设置为: {current_fps} FPS"})
+                        except:
+                            pass
+
                 # 🌍 处理浏览器导航指令
                 elif cmd_type == "browser_navigate":
                     url = command.get("url")
@@ -216,10 +240,14 @@ async def websocket_endpoint(websocket: WebSocket):
             # 📸 每一帧都尝试发送截图
             # 优化：增加帧率限制，避免发送过快导致前端卡顿和流量爆炸
             current_time = time.time()
-            if current_time - last_frame_time >= FRAME_INTERVAL:
+            # 动态计算帧间隔
+            frame_interval = 1.0 / current_fps
+            
+            if current_time - last_frame_time >= frame_interval:
                 try:
                     # 🖼️ 获取当前画面截图 (Base64)
-                    screenshot = await browser_service.get_screenshot_b64()
+                    # 传入当前的画质设置
+                    screenshot = await browser_service.get_screenshot_b64(quality_mode=current_quality)
                     if screenshot:
                         # 📤 发送画面更新消息
                         await send_packet(websocket, "frame_update", {"image": screenshot})
@@ -232,7 +260,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 如果刚刚处理了命令，则不 sleep，立即进入下一次循环以响应新命令。
                 if not command:
                     # 计算还需要睡多久
-                    sleep_time = FRAME_INTERVAL - (current_time - last_frame_time)
+                    sleep_time = frame_interval - (current_time - last_frame_time)
                     if sleep_time > 0:
                         await asyncio.sleep(sleep_time)
     except Exception as e:

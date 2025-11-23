@@ -2,6 +2,8 @@ import asyncio
 import base64
 import random
 import json
+import io
+from PIL import Image
 from playwright.async_api import async_playwright, Page
 from config import USER_DATA_DIR, VIEWPORT, TARGET_SEARCH_URL
 from services.billing import global_billing
@@ -142,25 +144,62 @@ class AngelBrowser:
             global_billing.track_browser(tx=size)
         except: pass
 
-    async def get_screenshot_b64(self):
+    async def get_screenshot_b64(self, quality_mode='high'):
         # =================================
-        #  🎉 获取截图 (无参数)
+        #  🎉 获取截图 (画质模式)
         #
         #  🎨 代码用途：
-        #     截取当前页面画面，压缩为 JPEG 并转换为 Base64 字符串。
+        #     截取当前页面画面，根据画质模式进行压缩和缩放，转换为 Base64。
         #
         #  💡 易懂解释：
-        #     给当前网页拍张照，发给前端看。📸
+        #     给当前网页拍张照，发给前端看。根据你的要求，可以是高清大图，也可以是省流小图。📸
         #
         #  ⚠️ 警告：
-        #     频繁截图会大量消耗 CPU 和带宽。quality=40 是为了平衡性能。
+        #     图片处理（缩放、压缩）是 CPU 密集型操作。
         # =================================
         try:
-            # 🖼️ 截图并压缩
-            screenshot = await self.page.screenshot(quality=40, type='jpeg')
-            # 🔡 转换为 Base64 字符串
-            return base64.b64encode(screenshot).decode()
-        except Exception:
+            if not self.page: return ""
+
+            # 1. Playwright 截图 (获取原始二进制数据)
+            # 使用 png 格式获取无损原图，然后用 PIL 处理
+            # 或者直接用 jpeg 获取，但 PIL 处理 jpeg 再存 jpeg 会有二次损耗
+            # 为了性能，先获取 jpeg，如果需要进一步压缩再处理
+            screenshot_bytes = await self.page.screenshot(type='jpeg', quality=70)
+            
+            # 如果是高画质，直接返回，省去 PIL 处理开销
+            if quality_mode == 'high':
+                return base64.b64encode(screenshot_bytes).decode()
+
+            # 2. 使用 PIL 进行后处理 (缩放 & 压缩)
+            with io.BytesIO(screenshot_bytes) as input_io:
+                img = Image.open(input_io)
+                
+                # 根据模式设置参数
+                if quality_mode == 'low':
+                    # 📉 低画质: 极度压缩，目标 ~1KB
+                    # 尺寸缩小到 1/6 (约 213x120)，质量 10
+                    target_width = int(VIEWPORT['width'] / 6)
+                    target_height = int(VIEWPORT['height'] / 6)
+                    img = img.resize((target_width, target_height), Image.Resampling.NEAREST) # 使用最快缩放算法
+                    save_quality = 10
+                elif quality_mode == 'medium':
+                    # ⚖️ 中画质: 平衡模式，目标 ~10KB
+                    # 尺寸缩小到 1/2 (640x360)，质量 40
+                    target_width = int(VIEWPORT['width'] / 2)
+                    target_height = int(VIEWPORT['height'] / 2)
+                    img = img.resize((target_width, target_height), Image.Resampling.BILINEAR)
+                    save_quality = 40
+                else:
+                    # 默认高画质
+                    save_quality = 70
+
+                # 3. 保存到内存缓冲区
+                with io.BytesIO() as output_io:
+                    img.save(output_io, format='JPEG', quality=save_quality)
+                    return base64.b64encode(output_io.getvalue()).decode()
+
+        except Exception as e:
+            print(f"Screenshot Error: {e}")
             return "" # ❌ 失败返回空字符串
 
     async def handle_click(self, x_ratio, y_ratio):

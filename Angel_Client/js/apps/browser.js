@@ -21,15 +21,33 @@ export const config = {
     // openMsg: "探索之窗已开启，准备好发现新世界了吗？🌍", // 💖 已移除，统一由 angel.js 管理
     content: `
         <!-- 💖 浏览器地址栏容器 -->
-        <div style="padding:8px; background:#f1f2f6; display:flex; gap:8px; border-bottom:1px solid #ddd;">
-            <!-- 💖 网址输入框 -->
-            <input type="text" id="browser-url" placeholder="输入网址 (例如 https://www.bilibili.com)"
-                style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
-            <!-- 💖 前往按钮 -->
-            <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
-            <!-- 💖 智能分析按钮 -->
-            <button id="btn-browser-analyze"
-                style="padding:4px 12px; cursor:pointer; background:var(--primary-color); color:white; border:none; border-radius:4px;">分析画面</button>
+        <div style="padding:8px; background:#f1f2f6; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #ddd;">
+            <div style="display:flex; gap:8px;">
+                <!-- 💖 网址输入框 -->
+                <input type="text" id="browser-url" placeholder="输入网址 (例如 https://www.bilibili.com)"
+                    style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
+                <!-- 💖 前往按钮 -->
+                <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
+                <!-- 💖 智能分析按钮 -->
+                <button id="btn-browser-analyze"
+                    style="padding:4px 12px; cursor:pointer; background:var(--primary-color); color:white; border:none; border-radius:4px;">分析画面</button>
+            </div>
+            <!-- 💖 性能控制栏 -->
+            <div style="display:flex; gap:8px; align-items:center; font-size:12px;">
+                <span>画质:</span>
+                <select id="sel-quality" style="padding:2px;">
+                    <option value="high" selected>高清 (High)</option>
+                    <option value="medium">均衡 (Medium)</option>
+                    <option value="low">省流 (Low)</option>
+                </select>
+                <span style="margin-left:8px;">帧率:</span>
+                <select id="sel-fps" style="padding:2px;">
+                    <option value="30">30 FPS</option>
+                    <option value="15" selected>15 FPS</option>
+                    <option value="5">5 FPS</option>
+                    <option value="1">1 FPS</option>
+                </select>
+            </div>
         </div>
 
         <!-- 💖 浏览器内容显示区域 -->
@@ -135,6 +153,23 @@ class BrowserApp {
             network.send('start_scan'); // 💖 发送网络请求，通知服务器开始扫描
             wm.openApp('win-angel'); // 💖 自动打开“观察眼”窗口，显示扫描界面
         });
+
+        // === 性能控制逻辑 (画质/帧率) ===
+        const selQuality = document.getElementById('sel-quality');
+        const selFps = document.getElementById('sel-fps');
+        
+        const updateConfig = () => {
+            if (selQuality && selFps) {
+                network.send({
+                    type: 'config_update',
+                    quality: selQuality.value,
+                    fps: parseInt(selFps.value)
+                });
+            }
+        };
+
+        if (selQuality) selQuality.onchange = updateConfig;
+        if (selFps) selFps.onchange = updateConfig;
 
         // === 浏览器控制逻辑 ===
         const btnGo = document.getElementById('btn-browser-go'); // 💖 获取“前往”按钮 DOM 元素
