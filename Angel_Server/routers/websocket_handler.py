@@ -52,8 +52,11 @@ async def send_packet(ws: WebSocket, type_str: str, data: dict = None):
     try:
         # 📤 发送文本消息
         await ws.send_text(json_str)
-    except:
-        pass # 🔇 忽略发送失败（通常是因为连接已断开）
+    except Exception as e:
+        # 🔇 忽略发送失败（通常是因为连接已断开）
+        # 在调试阶段打印错误有助于排查
+        print(f"⚠️ WS Send Error: {e}")
+        pass
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -146,21 +149,20 @@ async def websocket_endpoint(websocket: WebSocket):
         # 🏃 启动接收循环任务
         receiver_task = asyncio.create_task(receive_loop())
 
-        # 🚀 启动浏览器服务
-        await browser_service.start()
         # 🔗 注册 URL 回调
         browser_service.set_url_callback(on_url_change)
         
-        # 📢 发送启动成功日志
-        await send_packet(websocket, "log", {"msg": "✨ Angel 系统已模块化启动！"})
-
         # 🔄 主处理循环
         while True:
             # 🎮 处理命令
             try:
-                # ⏱️ 尝试从队列获取命令，超时时间为 0.05 秒
+                # ⏱️ 动态计算超时时间以匹配帧率
                 # 这样做的目的是为了不阻塞下面的截图逻辑，保证画面流畅
-                command = await asyncio.wait_for(queue.get(), timeout=0.05)
+                frame_interval = 1.0 / current_fps
+                # 计算距离下一帧还有多久，至少等待 1ms 避免 CPU 空转
+                wait_time = max(0.001, (last_frame_time + frame_interval) - time.time())
+                
+                command = await asyncio.wait_for(queue.get(), timeout=wait_time)
             except asyncio.TimeoutError:
                 # ⏳ 如果超时（没有新命令），则 command 为 None
                 command = None
@@ -195,7 +197,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             if current_fps != clamped_fps:
                                 current_fps = clamped_fps
                                 should_log = True
-                        except:
+                        except ValueError:
                             pass
                     
                     # 🛡️ 日志节流: 只有在真正变化且距离上次日志超过 1 秒时才发送
@@ -305,7 +307,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 🕰️ 处理旧版跳转指令 (兼容性)
                 elif cmd_type == "jump_to":
                     ts = command.get("timestamp", 0)
-                    # ...existing code...
+                    # 兼容性映射：尝试使用 angt_jump
+                    await browser_service.angt_jump(ts)
+                    await send_packet(websocket, "log", {"msg": f"🕰️ [兼容] 跳转至 {ts}秒"})
             
             # 📸 每一帧都尝试发送截图
             # 优化：增加帧率限制，避免发送过快导致前端卡顿和流量爆炸
