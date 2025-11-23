@@ -70,7 +70,7 @@ body {
 */
 #desktop {
     width: 100%; /* 📏 宽度占满 */
-    height: calc(100% - 40px); /* 📏 减去任务栏高度 */
+    height: 100%; /* 📏 占满全屏，让任务栏浮在壁纸上方 */
     /* background-image: var(--bg-wallpaper); */ /* 🖼️ 使用变量里的壁纸 (已改为 JS 直接设置，避免路径解析错误) */
     background-size: cover; /* 🖼️ 图片铺满 */
     background-position: center; /* 📍 图片居中 */
@@ -377,23 +377,22 @@ body {
 */
 #taskbar {
     position: fixed; /* 📍 固定定位 */
-    bottom: 10px; /* 📍 底部悬浮 */
-    left: 50%; /* 📍 居中 */
-    transform: translateX(-50%); /* 📍 居中修正 */
-    width: 90%; /* 📏 宽度不占满，像 Dock 栏 */
-    max-width: 800px; /* 📏 最大宽度 */
-    height: 56px; /* 📏 增加高度 */
-    background: rgba(255, 255, 255, 0.75); /* ⚪ 亮色磨砂背景 */
+    bottom: 0; /* 📍 底部对齐 */
+    left: 0; /* 📍 左侧对齐 */
+    width: 100%; /* 📏 宽度占满 */
+    height: 50px; /* 📏 适中的高度 */
+    background: rgba(255, 255, 255, 0.85); /* ⚪ 亮色磨砂背景 */
     -webkit-backdrop-filter: blur(20px) saturate(180%); /* 🍎 Safari 兼容 */
     backdrop-filter: blur(20px) saturate(180%); /* 🌫️ 强力毛玻璃 */
     display: grid; /* 📦 网格布局 */
     grid-template-columns: auto 1fr auto; /* 📏 左中右布局 */
     align-items: center; /* ↕️ 垂直居中 */
-    padding: 0 15px; /* 📏 增加内边距 */
+    padding: 0 10px; /* 📏 内边距 */
     z-index: 1000; /* 📚 确保任务栏永远在最上面 */
-    border: 1px solid rgba(255, 255, 255, 0.5); /* 📏 半透明边框 */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* 🌑 柔和阴影 */
-    border-radius: 16px; /* 📏 大圆角 */
+    border-top: 1px solid rgba(255, 255, 255, 0.5); /* 📏 顶部微光边框 */
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1); /* 🌑 柔和阴影 */
+    border-radius: 0; /* 🚫 无圆角 */
+    transform: none; /* 🚫 移除变换 */
 }
 
 .start-btn {
