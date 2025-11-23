@@ -119,10 +119,10 @@ export class WindowManager {
             // 📝 窗口标题
             const title = document.createElement('div');
             title.className = 'win-title';
-            // 组合名称和提示 (如果有)
-            title.innerText = app.description ? `${app.name} · ${app.description}` : app.name;
+            // 组合名称和提示 (使用空格分隔)
+            title.innerText = app.description ? `${app.name}     ${app.description}` : app.name;
 
-            // 交换顺序：标题在左，按钮在右
+            // 交换顺序：按钮在右，标题在左 (恢复经典布局)
             titleBar.appendChild(title);
             titleBar.appendChild(controls);
             win.appendChild(titleBar);
@@ -746,13 +746,11 @@ export class WindowManager {
         store.updateApp(id, { isOpen: true }); // 💾 保存状态
 
         // 📢 通知应用已打开 (可用于恢复运行)
-        bus.emit('app:opened', id);
+        // 💖 统一发送对象格式，方便扩展
+        bus.emit('app:opened', { id });
 
-        // 🔊 播放打开语音
-        if (speak) {
-            const appInfo = store.getApp(id);
-            bus.emit('system:speak', appInfo.openMsg || `打开 ${appInfo.name}`);
-        }
+        // 🔊 播放打开语音 (已移交 AngelApp 处理)
+        // if (speak) { ... } 
         this.updateTaskbar(); // 📊 更新任务栏
     }
 

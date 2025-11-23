@@ -17,7 +17,7 @@ export const config = {
     // =================================
     id: 'win-companion',
     name: '守护天使',
-    description: '智能伴侣',
+    description: '永远陪伴在你身边的守护者', // 💖 更长的描述
     icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z',
     color: '#ff7675',
     showDesktopIcon: false, // 💖 不显示桌面图标
@@ -25,7 +25,7 @@ export const config = {
     pos: { x: window.innerWidth - 320, y: 100 }, // 💖 默认出生在屏幕右侧，不挡视线
     winPos: { x: window.innerWidth - 320, y: 100 },
     isOpen: true, // 💖 默认打开小天使窗口
-    openMsg: "Seraphim 已上线，愿你的每一天都充满阳光！✨",
+    // openMsg: "Seraphim 已上线，愿你的每一天都充满阳光！✨", // 💖 已移除，统一由 angel.js 管理
     // 💖 这是一个特殊的“透明”窗口，我们通过 CSS 覆盖默认样式
     content: `
         <div id="angel-container" style="width:100%; height:100%; position:relative;">
@@ -77,6 +77,21 @@ const ANGEL_QUOTES = [
     "保持微笑，好运自然来！😊",
     "我在听，把你的烦恼都告诉我吧~ 👂"
 ];
+
+// =================================
+//  🎉 应用启动语录库
+// =================================
+const APP_OPEN_MESSAGES = {
+    'win-billing': "金色收获已开启，每一分耕耘都有回报！💰",
+    'win-angel': "探索之窗已打开，世界那么大，我们去看看！🌍",
+    'win-intel': "智慧锦囊已解开，灵感女神正在眷顾你！💡",
+    'win-manual': "光明指引已点亮，前方的路不再迷茫！🕯️",
+    'win-settings': "美好工坊已就绪，来打造你的梦想空间吧！🎨",
+    'win-taskmgr': "活力源泉已涌动，系统状态满格！💪",
+    'win-traffic': "脉动监测中，感受数据的每一次跳动！💓",
+    'win-companion': "Seraphim 已上线，愿你的每一天都充满阳光！✨",
+    'default': "应用已启动，随时为你服务！✨"
+};
 
 export class AngelApp {
     // =================================
@@ -181,8 +196,9 @@ export class AngelApp {
         this.isRunning = true;
         this.animate();
 
-        // 💖 显示欢迎语
-        this.showBubble(config.openMsg);
+        // 💖 显示欢迎语 (使用统一的消息库)
+        const msg = APP_OPEN_MESSAGES['win-companion'] || APP_OPEN_MESSAGES['default'];
+        this.showBubble(msg);
     }
 
     // =================================
@@ -263,7 +279,7 @@ export class AngelApp {
         this.group.add(box(0.2, 0.7, 0.2, matSkin, 0.5, 0.6, 0)); // 💖 右臂
 
         // Wings
-        // 💖 辅助函数：创建更饱满的翅膀 (丰满版)
+        // 💖 辅助函数：创建更饱满的翅膀 (修正版：向上展开)
         const createWing = (isLeft) => {
             const wing = new THREE.Group();
             const dir = isLeft ? -1 : 1; // 💖 方向系数
@@ -273,7 +289,7 @@ export class AngelApp {
             const matFeather = new THREE.MeshLambertMaterial({ 
                 color: 0xffffff, 
                 transparent: true, 
-                opacity: 0.95, // 提高不透明度，看起来更实
+                opacity: 0.95, 
             });
 
             // 1. 翅膀骨架 (连接身体的部分)
@@ -281,32 +297,27 @@ export class AngelApp {
             bone.rotation.z = dir * 0.1;
             wing.add(bone);
 
-            // 2. 内层绒羽 (填充根部，增加厚度)
+            // 2. 内层绒羽 (填充根部)
             for(let i = 0; i < 6; i++) {
-                // 增加宽度，减少间隙
-                const f = box(0.2, 0.45, 0.03, matFeather, dir * (0.15 + i*0.06), -0.15, 0.02);
-                f.rotation.z = dir * (0.15 - i * 0.05);
+                const f = box(0.2, 0.45, 0.03, matFeather, dir * (0.15 + i*0.06), 0.05 + i*0.02, 0.02); // y 向上调整
+                f.rotation.z = dir * (0.1 + i * 0.05); // 角度向上
                 f.rotation.x = 0.1; 
                 wing.add(f);
             }
 
             // 3. 中层覆羽 (主要覆盖层)
             for(let i = 0; i < 7; i++) {
-                // 更宽，更密
-                const f = box(0.18, 0.7, 0.03, matFeather, dir * (0.2 + i*0.09), -0.25, 0.04);
-                f.rotation.z = dir * (-0.05 - i * 0.1);
+                const f = box(0.18, 0.7, 0.03, matFeather, dir * (0.2 + i*0.09), 0.15 + i*0.05, 0.04); // y 向上调整
+                f.rotation.z = dir * (0.2 + i * 0.1); // 角度向上
                 f.rotation.x = 0.05;
                 wing.add(f);
             }
 
-            // 4. 外层飞羽 (长而有力)
+            // 4. 外层飞羽 (长而有力，向上展开)
             for(let i = 0; i < 8; i++) {
-                // 越往外越长，且更宽
                 const len = 0.9 + Math.sin(i * 0.4) * 0.4; 
-                const f = box(0.15, len, 0.03, matFeather, dir * (0.25 + i*0.11), -0.3 - len/2, 0.06);
-                // 展开角度
-                f.rotation.z = dir * (-0.15 - i * 0.15);
-                // 稍微向后弯曲
+                const f = box(0.15, len, 0.03, matFeather, dir * (0.25 + i*0.11), 0.2 + len/2 + i*0.05, 0.06); // y 向上调整
+                f.rotation.z = dir * (0.3 + i * 0.15); // 角度向上
                 f.rotation.y = dir * -0.15;
                 wing.add(f);
             }
@@ -315,10 +326,10 @@ export class AngelApp {
         };
 
         this.wL = createWing(true); // 💖 左翅膀组
-        this.wL.position.set(-0.3, 0.8, -0.4); // 💖 调整根部位置
+        this.wL.position.set(-0.3, 0.8, -0.4); 
         
         this.wR = createWing(false); // 💖 右翅膀组
-        this.wR.position.set(0.3, 0.8, -0.4); // 💖 调整根部位置
+        this.wR.position.set(0.3, 0.8, -0.4); 
         
         this.group.add(this.wL);
         this.group.add(this.wR);
@@ -381,6 +392,12 @@ export class AngelApp {
     // =================================
     initInteraction() {
         this.ctx.on('system:speak', (msg) => this.showBubble(msg)); // 💖 监听系统说话事件
+        
+        // 💖 监听应用打开事件，自动播放欢迎语
+        this.ctx.on('app:opened', (data) => {
+            const msg = APP_OPEN_MESSAGES[data.id] || APP_OPEN_MESSAGES['default'];
+            this.showBubble(msg);
+        });
 
         // 阻止默认右键
         this.container.addEventListener('contextmenu', (e) => e.preventDefault()); // 💖 禁用默认右键菜单

@@ -282,7 +282,7 @@ body {
     background: rgba(255, 255, 255, 0.6); /* 🌫️ 稍微加深背景 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
-    justify-content: center; /* ↔️ 标题居中 */
+    justify-content: space-between; /* ↔️ 两端对齐 */
     padding: 0 12px; /* 📏 增加内边距 */
     cursor: default; /* ✋ 默认鼠标样式，避免误解 */
     border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* 📏 增加底部分隔线 */
@@ -300,16 +300,14 @@ body {
     font-weight: 600; /* 🔤 加粗 */
     letter-spacing: 1px; /* 📏 增加字间距 */
     text-shadow: 0 1px 0 rgba(255,255,255,0.8); /* 🌑 文字阴影增加立体感 */
+    margin-left: 8px; /* 📏 左侧留白 */
 }
 
 .win-controls {
     display: flex;
     gap: 8px; /* 📏 增加按钮间距 */
     z-index: 10; /* 📚 确保按钮在最上层，不被标题栏遮挡 */
-    position: absolute; /* 📍 绝对定位到左侧 */
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
+    /* 恢复默认流式布局，靠右对齐 */
 }
 
 /* 🎮 窗口控制按钮 (红黄绿) */

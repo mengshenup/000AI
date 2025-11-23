@@ -13,12 +13,12 @@ export const config = {
     // =================================
     id: 'win-intel', // 💖 窗口的唯一标识符
     name: '智慧锦囊', // 💖 窗口标题栏显示的名称
-    description: '灵感源泉', // 💖 功能描述
+    description: '记录灵感与秘密的宝库', // 💖 功能描述
     icon: 'M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z', // 💖 SVG 图标路径（消息气泡形状）
     color: '#00b894', // 💖 窗口的主题颜色（青绿色）
     pos: { x: 20, y: 200 }, // 💖 桌面图标的默认位置
     winPos: { x: 150, y: 150 }, // 💖 窗口打开时的默认屏幕坐标
-    openMsg: "智慧锦囊已打开，这里藏着通往成功的秘密哦！💡", // 💖 打开应用时小天使说的话
+    // openMsg: "智慧锦囊已打开，这里藏着通往成功的秘密哦！💡", // 💖 已移除，统一由 angel.js 管理
     content: `
         <!-- 💖 顶部操作栏 -->
         <div style="margin-bottom:10px; display:flex; gap:10px;">
@@ -44,7 +44,7 @@ import { bus } from '../event_bus.js'; // 💖 导入事件总线
 import { network } from '../network.js'; // 💖 导入网络模块
 
 export const APP_NAME = 'Wisdom Pouch'; // 💖 导出应用名称常量
-export const APP_OPEN_MSG = "智慧锦囊已打开，这里藏着通往成功的秘密哦！💡"; // 💖 导出启动消息常量
+// export const APP_OPEN_MSG = "智慧锦囊已打开，这里藏着通往成功的秘密哦！💡"; // 💖 已移除
 
 class IntelligenceApp {
     // =================================
