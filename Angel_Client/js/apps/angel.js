@@ -263,7 +263,7 @@ export class AngelApp {
         this.group.add(box(0.2, 0.7, 0.2, matSkin, 0.5, 0.6, 0)); // 💖 右臂
 
         // Wings
-        // 💖 辅助函数：创建更精致的翅膀 (多层羽翼结构)
+        // 💖 辅助函数：创建更精致的翅膀 (加大版)
         const createWing = (isLeft) => {
             const wing = new THREE.Group();
             const dir = isLeft ? -1 : 1; // 💖 方向系数
@@ -277,24 +277,24 @@ export class AngelApp {
                 emissiveIntensity: 0.1
             });
 
-            // 💖 第一层：主翼骨 (厚实)
-            const bone = box(0.6, 0.15, 0.1, matFeather, dir * 0.3, 0.1, 0);
+            // 💖 第一层：主翼骨 (加大厚实)
+            const bone = box(0.8, 0.2, 0.12, matFeather, dir * 0.4, 0.1, 0);
             bone.rotation.z = dir * 0.2;
             wing.add(bone);
 
-            // 💖 第二层：中层羽毛 (扇形展开)
+            // 💖 第二层：中层羽毛 (加大扇形)
             const feathersMid = new THREE.Group();
             for(let i = 0; i < 3; i++) {
-                const f = box(0.5, 0.12, 0.05, matFeather, dir * (0.4 + i*0.15), -0.1 - i*0.05, 0.02);
+                const f = box(0.65, 0.15, 0.06, matFeather, dir * (0.5 + i*0.18), -0.15 - i*0.06, 0.02);
                 f.rotation.z = dir * (0.1 - i * 0.1);
                 feathersMid.add(f);
             }
             wing.add(feathersMid);
 
-            // 💖 第三层：长飞羽 (轻薄，末端)
+            // 💖 第三层：长飞羽 (加大延长)
             const feathersLong = new THREE.Group();
             for(let i = 0; i < 4; i++) {
-                const f = box(0.6, 0.1, 0.03, matFeather, dir * (0.5 + i*0.12), -0.25 - i*0.08, 0.04);
+                const f = box(0.8, 0.12, 0.04, matFeather, dir * (0.6 + i*0.15), -0.35 - i*0.1, 0.04);
                 f.rotation.z = dir * (-0.1 - i * 0.15);
                 feathersLong.add(f);
             }
@@ -304,10 +304,10 @@ export class AngelApp {
         };
 
         this.wL = createWing(true); // 💖 左翅膀组
-        this.wL.position.set(-0.25, 0.8, -0.35); // 💖 调整根部位置
+        this.wL.position.set(-0.3, 0.8, -0.4); // 💖 调整根部位置
         
         this.wR = createWing(false); // 💖 右翅膀组
-        this.wR.position.set(0.25, 0.8, -0.35); // 💖 调整根部位置
+        this.wR.position.set(0.3, 0.8, -0.4); // 💖 调整根部位置
         
         this.group.add(this.wL);
         this.group.add(this.wR);
