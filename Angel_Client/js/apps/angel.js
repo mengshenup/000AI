@@ -263,12 +263,27 @@ export class AngelApp {
         this.group.add(box(0.2, 0.7, 0.2, matSkin, 0.5, 0.6, 0)); // 💖 右臂
 
         // Wings
-        this.wL = new THREE.Group(); // 💖 左翅膀组
-        this.wL.add(box(0.8, 0.3, 0.1, matWing, -0.5, 0, 0));
+        // 💖 辅助函数：创建更精致的翅膀
+        const createWing = (isLeft) => {
+            const wing = new THREE.Group();
+            const dir = isLeft ? -1 : 1; // 💖 方向系数
+            
+            // 💖 翅膀根部 (主羽)
+            wing.add(box(0.5, 0.25, 0.08, matWing, dir * 0.25, 0.1, 0));
+            // 💖 翅膀中部 (副羽)
+            wing.add(box(0.45, 0.2, 0.06, matWing, dir * 0.55, -0.05, 0.02));
+            // 💖 翅膀尖端 (飞羽)
+            wing.add(box(0.35, 0.15, 0.04, matWing, dir * 0.8, -0.2, 0.04));
+            
+            return wing;
+        };
+
+        this.wL = createWing(true); // 💖 左翅膀组
         this.wL.position.set(-0.3, 0.8, -0.3);
-        this.wR = new THREE.Group(); // 💖 右翅膀组
-        this.wR.add(box(0.8, 0.3, 0.1, matWing, 0.5, 0, 0));
+        
+        this.wR = createWing(false); // 💖 右翅膀组
         this.wR.position.set(0.3, 0.8, -0.3);
+        
         this.group.add(this.wL);
         this.group.add(this.wR);
 

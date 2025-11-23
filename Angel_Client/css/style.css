@@ -117,44 +117,47 @@ body {
 */
 .speech-bubble {
     position: absolute; /* 📍 绝对定位 */
-    top: 10px; /* 📍 距离顶部固定距离，确保在头顶 */
+    top: -30px; /* 📍 向上移动，悬浮在头顶上方 */
     left: 50%; /* 📍 水平居中 */
-    transform: translateX(-50%); /* 📍 修正居中 */
-    background: white; /* ⚪ 白色背景 */
-    padding: 8px 12px; /* 📏 减小内边距 */
-    border-radius: 12px; /* 📏 增加圆角 */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* 🌑 更柔和的阴影 */
-    font-size: 12px; /* 🔤 减小字体大小 */
-    line-height: 1.4; /* 📏 减小行高 */
-    max-width: 180px; /* 📏 减小最大宽度 */
+    transform: translateX(-50%) translateY(10px); /* 📍 初始位置下沉，用于动画 */
+    background: rgba(255, 255, 255, 0.95); /* ⚪ 亮白背景 */
+    backdrop-filter: blur(5px); /* 🌫️ 气泡也带一点毛玻璃 */
+    padding: 10px 16px; /* 📏 舒适的内边距 */
+    border-radius: 20px; /* 📏 更圆润的圆角 */
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1), 0 2px 5px rgba(0,0,0,0.05); /* 🌑 层次感阴影 */
+    border: 1px solid rgba(255, 255, 255, 0.8); /* 📏 微光边框 */
+    font-size: 13px; /* 🔤 适中的字体 */
+    line-height: 1.5; /* 📏 良好的行高 */
+    max-width: 200px; /* 📏 限制最大宽度 */
     width: max-content; /* 📏 自适应宽度 */
-    min-width: 40px; /* 📏 最小宽度 */
+    min-width: 60px; /* 📏 最小宽度 */
     opacity: 0; /* 👻 默认隐藏 */
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 🎬 弹性动画 */
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); /* 🎬 弹性弹出动画 */
     pointer-events: none; /* 🚫 气泡不阻挡鼠标点击 */
     z-index: 51; /* 📚 层级高于小天使 */
     white-space: pre-wrap; /* 📝 保留换行 */
     word-wrap: break-word; /* 📝 自动换行 */
     text-align: center; /* ↔️ 文字居中 */
-    color: #444; /* 📝 文字颜色 */
+    color: #2d3436; /* 📝 深灰文字 */
 }
 
 /* 🗨️ 气泡的小尾巴 */
 .speech-bubble::after {
     content: '';
     position: absolute;
-    bottom: -8px; /* 📍 位于气泡底部 */
+    bottom: -6px; /* 📍 位于气泡底部 */
     left: 50%; /* 📍 水平居中 */
     transform: translateX(-50%); /* 📍 修正居中 */
     border-width: 8px 8px 0; /* 📏 三角形大小 */
     border-style: solid;
-    border-color: white transparent transparent;
+    border-color: rgba(255, 255, 255, 0.95) transparent transparent; /* 🎨 颜色匹配背景 */
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,0.05)); /* 🌑 尾巴阴影 */
 }
 
 /* ✨ 激活状态：显示气泡 */
 .speech-bubble.show {
     opacity: 1;
-    transform: translateX(-50%) translateY(0); /* 📍 恢复位置 */
+    transform: translateX(-50%) translateY(0); /* 📍 弹起到位 */
 }
 
 /* 
@@ -360,51 +363,52 @@ body {
 
 /* 
 // =================================
-//  🎉 任务栏样式 (Windows 风格)
+//  🎉 底部任务栏 (Bottom Taskbar)
 //
 //  🎨 代码用途：
-//     定义底部任务栏的外观和布局。
+//     底部固定导航栏，包含开始菜单、应用列表和状态信息。
 //
 //  💡 易懂解释：
-//     屏幕最下面的那个长条！显示时间、开始菜单和正在运行的软件，是操作系统的“控制台”！🎮
+//     这是你的控制台！开始按钮、正在运行的程序、还有时间都在这里排排坐！🎮
 //
 //  ⚠️ 警告：
-//     z-index: 1000 确保任务栏永远在最上面。
+//     它的层级（z-index）非常高，必须保证它永远浮在所有窗口的上面，不能被遮住！
 // =================================
 */
 #taskbar {
     position: fixed; /* 📍 固定定位 */
-    bottom: 0; /* 📍 底部对齐 */
-    left: 0; /* 📍 左侧对齐 */
-    width: 100%; /* 📏 宽度占满 */
-    height: 48px; /* 📏 高度 */
-    background: rgba(40, 40, 50, 0.7); /* 🌑 深色半透明背景 (调亮) */
-    -webkit-backdrop-filter: blur(15px); /* 🍎 Safari 兼容 */
-    backdrop-filter: blur(15px); /* 🌫️ 毛玻璃效果 */
+    bottom: 10px; /* 📍 底部悬浮 */
+    left: 50%; /* 📍 居中 */
+    transform: translateX(-50%); /* 📍 居中修正 */
+    width: 90%; /* 📏 宽度不占满，像 Dock 栏 */
+    max-width: 800px; /* 📏 最大宽度 */
+    height: 56px; /* 📏 增加高度 */
+    background: rgba(255, 255, 255, 0.75); /* ⚪ 亮色磨砂背景 */
+    -webkit-backdrop-filter: blur(20px) saturate(180%); /* 🍎 Safari 兼容 */
+    backdrop-filter: blur(20px) saturate(180%); /* 🌫️ 强力毛玻璃 */
     display: grid; /* 📦 网格布局 */
     grid-template-columns: auto 1fr auto; /* 📏 左中右布局 */
     align-items: center; /* ↕️ 垂直居中 */
-    padding: 0 10px; /* 📏 内边距 */
+    padding: 0 15px; /* 📏 增加内边距 */
     z-index: 1000; /* 📚 确保任务栏永远在最上面 */
-    border-top: 1px solid rgba(255, 255, 255, 0.1); /* 📏 顶部微光边框 */
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2); /* 🌑 阴影 */
-    border-radius: 0; /* 🚫 无圆角 */
-    transform: none; /* 🚫 移除居中变换 */
+    border: 1px solid rgba(255, 255, 255, 0.5); /* 📏 半透明边框 */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* 🌑 柔和阴影 */
+    border-radius: 16px; /* 📏 大圆角 */
 }
 
 .start-btn {
     font-weight: 600; /* 🔤 字体加粗 */
-    color: #fff; /* ⚪ 白色文字 */
+    color: #333; /* 📝 深色文字 */
     cursor: pointer; /* 👆 鼠标变成手型 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
     justify-content: center;
-    width: 36px; /* 📏 按钮宽度 */
-    height: 36px; /* 📏 按钮高度 */
-    background: transparent; /* 🚫 透明背景 */
-    border-radius: 4px; /* 📏 小圆角 */
-    box-shadow: none; /* 🚫 无阴影 */
-    transition: background 0.2s; /* 🎬 背景过渡 */
+    width: 40px; /* 📏 增大按钮 */
+    height: 40px; /* 📏 增大按钮 */
+    background: rgba(255, 255, 255, 0.5); /* ⚪ 半透明背景 */
+    border-radius: 10px; /* 📏 圆角 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* 🌑 轻微阴影 */
+    transition: all 0.2s; /* 🎬 过渡 */
     font-size: 0; /* 🚫 隐藏文字 */
     margin-right: 10px; /* 📏 右侧间距 */
 }
@@ -412,30 +416,29 @@ body {
 /* 🎨 开始按钮图标 (使用伪元素绘制简单的 Windows 风格图标) */
 .start-btn::before {
     content: '';
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2300adef'%3E%3Cpath d='M3 12V3h9v9H3zm9 9v-9H3v9h9zm1-9h9V3h-9v9zm9 9h-9v-9h9v9z'/%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;
-    filter: drop-shadow(0 0 2px rgba(0,173,239,0.5));
+    filter: drop-shadow(0 2px 3px rgba(0,173,239,0.3));
 }
 
 .start-btn:hover {
-    background: rgba(255, 255, 255, 0.1); /* ✨ 悬停背景色 */
-    transform: none; /* 🚫 移除缩放 */
-    box-shadow: none; /* 🚫 移除阴影 */
+    background: rgba(255, 255, 255, 0.8); /* ✨ 悬停变亮 */
+    transform: translateY(-2px); /* 🚀 上浮 */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* 🌑 增加阴影 */
 }
 
 .start-btn:active {
-    background: rgba(255, 255, 255, 0.2); /* 📉 点击背景色 */
     transform: scale(0.95); /* 📉 点击缩小 */
 }
 
 /* 📋 任务栏应用列表 */
 #taskbar-apps {
     display: flex; /* 📦 弹性布局 */
-    gap: 4px; /* 📏 紧凑间距 */
-    padding: 0;
+    gap: 8px; /* 📏 增加间距 */
+    padding: 0 10px;
     border: none;
     margin: 0;
     height: 100%;
@@ -443,45 +446,49 @@ body {
 }
 
 .task-app {
-    width: 40px; /* 📏 宽度 */
-    height: 40px; /* 📏 高度 */
-    border-radius: 4px; /* 📏 小圆角 */
+    width: 44px; /* 📏 增大图标 */
+    height: 44px; /* 📏 增大图标 */
+    border-radius: 10px; /* 📏 圆角 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
     justify-content: center; /* ↔️ 水平居中 */
     cursor: pointer; /* 👆 鼠标变成手型 */
-    transition: all 0.2s; /* 🎬 过渡动画 */
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); /* 🎬 弹性过渡 */
     position: relative; /* 📍 相对定位 */
-    background: transparent; /* 🚫 透明背景 */
-    margin-top: 4px; /* 📏 垂直居中微调 */
+    background: rgba(255, 255, 255, 0.3); /* ⚪ 默认微弱背景 */
+    margin-top: 0; /* 📏 移除偏移 */
 }
 
 .task-app:hover {
-    background: rgba(255, 255, 255, 0.1); /* ✨ 悬停背景色 */
-    transform: none; /* 🚫 移除上浮 */
+    background: rgba(255, 255, 255, 0.6); /* ✨ 悬停变亮 */
+    transform: translateY(-4px) scale(1.05); /* 🚀 上浮并放大 */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* 🌑 增加阴影 */
 }
 
 .task-app.active {
-    background: rgba(255, 255, 255, 0.15); /* 💡 当前激活窗口高亮 */
-    box-shadow: inset 0 -2px 0 var(--primary-color); /* 📏 底部高亮条 */
+    background: rgba(255, 255, 255, 0.8); /* 💡 激活高亮 */
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1); /* 🌑 激活阴影 */
 }
 
 /* 🟢 运行指示灯 (图标下方的小点) */
 .task-app.running::after {
     content: '';
     position: absolute;
-    bottom: 0; /* 📍 底部 */
-    width: 16px; /* 📏 宽度 */
-    height: 3px; /* 📏 高度 */
-    background: #ccc; /* ⚪ 灰色 */
-    border-radius: 2px;
+    bottom: -6px; /* 📍 移到图标外面 */
+    width: 4px; /* 📏 圆点 */
+    height: 4px; /* 📏 圆点 */
+    background: #888; /* ⚪ 灰色 */
+    border-radius: 50%; /* ⭕ 圆形 */
     opacity: 0.8;
+    transition: all 0.2s;
 }
 
 .task-app.active::after {
     background: var(--primary-color); /* 🔵 激活时变蓝 */
-    width: 100%; /* 📏 激活时占满宽度 */
-    border-radius: 0;
+    width: 20px; /* 📏 变长条 */
+    height: 3px;
+    border-radius: 2px;
+    bottom: 2px; /* 📍 移回图标内部 */
 }
 
 /* 状态栏区域 (右侧) */
