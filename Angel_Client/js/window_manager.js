@@ -108,8 +108,8 @@ export class WindowManager {
         const controls = document.createElement('div');
         controls.className = 'win-controls';
         controls.innerHTML = `
-            <button class="win-btn close-btn" title="关闭"></button>
             <button class="win-btn min-btn" title="最小化"></button>
+            <button class="win-btn close-btn" title="关闭"></button>
         `;
 
         // 📝 窗口标题

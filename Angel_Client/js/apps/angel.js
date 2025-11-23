@@ -22,7 +22,7 @@ export const config = {
     color: '#ff7675',
     pos: { x: window.innerWidth - 320, y: 100 }, // 💖 默认出生在屏幕右侧，不挡视线
     winPos: { x: window.innerWidth - 320, y: 100 },
-    isOpen: true, // 💖 默认打开小天使窗口
+    isOpen: false, // 💖 默认关闭小天使窗口
     openMsg: "Seraphim 已上线，随时待命！✨",
     // 💖 这是一个特殊的“透明”窗口，我们通过 CSS 覆盖默认样式
     content: `
@@ -347,13 +347,7 @@ export class AngelApp {
         this.container.addEventListener('mousedown', (e) => {
             if (e.button === 0) { // 💖 左键点击
                 this.chat(); // 💖 触发对话
-                
-                // 手动触发窗口拖拽
-                // 因为我们隐藏了标题栏，所以需要在这里手动调用 WindowManager 的拖拽逻辑
-                const win = document.getElementById(this.id);
-                if (win) {
-                    wm.startDrag(e, win, 'window'); // 💖 开始拖拽窗口
-                }
+                // 拖拽逻辑由 WindowManager 全局接管，无需手动调用
             } else if (e.button === 2) { // 💖 右键点击
                 this.handleRightClick(e); // 💖 处理旋转逻辑
             }
