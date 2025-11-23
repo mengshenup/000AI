@@ -33,6 +33,7 @@ export class WindowManager {
         // 🔗 绑定方法的 this 上下文，确保在事件回调中能正确访问类实例
         this.handleMouseMove = this.handleMouseMove.bind(this);
         this.handleMouseUp = this.handleMouseUp.bind(this);
+        this.handleWindowClick = this.handleWindowClick.bind(this); // 💖 绑定窗口点击事件
 
         // 🔢 窗口层级计数器
         this.zIndexCounter = 100;
@@ -97,6 +98,8 @@ export class WindowManager {
         if (document.getElementById(id)) return;
 
         const desktop = document.getElementById('desktop');
+        
+
 
         // 📦 创建窗口容器
         const win = document.createElement('div');
@@ -373,6 +376,15 @@ export class WindowManager {
 
     // === 2. 事件委托与交互 ===
 
+    // 💖 新增：处理窗口点击
+    handleWindowClick(win) {
+        const id = win.id;
+        // 如果点击的不是当前激活窗口，则置顶并更新状态
+        if (this.activeWindowId !== id) {
+            this.bringToFront(id);
+        }
+    }
+
     setupGlobalEvents() {
         // =================================
         //  🎉 设置全局事件 ()
@@ -388,12 +400,18 @@ export class WindowManager {
         // =================================
 
         // 🖱️ 全局点击委托 (处理关闭、最小化、点击图标)
-        document.addEventListener('click', (e) => {
+        document.addEventListener('mousedown', (e) => {
             const target = e.target; // 🎯 获取被点击的元素
 
-            // 1. 处理窗口控制按钮 (关闭)
+            // 1. 处理窗口点击 (置顶)
+            const win = target.closest('.window');
+            if (win) {
+                this.handleWindowClick(win); // 💖 统一处理窗口点击
+            }
+
+            // 2. 处理窗口控制按钮 (关闭)
             if (target.closest('.close-btn')) {
-                const win = target.closest('.window'); // 🪟 找到所属窗口
+                // const win = target.closest('.window'); // 上面已经获取了
                 if (win) this.closeApp(win.id); // ❌ 关闭窗口
             }
             // 2. 处理窗口控制按钮 (最小化)

@@ -162,6 +162,12 @@ export class AngelApp {
     //     必须确保 DOM 元素 #angel-scene 已经存在，否则无法挂载渲染器。
     // =================================
     init() {
+        // 💖 读取静音状态
+        const savedMute = localStorage.getItem('angel_is_muted');
+        if (savedMute !== null) {
+            this.isMuted = savedMute === 'true';
+        }
+
         // 🛑 防止重复初始化导致多个渲染循环
         if (this.renderer) {
             // 如果已经有渲染器，说明是重新打开窗口
@@ -176,6 +182,7 @@ export class AngelApp {
             }
             this.isRunning = true;
             this.animate(); // 确保恢复运行
+            this.updateMuteIcon(); // 💖 更新图标状态
             return;
         }
 
@@ -214,6 +221,9 @@ export class AngelApp {
         // 启动动画循环
         this.isRunning = true;
         this.animate();
+
+        // 💖 更新静音图标
+        this.updateMuteIcon();
 
         // 💖 显示欢迎语 (使用统一的消息库)
         const msg = APP_OPEN_MESSAGES['win-companion'] || APP_OPEN_MESSAGES['default'];
@@ -345,10 +355,10 @@ export class AngelApp {
         };
 
         this.wL = createWing(true); // 💖 左翅膀组
-        this.wL.position.set(-0.3, 0.8, -0.4); 
+        this.wL.position.set(-0.3, 0.6, -0.4); // 💖 降低 y 坐标 (0.8 -> 0.6)
         
         this.wR = createWing(false); // 💖 右翅膀组
-        this.wR.position.set(0.3, 0.8, -0.4); 
+        this.wR.position.set(0.3, 0.6, -0.4); // 💖 降低 y 坐标 (0.8 -> 0.6)
         
         this.group.add(this.wL);
         this.group.add(this.wR);
@@ -470,17 +480,29 @@ export class AngelApp {
     // =================================
     toggleMute() {
         this.isMuted = !this.isMuted;
+        localStorage.setItem('angel_is_muted', this.isMuted); // 💾 保存状态
+        this.updateMuteIcon();
+        
+        if (this.isMuted) {
+            window.speechSynthesis.cancel(); // 立即停止发声
+        } else {
+            this.speak("语音功能已开启");
+        }
+    }
+
+    // =================================
+    //  🎉 更新静音图标
+    // =================================
+    updateMuteIcon() {
         const iconOn = document.getElementById('icon-sound-on');
         const iconOff = document.getElementById('icon-sound-off');
         
         if (this.isMuted) {
             if (iconOn) iconOn.style.display = 'none';
             if (iconOff) iconOff.style.display = 'block';
-            window.speechSynthesis.cancel(); // 立即停止发声
         } else {
             if (iconOn) iconOn.style.display = 'block';
             if (iconOff) iconOff.style.display = 'none';
-            this.speak("语音功能已开启");
         }
     }
 
