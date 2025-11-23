@@ -1,8 +1,7 @@
 fastapi
 uvicorn
 playwright
-# 如果你之后加了 google-genai 或其他库，加在这里即可，setup.bat 会自动读取
-google-generativeai
+google-genai
 python-dotenv
 watchfiles
 Pillow

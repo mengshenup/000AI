@@ -6,7 +6,7 @@ import io
 from PIL import Image
 from playwright.async_api import async_playwright, Page
 from playwright_stealth import Stealth
-from config import USER_DATA_DIR, VIEWPORT, TARGET_SEARCH_URL
+from config import USER_DATA_DIR, VIEWPORT, TARGET_SEARCH_URL, BROWSER_CHANNEL
 from services.billing import global_billing
 
 class AngelBrowser:
@@ -81,24 +81,42 @@ class AngelBrowser:
         ]
 
         try:
-            # 1️⃣ 尝试启动系统 Chrome (最佳抗指纹 & 解码能力)
-            print("🚀 尝试启动系统 Chrome...")
-            self.browser_context = await self.playwright.chromium.launch_persistent_context(
-                USER_DATA_DIR,
-                headless=True,
-                channel="chrome", # 👈 指定使用 Chrome
-                args=launch_args,
-                viewport=VIEWPORT
-            )
-        except Exception as e_chrome:
-            print(f"❌ 系统 Chrome 启动失败: {e_chrome}")
+            # 1️⃣ 根据配置启动浏览器
+            if BROWSER_CHANNEL:
+                print(f"🚀 [配置] 正在启动系统浏览器 (Channel: {BROWSER_CHANNEL}, H.264支持)...")
+                self.browser_context = await self.playwright.chromium.launch_persistent_context(
+                    USER_DATA_DIR,
+                    headless=True,
+                    channel=BROWSER_CHANNEL, # 👈 使用配置的 Channel (msedge/chrome)
+                    args=launch_args,
+                    viewport=VIEWPORT
+                )
+            else:
+                print("🚀 [配置] 正在启动内置 Chromium (Playwright 自带)...")
+                self.browser_context = await self.playwright.chromium.launch_persistent_context(
+                    USER_DATA_DIR,
+                    headless=True,
+                    # channel=None, # 👈 不指定 channel，使用内置
+                    args=launch_args,
+                    viewport=VIEWPORT
+                )
+                
+        except Exception as e:
+            print(f"❌ 浏览器启动失败: {e}")
             print("==================================================")
-            print("🚨 严重错误：未检测到 Google Chrome 浏览器！")
-            print("💡 为了确保视频解码和反爬虫能力，必须使用系统 Chrome。")
-            print("👉 请前往 https://www.google.com/chrome/ 下载并安装。")
+            if BROWSER_CHANNEL:
+                print(f"🚨 严重错误：未检测到浏览器 (Channel: {BROWSER_CHANNEL})！")
+                print("💡 当前配置要求使用系统浏览器以支持 H.264 和伪装。")
+                if BROWSER_CHANNEL == "msedge":
+                     print("👉 请确保已安装 Microsoft Edge。")
+                elif BROWSER_CHANNEL == "chrome":
+                     print("👉 请确保已安装 Google Chrome。")
+                print("👉 或者在 config.py 中设置 BROWSER_CHANNEL = None (不推荐)")
+            else:
+                print("🚨 严重错误：无法启动内置 Chromium！")
+                print("👉 请尝试运行: playwright install chromium")
             print("==================================================")
-            # 🚫 拒绝降级，直接抛出异常终止启动，防止用户在不知情的情况下使用阉割版 Chromium
-            raise e_chrome
+            raise e
 
         # 📄 获取第一个页面，如果没有则新建一个
         # 📄 获取第一个页面，如果没有则新建一个
