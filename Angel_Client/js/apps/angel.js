@@ -30,7 +30,7 @@ export const config = {
     content: `
         <div id="angel-container" style="width:100%; height:100%; position:relative;">
             <div id="angel-scene" style="width:100%; height:100%;"></div>
-            <div id="angel-speech" class="speech-bubble" style="position:absolute; top:-60px; left:50%; transform:translateX(-50%); pointer-events:none; opacity:0; transition:opacity 0.3s;">...</div>
+            <div id="angel-speech" class="speech-bubble">...</div>
         </div>
         <style>
             /* 💖 特殊样式：让这个窗口背景透明，去掉边框和阴影 */
@@ -47,30 +47,7 @@ export const config = {
                 background: transparent !important;
                 overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */
             }
-            /* 💖 气泡样式 */
-            .speech-bubble {
-                background: white;
-                border-radius: 15px;
-                padding: 10px 15px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                font-size: 14px;
-                color: #333;
-                text-align: center;
-                z-index: 1000;
-            }
-            .speech-bubble::after {
-                content: '';
-                position: absolute;
-                bottom: -10px;
-                left: 50%;
-                transform: translateX(-50%);
-                border-width: 10px 10px 0;
-                border-style: solid;
-                border-color: white transparent transparent transparent;
-            }
-            .speech-bubble.show {
-                opacity: 1 !important;
-            }
+            /* 💖 气泡样式已移至 style.css 统一管理 */
         </style>
     `,
     contentStyle: 'background:transparent; overflow:visible;'
