@@ -12,13 +12,13 @@ export const config = {
     //     列表容器 ID 为 task-list。
     // =================================
     id: 'win-taskmgr', // 💖 窗口的唯一标识符
-    name: '灵魂棱镜', // 💖 窗口标题栏显示的名称
-    description: '任务管理', // 💖 功能描述
+    name: '活力源泉', // 💖 窗口标题栏显示的名称
+    description: '状态管理', // 💖 功能描述
     icon: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z', // 💖 SVG 图标路径（列表形状）
     color: '#d63031', // 💖 窗口的主题颜色（红色）
     pos: { x: 20, y: 380 }, // 💖 桌面图标的默认位置
     winPos: { x: 300, y: 300 }, // 💖 窗口打开时的默认屏幕坐标
-    openMsg: "灵魂棱镜已展开，正在审视系统状态... 📊", // 💖 打开应用时小天使说的话
+    openMsg: "活力源泉已启动，系统能量充沛！💪", // 💖 打开应用时小天使说的话
     content: `
         <!-- 💖 任务列表容器 -->
         <div id="task-list" style="height:100%; overflow-y:auto; padding:10px;">
@@ -31,8 +31,8 @@ import { store } from '../store.js'; // 💖 导入全局状态存储
 import { bus } from '../event_bus.js'; // 💖 导入事件总线
 import { wm } from '../window_manager.js'; // 💖 导入窗口管理器
 
-export const APP_NAME = 'Soul Prism'; // 💖 导出应用名称常量
-export const APP_OPEN_MSG = "灵魂棱镜已展开，正在审视系统状态... 📊"; // 💖 导出启动消息常量
+export const APP_NAME = 'Vitality Source'; // 💖 导出应用名称常量
+export const APP_OPEN_MSG = "活力源泉已启动，系统能量充沛！💪"; // 💖 导出启动消息常量
 
 export class TaskManagerApp {
     // =================================

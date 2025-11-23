@@ -83,6 +83,41 @@ function setupBusinessLogic() {
 
     // === 监听 UI 命令 -> 发送网络请求 ===
     // (原本的 cmd:scan 和 cmd:remote_click 已移动到 browser.js)
+
+    // 💖 胶囊拖拽逻辑
+    const capsule = document.getElementById('bar-billing');
+    if (capsule) {
+        let isDragging = false;
+        let startX = 0;
+        let currentX = 0;
+
+        capsule.style.cursor = 'grab';
+        capsule.style.position = 'relative'; // 确保可以移动
+        capsule.style.transition = 'transform 0.1s'; // 平滑移动
+
+        capsule.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - currentX;
+            capsule.style.cursor = 'grabbing';
+            capsule.style.transition = 'none'; // 拖拽时移除过渡，防止延迟
+            e.preventDefault(); // 防止选中文本
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            currentX = e.clientX - startX;
+            // 限制拖拽范围 (可选，这里暂不限制，让用户自由拖动)
+            capsule.style.transform = `translateX(${currentX}px)`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                capsule.style.cursor = 'grab';
+                capsule.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; // 释放时添加回弹效果
+            }
+        });
+    }
 }
 
 window.onload = () => {
