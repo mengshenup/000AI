@@ -44,24 +44,8 @@ class Store {
                 this.apps = {}; // 🧹 重置
             }
         } else {
-            // 尝试读取旧版本数据进行迁移 (可选)
-            const oldSaved = localStorage.getItem('seraphim_apps_v5'); // 🕰️ 检查旧存档
-            if (oldSaved) {
-                try {
-                    console.log("检测到旧版本数据，正在迁移..."); // 📝 日志
-                    this.apps = JSON.parse(oldSaved); // 📥 加载旧数据
-                    // 迁移后立即保存为新格式并删除旧数据
-                    setTimeout(() => {
-                        this.save(); // 💾 保存新格式
-                        localStorage.removeItem('seraphim_apps_v5'); // 🗑️ 删除旧格式
-                    }, 1000);
-                } catch (e) {
-                    this.apps = {}; // 🧹 重置
-                }
-            } else {
-                // 如果没有缓存，初始化为空对象
-                this.apps = {}; // 🆕 全新开始
-            }
+            // 如果没有缓存，初始化为空对象
+            this.apps = {}; // 🆕 全新开始
         }
     }
 
@@ -81,7 +65,7 @@ class Store {
         // =================================
 
         // 定义只保存这些动态字段，过滤掉静态 HTML 内容
-        const DYNAMIC_KEYS = ['pos', 'winPos', 'isOpen', 'zIndex', 'isMinimized', 'isMaximized', 'size', 'customName']; // 🔑 关键字段列表
+        const DYNAMIC_KEYS = ['pos', 'winPos', 'isOpen', 'zIndex', 'isMinimized', 'isMaximized', 'size', 'customName', 'description']; // 🔑 关键字段列表
         
         const stateToSave = {}; // 📦 待保存对象
         Object.entries(this.apps).forEach(([id, app]) => {
@@ -93,8 +77,8 @@ class Store {
             });
         });
 
-        // 移除版本号后缀，使用通用 Key，依靠 prune 机制清理旧数据
-        localStorage.setItem('seraphim_apps_state', JSON.stringify(stateToSave)); // 💾 写入硬盘
+        // 保存到本地
+        localStorage.setItem('seraphim_apps_state', JSON.stringify(stateToSave)); 
     }
 
     prune(validIds) {

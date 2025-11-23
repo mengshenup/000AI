@@ -33,6 +33,11 @@ export class WindowManager {
         // 🔗 绑定方法的 this 上下文，确保在事件回调中能正确访问类实例
         this.handleMouseMove = this.handleMouseMove.bind(this);
         this.handleMouseUp = this.handleMouseUp.bind(this);
+
+        // 🔢 窗口层级计数器
+        this.zIndexCounter = 100;
+        // 🆔 当前激活的窗口 ID
+        this.activeWindowId = null;
     }
 
     init() {
@@ -64,6 +69,9 @@ export class WindowManager {
         this.initWallpaperApp();   // 🎨 初始化壁纸设置 APP 的内容
         this.restoreWindows();     // 🔄 恢复上次窗口的位置和状态
         this.setupGlobalEvents();  // 🖱️ 设置全局鼠标点击等事件监听
+
+        // 暴露 wm 到全局，方便 store 异步加载后调用
+        window.wm = this;
     }
 
     // === 1. 初始化与渲染 ===
@@ -362,19 +370,67 @@ export class WindowManager {
                         label: '重命名',
                         icon: '✏️',
                         action: () => {
-                            const newName = prompt('请输入新的应用名称:', app.name);
-                            if (newName && newName.trim() !== '') {
-                                // 保存自定义名称到 customName 字段，并更新 name
-                                store.updateApp(id, { customName: newName.trim(), name: newName.trim() });
-                                this.renderDesktopIcons(); // 重新渲染图标
+                            // 获取输入框元素
+                            const input = document.getElementById('rename-input');
+                            if (!input) return;
+
+                            // 获取图标位置
+                            const rect = icon.getBoundingClientRect();
+                            
+                            // 设置输入框位置 (在图标下方)
+                            input.style.left = `${rect.left + rect.width / 2 - 50}px`; // 居中
+                            input.style.top = `${rect.bottom + 5}px`;
+                            input.style.display = 'block';
+                            input.innerText = app.name; // 填充当前名称
+                            
+                            // 聚焦并全选
+                            input.focus();
+                            const range = document.createRange();
+                            range.selectNodeContents(input);
+                            const sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+
+                            // 定义提交函数
+                            const submit = () => {
+                                const newName = input.innerText.trim();
+                                input.style.display = 'none'; // 隐藏输入框
                                 
-                                // 如果窗口已打开，也更新窗口标题
-                                const winTitle = document.querySelector(`#${id} .win-title`);
-                                if (winTitle) {
-                                    const desc = app.description || '';
-                                    winTitle.innerText = desc ? `${newName.trim()} · ${desc}` : newName.trim();
+                                if (newName && newName !== '') {
+                                    // 保存自定义名称到 customName 字段，并更新 name
+                                    store.updateApp(id, { customName: newName, name: newName });
+                                    this.renderDesktopIcons(); // 重新渲染图标
+                                    
+                                    // 如果窗口已打开，也更新窗口标题
+                                    const winTitle = document.querySelector(`#${id} .win-title`);
+                                    if (winTitle) {
+                                        const desc = app.description || '';
+                                        winTitle.innerText = desc ? `${newName} · ${desc}` : newName;
+                                    }
                                 }
-                            }
+                            };
+
+                            // 绑定回车和失焦事件
+                            const handleKey = (e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    submit();
+                                    cleanup();
+                                }
+                            };
+                            const handleBlur = () => {
+                                submit();
+                                cleanup();
+                            };
+
+                            // 清理事件监听
+                            const cleanup = () => {
+                                input.removeEventListener('keydown', handleKey);
+                                input.removeEventListener('blur', handleBlur);
+                            };
+
+                            input.addEventListener('keydown', handleKey);
+                            input.addEventListener('blur', handleBlur);
                         }
                     }
                 ]);
@@ -410,11 +466,11 @@ export class WindowManager {
             this.dragState.offsetY = e.clientY - rect.top;
 
             // 🎨 添加拖拽过程中需要的样式或逻辑
-            item.classList.add('dragging');
+            // item.classList.add('dragging'); // 移到 handleMouseMove 中延迟添加
 
             // 🛡️ 显示遮罩层
-            const overlay = document.getElementById('drag-overlay');
-            if (overlay) overlay.style.display = 'block';
+            // const overlay = document.getElementById('drag-overlay');
+            // if (overlay) overlay.style.display = 'block'; // 移到 handleMouseMove 中延迟显示
 
             // 🔗 绑定鼠标移动和抬起事件
             document.addEventListener('mousemove', this.handleMouseMove);
@@ -448,6 +504,27 @@ export class WindowManager {
         if (!this.dragState.active) return;
 
         const { clientX, clientY } = e;
+        
+        // 🛡️ 拖拽阈值检查：只有移动超过 5px 才开始真正的拖拽
+        // 这可以防止点击时的微小抖动被误判为拖拽，从而修复点击/双击失效的问题
+        if (!this.dragState.isDragging) {
+            const moveX = Math.abs(clientX - this.dragState.startX);
+            const moveY = Math.abs(clientY - this.dragState.startY);
+            if (moveX < 5 && moveY < 5) return; // 移动太小，忽略
+            
+            // 🚀 确认开始拖拽
+            this.dragState.isDragging = true;
+            
+            // 🎨 添加拖拽样式 (延迟到这里才添加)
+            if (this.dragState.item) {
+                this.dragState.item.classList.add('dragging');
+            }
+            
+            // 🛡️ 显示遮罩层 (延迟到这里才显示)
+            const overlay = document.getElementById('drag-overlay');
+            if (overlay) overlay.style.display = 'block';
+        }
+
         const { item, offsetX, offsetY } = this.dragState;
 
         // 🔢 计算新的位置
@@ -457,8 +534,6 @@ export class WindowManager {
         // 📍 更新元素位置
         item.style.left = `${x}px`;
         item.style.top = `${y}px`;
-
-        this.dragState.isDragging = true; // 🚩 标记为正在拖拽
     }
 
     handleMouseUp(e) {
@@ -608,7 +683,29 @@ export class WindowManager {
         // =================================
 
         const win = document.getElementById(id);
-        if (win) win.classList.add('minimized'); // 🔽 添加最小化类名 (CSS控制隐藏)
+        if (win) {
+            win.classList.add('minimized'); // 🔽 添加最小化类名 (CSS控制隐藏)
+            store.updateApp(id, { isMinimized: true }); // 💾 保存状态
+        }
+        this.updateTaskbar();
+    }
+
+    restoreApp(id) {
+        // =================================
+        //  🎉 恢复应用 (应用ID)
+        //
+        //  🎨 代码用途：
+        //     取消最小化状态，显示窗口。
+        //
+        //  💡 易懂解释：
+        //     别躲啦，快出来干活！👷
+        // =================================
+
+        const win = document.getElementById(id);
+        if (win) {
+            win.classList.remove('minimized');
+            store.updateApp(id, { isMinimized: false });
+        }
         this.updateTaskbar();
     }
 
@@ -617,24 +714,36 @@ export class WindowManager {
         //  🎉 切换应用状态 (应用ID)
         //
         //  🎨 代码用途：
-        //     任务栏点击逻辑：没开就开，最小化就还原，在后台就置顶，在最前就最小化。
+        //     处理任务栏图标点击逻辑：打开、最小化、恢复。
         //
         //  💡 易懂解释：
-        //     点任务栏上的图标，它会根据当前情况变身！没开就打开，开了没显示就显示，显示了就藏起来，超智能！🧠
+        //     点一下图标，如果没开就打开，如果开了就最小化，如果最小化了就弹出来！🔄
         //
         //  ⚠️ 警告：
-        //     逻辑比较复杂，涉及四种状态的切换，修改时要小心。
+        //     无
         // =================================
 
+        const app = store.getApp(id);
+        // 如果 store 中没有，尝试从 DOM 判断（兼容旧逻辑）
         const win = document.getElementById(id);
-        if (!win || !win.classList.contains('open')) {
-            this.openApp(id); // 🚀 没开 -> 打开
-        } else if (win.classList.contains('minimized')) {
-            this.openApp(id); // 🔼 最小化 -> 还原
-        } else if (win.style.zIndex >= 100) {
-            this.minimizeApp(id); // 🔽 在最前 -> 最小化
+        const isOpen = app ? app.isOpen : (win && win.classList.contains('open'));
+        const isMinimized = app ? app.isMinimized : (win && win.classList.contains('minimized'));
+
+        if (!isOpen) {
+            // 1. 如果没打开，则打开
+            this.openApp(id);
+        } else if (isMinimized) {
+            // 2. 如果已最小化，则恢复并置顶
+            this.restoreApp(id);
+            this.bringToFront(id);
         } else {
-            this.bringToFront(id); // 🔝 在后台 -> 置顶
+            // 3. 如果已打开且未最小化
+            // 检查是否是当前最顶层窗口
+            if (this.activeWindowId === id) {
+                this.minimizeApp(id);
+            } else {
+                this.bringToFront(id);
+            }
         }
     }
 
@@ -643,22 +752,27 @@ export class WindowManager {
         //  🎉 窗口置顶 (应用ID)
         //
         //  🎨 代码用途：
-        //     管理窗口的 z-index，让当前窗口显示在最前面。
+        //     将指定窗口的 z-index 设为最大，使其显示在最前面。
         //
         //  💡 易懂解释：
-        //     把你要用的那个窗口拿起来，放到所有窗口的最上面，让你看得清清楚楚！👀
+        //     把这个窗口抽出来放到最上面，别让其他窗口挡住它！🔝
         //
         //  ⚠️ 警告：
-        //     目前的逻辑比较简单，只是把其他设为 10，当前设为 100。如果窗口很多，可能需要更复杂的层级管理。
+        //     zIndexCounter 会无限增加，理论上可能溢出，但实际上很难达到 Number.MAX_SAFE_INTEGER。
         // =================================
 
-        // 🔢 简单粗暴的 Z-Index 管理：先把所有窗口设为 10
-        document.querySelectorAll('.window').forEach(w => w.style.zIndex = 10);
-        // 🔝 再把当前窗口设为 100
-        const current = document.getElementById(id);
-        if (current && current.classList.contains('window')) current.style.zIndex = 100;
-        // 📊 更新任务栏样式 (高亮当前窗口)
-        this.updateTaskbar();
+        const win = document.getElementById(id);
+        if (win) {
+            this.zIndexCounter++; // 🔢 计数器加一
+            win.style.zIndex = this.zIndexCounter; // 📚 设置层级
+            store.updateApp(id, { zIndex: this.zIndexCounter }); // 💾 保存状态
+            
+            // 记录当前激活窗口
+            this.activeWindowId = id;
+            
+            // 更新任务栏高亮
+            this.updateTaskbar();
+        }
     }
 
     changeWallpaper(url, el) {
@@ -718,8 +832,8 @@ export class WindowManager {
             // 💡 如果窗口打开了，添加运行指示灯样式
             if (win && win.classList.contains('open')) {
                 div.classList.add('running');
-                // ✨ 如果窗口处于激活状态 (z-index 高且未最小化)，添加高亮样式
-                if (!win.classList.contains('minimized') && win.style.zIndex >= 100) {
+                // ✨ 如果窗口处于激活状态 (是当前 activeWindowId 且未最小化)，添加高亮样式
+                if (!win.classList.contains('minimized') && this.activeWindowId === id) {
                     div.classList.add('active');
                 }
             }

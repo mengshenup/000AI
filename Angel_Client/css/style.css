@@ -258,13 +258,14 @@ body {
 // =================================
 */
 .title-bar {
-    height: 30px; /* 📏 标题栏高度 */
-    background: rgba(255, 255, 255, 0.3); /* 🌫️ 半透明背景 */
+    height: 36px; /* 📏 增加标题栏高度 */
+    background: rgba(255, 255, 255, 0.4); /* 🌫️ 稍微加深背景 */
     display: flex; /* 📦 弹性布局 */
     align-items: center; /* ↕️ 垂直居中 */
     justify-content: space-between; /* ↔️ 两端对齐 */
-    padding: 0 10px; /* 📏 内边距 */
+    padding: 0 12px; /* 📏 增加内边距 */
     cursor: grab; /* ✋ 鼠标变成抓手形状 */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* 📏 增加底部分隔线 */
 }
 
 .title-bar:active {
@@ -273,9 +274,11 @@ body {
 }
 
 .win-title {
-    font-size: 12px;
-    color: #555;
-    font-weight: bold;
+    font-size: 14px; /* 🔤 增大字体 */
+    color: #333; /* 📝 加深颜色 */
+    font-weight: 600; /* 🔤 加粗 */
+    letter-spacing: 0.5px; /* 📏 增加字间距 */
+    text-shadow: 0 1px 0 rgba(255,255,255,0.5); /* 🌑 文字阴影增加立体感 */
 }
 
 .win-controls {
@@ -342,6 +345,10 @@ body {
 // =================================
 */
 #taskbar {
+    position: absolute; /* 📍 绝对定位 */
+    bottom: 0; /* 📍 底部对齐 */
+    left: 0; /* 📍 左侧对齐 */
+    width: 100%; /* 📏 宽度占满 */
     height: 40px; /* 📏 任务栏高度 */
     background: rgba(255, 255, 255, 0.8); /* 🌫️ 半透明背景 */
     -webkit-backdrop-filter: blur(10px); /* 🍎 Safari 兼容 */
@@ -565,4 +572,35 @@ body {
     color: #666; /* 📝 文字颜色 */
     border-bottom: none; /* 🚫 无底部边框 */
     margin-bottom: 4px; /* 📏 底部外边距 */
+}
+
+/* 
+// =================================
+//  🎉 重命名输入框样式 ()
+//
+//  🎨 代码用途：
+//     定义桌面图标重命名时的输入框样式。
+//
+//  💡 易懂解释：
+//     给图标改名时出现的小框框，要漂亮一点！✏️
+//
+//  ⚠️ 警告：
+//     绝对定位，由 JS 动态控制位置。
+// =================================
+*/
+#rename-input {
+    position: absolute;
+    z-index: 2000;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    outline: none;
+    text-align: center;
+    min-width: 100px;
+    display: none; /* 默认隐藏 */
+    backdrop-filter: blur(5px);
 }
