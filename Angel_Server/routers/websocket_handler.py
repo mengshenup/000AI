@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from services.browser import AngelBrowser
 from services.billing import global_billing
@@ -84,6 +85,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
         # 📨 创建异步队列，用于在接收循环和处理循环之间传递消息
         queue = asyncio.Queue()
+
+        # ⏱️ 帧率控制 (FPS)
+        # 限制为 15 FPS，既能保证流畅度，又能大幅降低流量和 CPU 占用
+        # 60 FPS 对于 Base64 传输来说太高了，会导致网络拥塞和前端解析卡顿
+        TARGET_FPS = 15
+        FRAME_INTERVAL = 1.0 / TARGET_FPS
+        last_frame_time = 0
 
         # 🔄 定义内部接收循环函数
         async def receive_loop():
@@ -206,15 +214,27 @@ async def websocket_endpoint(websocket: WebSocket):
                     # ...existing code...
             
             # 📸 每一帧都尝试发送截图
-            # 如果没有命令处理（超时），或者处理完命令后，都更新画面
-            try:
-                # 🖼️ 获取当前画面截图 (Base64)
-                screenshot = await browser_service.get_screenshot_b64()
-                if screenshot:
-                    # 📤 发送画面更新消息
-                    await send_packet(websocket, "frame_update", {"image": screenshot})
-            except Exception as e:
-                print(f"Screenshot Error: {e}")
+            # 优化：增加帧率限制，避免发送过快导致前端卡顿和流量爆炸
+            current_time = time.time()
+            if current_time - last_frame_time >= FRAME_INTERVAL:
+                try:
+                    # 🖼️ 获取当前画面截图 (Base64)
+                    screenshot = await browser_service.get_screenshot_b64()
+                    if screenshot:
+                        # 📤 发送画面更新消息
+                        await send_packet(websocket, "frame_update", {"image": screenshot})
+                        last_frame_time = current_time
+                except Exception as e:
+                    print(f"Screenshot Error: {e}")
+            else:
+                # 如果没到截图时间，且刚刚没有处理命令（即 timeout 唤醒），
+                # 则稍微 sleep 一下，避免 CPU 空转。
+                # 如果刚刚处理了命令，则不 sleep，立即进入下一次循环以响应新命令。
+                if not command:
+                    # 计算还需要睡多久
+                    sleep_time = FRAME_INTERVAL - (current_time - last_frame_time)
+                    if sleep_time > 0:
+                        await asyncio.sleep(sleep_time)
     except Exception as e:
         # ❌ 打印全局异常
         print(f"❌ WebSocket Error: {e}")
