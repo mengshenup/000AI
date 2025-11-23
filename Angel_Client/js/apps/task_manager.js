@@ -117,15 +117,28 @@ export class TaskManagerApp {
             
             // 📊 获取性能数据 (添加容错，防止旧版缓存导致崩溃)
             let stats = { cpuTime: 0, startTime: Date.now() };
-            if (pm && typeof pm.getAppStats === 'function') {
-                stats = pm.getAppStats(app.id);
-            } else {
-                // console.warn("ProcessManager 版本过旧，无法获取统计数据");
+            let resCount = { total: 0 };
+            
+            if (pm) {
+                if (typeof pm.getAppStats === 'function') stats = pm.getAppStats(app.id);
+                if (typeof pm.getAppResourceCount === 'function') resCount = pm.getAppResourceCount(app.id);
             }
             
             const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(1) : '0.0';
-            const memUsage = app.isOpen ? (Math.random() * 20 + 10).toFixed(0) : '0'; // 模拟内存 (MB)
-            const gpuUsage = (app.id === 'win-companion' && app.isOpen) ? '高' : '低'; // 模拟 GPU
+            
+            // 💾 真实资源占用：显示持有的句柄数 (定时器+监听器)
+            const resUsage = app.isOpen ? resCount.total : 0;
+            
+            // 🎮 真实 FPS：尝试从 DOM 获取 FPS 数据 (仅针对小天使)
+            let fpsText = '-';
+            if (app.id === 'win-companion' && app.isOpen) {
+                const fpsEl = document.getElementById('fps-display');
+                if (fpsEl) {
+                    fpsText = fpsEl.innerText.replace('FPS: ', '');
+                } else {
+                    fpsText = 'Running'; // 运行中但未显示FPS
+                }
+            }
 
             const item = document.createElement('div');
             item.style.cssText = `
@@ -144,9 +157,9 @@ export class TaskManagerApp {
                     <div style="font-weight:bold; color:#2d3436;">${app.customName || app.name}</div>
                     <div style="font-size:0.8em; color:#636e72;">${app.description || '无描述'}</div>
                     <div style="font-size:0.75em; color:#999; margin-top:2px; display:flex; gap:10px;">
-                        <span>CPU: ${cpuUsage}%</span>
-                        <span>MEM: ${memUsage}MB</span>
-                        <span>GPU: ${gpuUsage}</span>
+                        <span title="主线程 JS 执行占比">CPU: ${cpuUsage}%</span>
+                        <span title="持有的资源句柄数 (定时器+监听器)">RES: ${resUsage}</span>
+                        <span title="实时帧率 (仅 3D 应用)">FPS: ${fpsText}</span>
                     </div>
                 </div>
                 <button class="task-action-btn" style="

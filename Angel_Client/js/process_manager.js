@@ -32,6 +32,26 @@ class ProcessManager {
     }
 
     /**
+     * 📊 获取应用资源统计数据
+     * 返回该应用当前持有的资源句柄数量
+     */
+    getAppResourceCount(appId) {
+        const queue = this.queues.get(appId);
+        if (!queue) {
+            return { timers: 0, events: 0, animations: 0, total: 0 };
+        }
+        const timers = queue.intervals.size + queue.timeouts.size;
+        const events = queue.events.length + queue.busListeners.length;
+        const animations = queue.animations.size;
+        return {
+            timers,
+            events,
+            animations,
+            total: timers + events + animations
+        };
+    }
+
+    /**
      * ⏱️ 记录执行时间 (内部辅助)
      */
     _measure(appId, fn) {
