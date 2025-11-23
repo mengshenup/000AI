@@ -38,6 +38,19 @@ class AngelBrowser:
         self.browser_context = None # 🌍 浏览器上下文
         self.page: Page = None # 📄 当前页面对象
         self.found_spots = set() # 🔍 已发现的点位集合（去重用）
+        self.on_url_change = None # 🔗 URL 变更回调函数
+
+    def set_url_callback(self, callback):
+        # =================================
+        #  🎉 设置 URL 回调 (回调函数)
+        #
+        #  🎨 代码用途：
+        #     注册一个回调函数，当浏览器 URL 发生变化时调用。
+        #
+        #  💡 易懂解释：
+        #     告诉机器人，如果换台了，记得告诉我一声。📢
+        # =================================
+        self.on_url_change = callback
 
     async def start(self):
         # =================================
@@ -74,6 +87,14 @@ class AngelBrowser:
         self.page.on("response", self._track_response) # 📥 监听响应
         self.page.on("request", self._track_request) # 📤 监听请求
         
+        # 🔗 绑定 URL 变更事件
+        # 当页面导航完成或 URL 发生变化时触发
+        async def handle_url_change(page):
+            if self.on_url_change:
+                await self.on_url_change(page.url)
+        
+        self.page.on("framenavigated", handle_url_change)
+
         # 🏠 预加载主页
         try:
             # ⏳ 访问抖音主页，超时时间 30秒

@@ -24,7 +24,7 @@ export const config = {
         <div style="padding:8px; background:#f1f2f6; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #ddd;">
             <div style="display:flex; gap:8px;">
                 <!-- 💖 网址输入框 -->
-                <input type="text" id="browser-url" placeholder="输入网址 (例如 https://www.bilibili.com)"
+                <input type="text" id="browser-url" placeholder="https://www.douyin.com/"
                     style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
                 <!-- 💖 前往按钮 -->
                 <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
@@ -174,10 +174,19 @@ class BrowserApp {
         // === 浏览器控制逻辑 ===
         const btnGo = document.getElementById('btn-browser-go'); // 💖 获取“前往”按钮 DOM 元素
         const inputUrl = document.getElementById('browser-url'); // 💖 获取地址输入框 DOM 元素
+        
+        // 监听来自服务器的 URL 更新消息
+        bus.on('net:url_update', (newUrl) => {
+            if (inputUrl && newUrl) {
+                inputUrl.value = newUrl;
+                window.current_browser_url = newUrl;
+            }
+        });
+
         if (btnGo && inputUrl) { // 💖 确保元素存在，防止报错
             // 点击“前往”按钮时触发
             btnGo.onclick = () => {
-                const url = inputUrl.value; // 💖 获取用户输入的网址
+                const url = inputUrl.value || "https://www.douyin.com/"; // 💖 获取用户输入的网址，如果为空则使用默认值
                 if (url) { // 💖 如果网址不为空
                     window.current_browser_url = url; // 💖 记录当前 URL 到全局变量，供其他模块使用
                     network.send({ type: 'browser_navigate', url: url }); // 💖 发送导航指令给服务器

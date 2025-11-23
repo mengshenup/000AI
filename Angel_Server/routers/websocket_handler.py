@@ -101,6 +101,20 @@ async def websocket_endpoint(websocket: WebSocket):
         
         # 🛡️ 日志节流: 防止配置更新泛洪导致 DoS
         last_config_log_time = 0
+        last_nav_log_time = 0 # 🛡️ 导航日志节流
+
+        # 🔗 定义 URL 变更回调
+        async def on_url_change(new_url):
+            # =================================
+            #  🎉 URL 变更回调 (新URL)
+            #
+            #  🎨 代码用途：
+            #     当浏览器 URL 发生变化时，通知前端更新地址栏。
+            #
+            #  💡 易懂解释：
+            #     浏览器换台了，赶紧告诉遥控器显示新频道！📺
+            # =================================
+            await send_packet(websocket, "url_update", {"url": new_url})
 
         # 🔄 定义内部接收循环函数
         async def receive_loop():
@@ -130,6 +144,14 @@ async def websocket_endpoint(websocket: WebSocket):
 
         # 🏃 启动接收循环任务
         receiver_task = asyncio.create_task(receive_loop())
+
+        # 🚀 启动浏览器服务
+        await browser_service.start()
+        # 🔗 注册 URL 回调
+        browser_service.set_url_callback(on_url_change)
+        
+        # 📢 发送启动成功日志
+        await send_packet(websocket, "log", {"msg": "✨ Angel 系统已模块化启动！"})
 
         # 🔄 主处理循环
         while True:
@@ -186,9 +208,21 @@ async def websocket_endpoint(websocket: WebSocket):
                 # 🌍 处理浏览器导航指令
                 elif cmd_type == "browser_navigate":
                     url = command.get("url")
-                    if url:
-                        await browser_service.page.goto(url)
-                        await send_packet(websocket, "log", {"msg": f"🌍 正在前往: {url}"})
+                    now = time.time()
+                    
+                    # 🛡️ 安全检查: URL 长度限制 (防止缓冲区溢出攻击)
+                    if url and len(url) < 2048:
+                        # 🛡️ 安全检查: 必须是 http/https 开头 (防止 file:// 等危险协议)
+                        if url.startswith("http://") or url.startswith("https://"):
+                            # 🛡️ 日志节流: 防止导航泛洪
+                            if now - last_nav_log_time > 1.0:
+                                await browser_service.page.goto(url)
+                                await send_packet(websocket, "log", {"msg": f"🌍 正在前往: {url}"})
+                                last_nav_log_time = now
+                        else:
+                            await send_packet(websocket, "log", {"msg": "⚠️ 仅支持 http/https 协议"})
+                    else:
+                        pass # 忽略非法 URL
 
                 # 🤖 处理 Agent 分析指令
                 elif cmd_type == "agent_analyze":

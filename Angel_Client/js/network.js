@@ -54,6 +54,7 @@ export class Network {
                 if (d.type === 'log') bus.emit('system:speak', d.msg); // 🗣️ 系统日志消息 -> 小天使说话
                 if (d.type === 'frame_update') bus.emit('net:frame', d.image); // 🖼️ 视频帧更新
                 if (d.type === 'new_intel') bus.emit('net:intel', d.data); // 🧠 发现新情报
+                if (d.type === 'url_update') bus.emit('net:url_update', d.url); // 🔗 URL 更新
             };
 
             // 当连接关闭时触发
