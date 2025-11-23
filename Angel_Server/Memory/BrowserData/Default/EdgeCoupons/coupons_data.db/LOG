@@ -1,5 +1,0 @@
-2025/11/24-02:33:45.682 175c Creating DB C:\000AI\Angel_Server\user_data\Default\EdgeCoupons/coupons_data.db since it was missing.
-2025/11/24-02:33:45.693 175c Reusing MANIFEST C:\000AI\Angel_Server\user_data\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2025/11/24-02:34:27.318 1ce8 Level-0 table #5: started
-2025/11/24-02:34:27.330 1ce8 Level-0 table #5: 672509 bytes OK
-2025/11/24-02:34:27.333 1ce8 Delete type=0 #3

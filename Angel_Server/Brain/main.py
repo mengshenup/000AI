@@ -20,6 +20,8 @@ if __name__ == "__main__":
         "Nerve.fastapi_app:app",
         host="0.0.0.0", 
         port=8000,      
-        reload=False,    
+        reload=True,
+        reload_dirs=["."],  # 🔄 监听当前目录下所有文件的变动
+        reload_excludes=["Memorybank", "Memorybank/*", "*.log", "*.tmp", ".git", "*.md", "*.bat", "*.txt"], # 🚫 排除频繁变动的目录和文档
         workers=1       
     )

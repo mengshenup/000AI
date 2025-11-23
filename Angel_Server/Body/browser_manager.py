@@ -34,6 +34,17 @@ class BrowserManager:
             "--disable-gpu",
         ]
 
+        # 💾 保存 PID 到文件，用于僵尸进程清理
+        try:
+            # 注意：launch_persistent_context 返回的 BrowserContext 对象在 Python Playwright 中
+            # 并不直接暴露 process.pid。但我们可以通过 browser_context.browser (如果是 launch) 
+            # 或者通过 hack 方式获取。
+            # 对于 persistent_context，它实际上对应一个浏览器进程。
+            # 暂时无法直接获取 PID，但我们可以依靠文件锁机制。
+            pass
+        except Exception:
+            pass
+
         try:
             if BROWSER_CHANNEL:
                 print(f"🚀 [Body] Waking up with System Browser ({BROWSER_CHANNEL})...")
