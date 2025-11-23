@@ -168,6 +168,12 @@ export class AngelApp {
             this.isMuted = savedMute === 'true';
         }
 
+        // 💖 读取性能配置 (新增)
+        const savedPerf = localStorage.getItem('angel_performance_mode');
+        this.perfMode = savedPerf || 'high'; // high, low
+        this.targetFPS = this.perfMode === 'low' ? 30 : 60;
+        this.frameInterval = 1000 / this.targetFPS;
+
         // 🛑 防止重复初始化导致多个渲染循环
         if (this.renderer) {
             // 如果已经有渲染器，说明是重新打开窗口
@@ -198,11 +204,19 @@ export class AngelApp {
         this.camera.position.set(0, 1, 5);
 
         // 创建渲染器
-        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // alpha: true 允许背景透明
+        // 💖 性能优化：根据配置决定是否开启抗锯齿
+        this.renderer = new THREE.WebGLRenderer({ 
+            alpha: true, 
+            antialias: this.perfMode === 'high',
+            powerPreference: "high-performance"
+        }); 
         // 确保容器有尺寸
         const width = this.container.clientWidth || 300;
         const height = this.container.clientHeight || 400;
         this.renderer.setSize(width, height);
+        // 💖 性能优化：设置像素比，低配模式下降低分辨率
+        this.renderer.setPixelRatio(this.perfMode === 'low' ? 1 : window.devicePixelRatio);
+        
         this.container.appendChild(this.renderer.domElement);
 
         // 添加灯光
@@ -217,6 +231,17 @@ export class AngelApp {
 
         // 初始化交互
         this.initInteraction();
+
+        // 💖 性能优化：监听页面可见性，不可见时停止渲染
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                this.isRunning = false;
+            } else {
+                this.isRunning = true;
+                this.lastTime = performance.now();
+                this.animate();
+            }
+        });
 
         // 启动动画循环
         this.isRunning = true;
@@ -388,13 +413,36 @@ export class AngelApp {
         const now = performance.now(); // 💖 获取当前时间
         if (!this.lastTime) this.lastTime = now; // 💖 初始化上一帧时间
         const delta = now - this.lastTime; // 💖 计算时间差
+
+        // 💖 性能优化：帧率限制
+        if (this.frameInterval && delta < this.frameInterval) return;
+
+        // 💖 性能优化：动态降级检测 (如果帧率持续过低，自动切换到低配模式)
+        if (delta > 100) { // 如果一帧超过 100ms (FPS < 10)
+            this.lowFpsCount = (this.lowFpsCount || 0) + 1;
+            if (this.lowFpsCount > 20 && this.perfMode !== 'low') {
+                console.warn("检测到性能卡顿，自动切换至低性能模式");
+                this.perfMode = 'low';
+                this.targetFPS = 30;
+                this.frameInterval = 1000 / 30;
+                this.renderer.setPixelRatio(1);
+                this.renderer.antialias = false; // 注意：WebGLRenderer 的 antialias 属性通常只在构造时生效，这里可能无效，但意图是降级
+                this.lowFpsCount = 0;
+            }
+        } else {
+            this.lowFpsCount = 0;
+        }
+
+        this.lastTime = now - (delta % (this.frameInterval || 16.67)); // 💖 修正时间戳，保持平滑
+
         this.frameCount = (this.frameCount || 0) + 1; // 💖 帧数计数器
-        if (delta >= 1000) { // 💖 每秒更新一次 FPS
-            const fps = Math.round((this.frameCount * 1000) / delta);
+        // 💖 仅在调试模式或每秒更新一次 FPS
+        if (now - (this.lastFpsTime || 0) >= 1000) { 
+            const fps = Math.round((this.frameCount * 1000) / (now - (this.lastFpsTime || 0)));
             const fpsEl = document.getElementById('fps-display');
             if (fpsEl) fpsEl.innerText = `FPS: ${fps}`;
             this.frameCount = 0;
-            this.lastTime = now;
+            this.lastFpsTime = now;
         }
 
         const t = now / 1000; // 💖 转换为秒

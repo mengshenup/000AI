@@ -1,3 +1,5 @@
+import { bus } from '../event_bus.js'; // 💖 导入事件总线
+
 export const config = {
     // =================================
     //  🎉 说明书配置 (ID, 名称, 图标...)
@@ -35,6 +37,11 @@ export const config = {
             </li>
             <li>⚙️ <b>个性化</b>：在设置中更换壁纸。</li>
         </ul>
+        <hr style="margin:10px 0; border:0; border-top:1px solid #eee;">
+        <p><b>💻 本机配置信息：</b></p>
+        <div id="manual-sys-info" style="background:#f8f9fa; padding:10px; border-radius:5px; font-size:0.9em; color:#666;">
+            正在读取系统信息...
+        </div>
     `, // 💖 窗口显示的 HTML 内容
     contentStyle: 'color:#444; line-height:1.6;' // 💖 窗口内容的 CSS 样式
 };
@@ -53,8 +60,38 @@ class ManualApp {
     //     目前此类几乎为空，因为说明书的内容主要是静态 HTML。
     // =================================
     constructor() {
-        // 目前没有动态逻辑，只是占位，方便未来扩展
-        // 💖 这是一个空构造函数，因为说明书目前只需要静态展示
+        // 💖 监听窗口就绪事件，填充系统信息
+        bus.on(`app:ready:${config.id}`, () => this.updateSystemInfo());
+    }
+
+    // =================================
+    //  🎉 更新系统信息
+    // =================================
+    updateSystemInfo() {
+        const infoBox = document.getElementById('manual-sys-info');
+        if (!infoBox) return;
+
+        const mem = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : '未知';
+        const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} 核` : '未知';
+        const platform = navigator.platform || '未知';
+        const userAgent = navigator.userAgent;
+        
+        // 简单的浏览器判断
+        let browser = "未知浏览器";
+        if (userAgent.includes("Chrome")) browser = "Chrome / Chromium";
+        if (userAgent.includes("Firefox")) browser = "Firefox";
+        if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) browser = "Safari";
+        if (userAgent.includes("Edge")) browser = "Microsoft Edge";
+
+        infoBox.innerHTML = `
+            <ul style="list-style:none; padding:0; margin:0;">
+                <li>🧠 <b>CPU 核心数：</b> ${cores}</li>
+                <li>💾 <b>内存估算：</b> ${mem}</li>
+                <li>🖥️ <b>操作系统平台：</b> ${platform}</li>
+                <li>🌐 <b>浏览器：</b> ${browser}</li>
+                <li style="margin-top:5px; font-size:0.8em; opacity:0.7;">UA: ${userAgent.substring(0, 50)}...</li>
+            </ul>
+        `;
     }
 }
 
