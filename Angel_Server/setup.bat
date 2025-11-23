@@ -1,5 +1,7 @@
 @echo off
 cd /d "%~dp0"
+:: 🔧 优化控制台体验
+powershell -Command "&{$c=[Console];$m=$c::In.GetMode();$m=$m -band -not 0x0040;$c::In.SetMode($m);$r=$c::BufferHeight;if($r -lt 3000){$c::BufferHeight=3000}}" >nul 2>&1
 
 :: === ANGEL SETUP UTILITY (Compatibility Mode) ===
 
