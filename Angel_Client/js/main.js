@@ -39,6 +39,13 @@ function setupBusinessLogic() {
             const els = document.querySelectorAll(`#${id}`);
             els.forEach(el => el.innerText = val);
         }; 
+        
+        // 更新任务栏胶囊数据
+        update('bar-tx', stats.net.up);
+        update('bar-rx', stats.net.down);
+        update('bar-total', stats.grand_total);
+
+        // 更新详情窗口数据
         update('tx-stat', stats.net.up);    // ⬆️ 更新上传速度
         update('rx-stat', stats.net.down);  // ⬇️ 更新下载速度
         update('ai-cost', stats.grand_total); // 💰 更新总费用
@@ -132,7 +139,7 @@ window.onload = () => {
 
         // 🌟 启动系统级应用 (优先加载)
         // 这些应用默认应该在后台或前台运行
-        const SYSTEM_APPS = ['win-companion', 'win-traffic', 'win-billing'];
+        const SYSTEM_APPS = ['win-companion']; // 💖 移除 traffic 和 billing，因为它们现在默认关闭，点击才显示
         SYSTEM_APPS.forEach(id => {
             // 如果没有打开，则强制打开
             // 注意：openApp 会检查是否已存在，不会重复创建
@@ -158,6 +165,28 @@ window.onload = () => {
     }, 1000);
 
     // === 特定 UI 绑定 (非通用部分) ===
+
+    // 绑定任务栏胶囊点击事件 -> 打开详情窗口
+    document.getElementById('bar-traffic')?.addEventListener('click', () => {
+        // 切换显示/隐藏
+        const id = 'win-traffic';
+        const app = store.getApp(id);
+        if (app && app.isOpen) {
+            wm.closeApp(id);
+        } else {
+            wm.openApp(id, false);
+        }
+    });
+
+    document.getElementById('bar-billing')?.addEventListener('click', () => {
+        const id = 'win-billing';
+        const app = store.getApp(id);
+        if (app && app.isOpen) {
+            wm.closeApp(id);
+        } else {
+            wm.openApp(id, false);
+        }
+    });
 
     // 绑定扫描按钮点击事件 (保留在这里，因为它可能属于全局工具栏，或者也可以移到 browser.js，但目前先保留)
     // 实际上 browser.js 已经监听了 cmd:scan，这里只是触发事件

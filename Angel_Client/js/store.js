@@ -201,6 +201,12 @@ class Store {
             this.apps[id].color = metadata.color; // 🎨 更新颜色
             this.apps[id].contentStyle = metadata.contentStyle; // 💅 更新样式
             this.apps[id].openMsg = metadata.openMsg; // 💬 更新欢迎语
+            
+            // 💖 显式更新布局属性，确保新版本 UI 生效
+            this.apps[id].frameless = metadata.frameless; 
+            this.apps[id].fixed = metadata.fixed;
+            this.apps[id].width = metadata.width;
+            this.apps[id].height = metadata.height;
         } else {
             // 如果是新应用，直接使用元数据
             this.apps[id] = metadata; // 🆕 创建新应用数据

@@ -103,27 +103,32 @@ export class WindowManager {
         win.id = id;
         win.className = 'window';
 
-        // 🏷️ 创建标题栏
-        const titleBar = document.createElement('div');
-        titleBar.className = 'title-bar';
+        // 🏷️ 创建标题栏 (仅当非无边框模式时)
+        if (!app.frameless) {
+            const titleBar = document.createElement('div');
+            titleBar.className = 'title-bar';
 
-        // 🎮 窗口控制按钮
-        const controls = document.createElement('div');
-        controls.className = 'win-controls';
-        controls.innerHTML = `
-            <button class="win-btn min-btn" title="最小化"></button>
-            <button class="win-btn close-btn" title="关闭"></button>
-        `;
+            // 🎮 窗口控制按钮
+            const controls = document.createElement('div');
+            controls.className = 'win-controls';
+            controls.innerHTML = `
+                <button class="win-btn min-btn" title="最小化"></button>
+                <button class="win-btn close-btn" title="关闭"></button>
+            `;
 
-        // 📝 窗口标题
-        const title = document.createElement('div');
-        title.className = 'win-title';
-        // 组合名称和提示 (如果有)
-        title.innerText = app.description ? `${app.name} · ${app.description}` : app.name;
+            // 📝 窗口标题
+            const title = document.createElement('div');
+            title.className = 'win-title';
+            // 组合名称和提示 (如果有)
+            title.innerText = app.description ? `${app.name} · ${app.description}` : app.name;
 
-        // 交换顺序：标题在左，按钮在右
-        titleBar.appendChild(title);
-        titleBar.appendChild(controls);
+            // 交换顺序：标题在左，按钮在右
+            titleBar.appendChild(title);
+            titleBar.appendChild(controls);
+            win.appendChild(titleBar);
+        } else {
+            win.classList.add('frameless'); // 添加无边框样式类
+        }
 
         // 📄 内容区域
         const content = document.createElement('div');
@@ -134,22 +139,50 @@ export class WindowManager {
         // 💉 注入 HTML 模板
         content.innerHTML = app.content || '';
 
-        // 🏗️ 组装窗口
-        win.appendChild(titleBar);
+        // 🏗️ 组装窗口 (标题栏已在上面处理)
         win.appendChild(content);
         
         // 📌 添加到桌面
         desktop.appendChild(win);
 
+        // 📏 设置窗口大小 (如果有配置)
+        if (app.width) win.style.width = typeof app.width === 'number' ? `${app.width}px` : app.width;
+        if (app.height) win.style.height = typeof app.height === 'number' ? `${app.height}px` : app.height;
+
         // 📍 设置初始位置 (优先使用保存的位置，否则使用默认位置，最后兜底)
         // 修复：防止因位置信息丢失导致窗口不可见
-        const initialPos = app.winPos || app.pos || { x: 100, y: 100 };
-        // 确保坐标是有效数值
-        const safeX = isNaN(initialPos.x) ? 100 : initialPos.x;
-        const safeY = isNaN(initialPos.y) ? 100 : initialPos.y;
+        // 💖 强制修正：如果是固定窗口 (fixed)，则忽略 store 中的历史位置，强制使用配置中的位置
+        // 这解决了用户修改配置后，因缓存导致位置不更新的问题
+        let initialPos = app.winPos || app.pos || { x: 100, y: 100 };
+        if (app.fixed) {
+            // 尝试从原始元数据中获取位置，或者直接信任当前的 app 对象 (如果 store 更新逻辑正确)
+            // 这里假设 app 对象已经包含了最新的配置信息 (store.checkVersion 应该处理了合并)
+            // 但为了保险，如果 app.fixed 为 true，我们应该优先信任 right/bottom 属性
+            // 如果 store 里存了 x/y，可能会覆盖 right/bottom，所以这里要做个清理
+            if (initialPos.right !== undefined || initialPos.bottom !== undefined) {
+                // 如果配置了 right/bottom，就用它们
+            }
+        }
         
-        win.style.left = `${safeX}px`;
-        win.style.top = `${safeY}px`;
+        // 支持 right/bottom 定位
+        if (initialPos.right !== undefined) {
+            win.style.right = `${initialPos.right}px`;
+            win.style.left = 'auto'; // 清除 left
+        } else {
+            // 确保坐标是有效数值
+            const safeX = isNaN(initialPos.x) ? 100 : initialPos.x;
+            win.style.left = `${safeX}px`;
+            win.style.right = 'auto'; // 清除 right
+        }
+
+        if (initialPos.bottom !== undefined) {
+            win.style.bottom = `${initialPos.bottom}px`;
+            win.style.top = 'auto'; // 清除 top
+        } else {
+            const safeY = isNaN(initialPos.y) ? 100 : initialPos.y;
+            win.style.top = `${safeY}px`;
+            win.style.bottom = 'auto'; // 清除 bottom
+        }
 
         // 📢 通知应用窗口已就绪 (解决竞态条件)
         bus.emit(`app:ready:${id}`);
@@ -277,11 +310,45 @@ export class WindowManager {
                 // 📍 如果有保存的位置，恢复位置
                 // 修复：增加对无效位置的检查和兜底
                 const pos = app.winPos || app.pos || { x: 100, y: 100 };
-                const safeX = isNaN(pos.x) ? 100 : pos.x;
-                const safeY = isNaN(pos.y) ? 100 : pos.y;
                 
-                win.style.left = `${safeX}px`;
-                win.style.top = `${safeY}px`;
+                // 💖 强制修正：如果是固定窗口，优先使用 right/bottom
+                // 即使 store 里有 x/y (可能是旧数据)，只要配置了 fixed，就强制归位
+                if (app.fixed) {
+                    if (pos.right !== undefined) {
+                        win.style.right = `${pos.right}px`;
+                        win.style.left = 'auto';
+                    }
+                    if (pos.bottom !== undefined) {
+                        win.style.bottom = `${pos.bottom}px`;
+                        win.style.top = 'auto';
+                    }
+                    // 如果没有 right/bottom，则回退到 x/y
+                    if (pos.right === undefined && pos.bottom === undefined) {
+                         const safeX = isNaN(pos.x) ? 100 : pos.x;
+                         const safeY = isNaN(pos.y) ? 100 : pos.y;
+                         win.style.left = `${safeX}px`;
+                         win.style.top = `${safeY}px`;
+                    }
+                } else {
+                    // 普通窗口逻辑
+                    if (pos.right !== undefined) {
+                        win.style.right = `${pos.right}px`;
+                        win.style.left = 'auto';
+                    } else {
+                        const safeX = isNaN(pos.x) ? 100 : pos.x;
+                        win.style.left = `${safeX}px`;
+                        win.style.right = 'auto';
+                    }
+
+                    if (pos.bottom !== undefined) {
+                        win.style.bottom = `${pos.bottom}px`;
+                        win.style.top = 'auto';
+                    } else {
+                        const safeY = isNaN(pos.y) ? 100 : pos.y;
+                        win.style.top = `${safeY}px`;
+                        win.style.bottom = 'auto';
+                    }
+                }
 
                 // 🔓 如果上次是打开状态，则重新打开
                 if (app.isOpen) this.openApp(id, false); // false 表示不播放语音
@@ -451,6 +518,11 @@ export class WindowManager {
             
             if (!win && !icon) return;
 
+            // 🛑 检查是否固定位置 (如 Widget)
+            const id = (win || icon).id.replace('icon-', '');
+            const app = store.getApp(id);
+            if (app && app.fixed) return;
+
             // 📍 记录鼠标按下位置
             this.dragState.startX = e.clientX;
             this.dragState.startY = e.clientY;
@@ -483,10 +555,10 @@ export class WindowManager {
         document.getElementById('taskbar-apps').addEventListener('click', (e) => {
             const target = e.target.closest('.task-app');
             if (target) {
-                // ⏳ 节流检查：防止快速点击导致窗口闪烁 (0.5秒冷却)
+                // ⏳ 节流检查：防止快速点击导致窗口闪烁 (0.1秒冷却)
                 const now = Date.now();
-                if (now - this.lastClickTime < 500) {
-                    console.log("点击过快，已忽略");
+                if (now - this.lastClickTime < 100) {
+                    // console.log("点击过快，已忽略");
                     return;
                 }
                 this.lastClickTime = now;

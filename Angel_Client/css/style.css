@@ -243,6 +243,14 @@ body {
     pointer-events: none;
 }
 
+/* 🚫 无边框窗口样式 */
+.window.frameless {
+    background: transparent !important; /* 强制透明背景 */
+    border: none !important; /* 强制无边框 */
+    box-shadow: none !important; /* 强制无阴影 */
+    backdrop-filter: none !important; /* 移除毛玻璃，由内容自己控制 */
+}
+
 /* 
 // =================================
 //  🎉 窗口标题栏样式 ()
@@ -630,4 +638,28 @@ body {
     min-width: 100px;
     display: none; /* 默认隐藏 */
     backdrop-filter: blur(5px);
+}
+
+/* 
+// =================================
+//  🎉 状态栏胶囊样式
+// =================================
+*/
+.status-capsule {
+    background: rgba(255, 255, 255, 0.5); /* 浅灰色半透明背景 */
+    padding: 4px 10px;
+    border-radius: 12px; /* 胶囊圆角 */
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Segoe UI', monospace;
+    font-size: 11px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.status-capsule:hover {
+    background: rgba(255, 255, 255, 0.8);
 }

@@ -7,25 +7,29 @@ export const config = {
     system: true, // 💖 标记为系统应用
     showDesktopIcon: false, // 💖 不显示桌面图标
     showTaskbarIcon: false, // 💖 不显示任务栏图标
-    pos: { x: 100, y: 20 },
-    winPos: { x: 200, y: 200 },
-    isOpen: false,
-    openMsg: "网络监控已启动 📡",
+    frameless: true, // 💖 无边框窗口
+    fixed: true, // 💖 固定位置
+    width: 200, // 📏 详情窗宽度
+    height: 120, // 📏 详情窗高度
+    pos: { x: 0, y: 0 }, // 占位
+    winPos: { right: 10, bottom: 50 }, // 📍 固定在右下角 (任务栏上方)
+    isOpen: false, // 默认关闭，点击胶囊才显示
+    openMsg: "", // 不播放语音
     content: `
-        <div style="padding: 20px; text-align: center; background: #1e272e; color: #fff; height: 100%;">
-            <h3 style="color: #00cec9; text-shadow: 0 0 10px rgba(0, 206, 201, 0.5);">⚡ 网络监控</h3>
-            <div style="margin: 30px 0; display: flex; justify-content: space-around;">
-                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; width: 45%;">
-                    <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">UPLOAD</div>
-                    <div id="tx-stat" style="font-size: 20px; color: #74b9ff; font-weight: bold; font-family: monospace;">0 KB/s</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; width: 45%;">
-                    <div style="font-size: 12px; color: #aaa; margin-bottom: 5px;">DOWNLOAD</div>
-                    <div id="rx-stat" style="font-size: 20px; color: #55efc4; font-weight: bold; font-family: monospace;">0 KB/s</div>
-                </div>
+        <div style="padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%;">
+            <div style="font-size: 12px; color: #00cec9; margin-bottom: 10px; font-weight: bold;">NETWORK MONITOR</div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #aaa; font-size: 11px;">UPLOAD</span>
+                <span id="tx-stat" style="color: #74b9ff; font-family: monospace;">0 KB/s</span>
             </div>
-            <div style="font-size: 10px; color: #555; margin-top: 20px;">SYSTEM LINKED // ONLINE</div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: #aaa; font-size: 11px;">DOWNLOAD</span>
+                <span id="rx-stat" style="color: #55efc4; font-family: monospace;">0 KB/s</span>
+            </div>
+            <div style="margin-top: 10px; height: 2px; background: #333; border-radius: 1px; overflow: hidden;">
+                <div style="width: 50%; height: 100%; background: #00cec9; animation: pulse 2s infinite;"></div>
+            </div>
         </div>
     `,
-    contentStyle: 'background: #1e272e; padding: 0;'
+    contentStyle: 'background: transparent; padding: 0; box-shadow: none; border: none;'
 };
