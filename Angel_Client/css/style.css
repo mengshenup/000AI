@@ -117,10 +117,9 @@ body {
 */
 .speech-bubble {
     position: absolute; /* 📍 绝对定位 */
-    bottom: 100%; /* 📍 位于容器顶部 */
+    top: 20px; /* 📍 距离顶部固定距离，确保在头顶 */
     left: 50%; /* 📍 水平居中 */
-    transform: translateX(-50%) translateY(-10px); /* 📍 微调位置，向上偏移 */
-    margin-bottom: 5px; /* 📏 减小距离头顶的间距 (原20px) */
+    transform: translateX(-50%); /* 📍 修正居中 */
     background: white; /* ⚪ 白色背景 */
     padding: 8px 12px; /* 📏 减小内边距 */
     border-radius: 12px; /* 📏 增加圆角 */
@@ -381,9 +380,9 @@ body {
     background: rgba(20, 20, 30, 0.85); /* 🌑 深色半透明背景 */
     -webkit-backdrop-filter: blur(15px); /* 🍎 Safari 兼容 */
     backdrop-filter: blur(15px); /* 🌫️ 毛玻璃效果 */
-    display: flex; /* 📦 弹性布局 */
+    display: grid; /* 📦 网格布局 */
+    grid-template-columns: auto 1fr auto; /* 📏 左中右布局 */
     align-items: center; /* ↕️ 垂直居中 */
-    justify-content: flex-start; /* ↔️ 左对齐 */
     padding: 0 10px; /* 📏 内边距 */
     z-index: 1000; /* 📚 确保任务栏永远在最上面 */
     border-top: 1px solid rgba(255, 255, 255, 0.1); /* 📏 顶部微光边框 */
@@ -439,6 +438,7 @@ body {
     border: none;
     margin: 0;
     height: 100%;
+    justify-content: center; /* ↔️ 居中对齐 */
 }
 
 .task-app {
@@ -483,6 +483,13 @@ body {
     border-radius: 0;
 }
 
+/* 状态栏区域 (右侧) */
+#taskbar > div:last-child {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 /* 
 // =================================
 //  🎉 特定窗口尺寸定义 ()
@@ -518,8 +525,8 @@ body {
 }
 
 #win-companion {
-    width: 200px; /* 📏 缩小宽度 (原300px) */
-    height: 266px; /* 📏 缩小高度 (原400px) */
+    width: 240px; /* 📏 放大宽度 (200 * 1.2) */
+    height: 320px; /* 📏 放大高度 (266 * 1.2) */
 }
 
 #win-taskmgr {

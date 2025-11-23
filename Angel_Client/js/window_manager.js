@@ -203,7 +203,6 @@ export class WindowManager {
         // =================================
 
         // 💾 尝试获取保存的壁纸，如果没有则使用默认值
-        // 修复：确保 URL 格式正确，避免重复添加 url()
         let savedWp = localStorage.getItem('seraphim_wallpaper');
         if (!savedWp) {
             savedWp = `url('${DEFAULT_WALLPAPER}')`;
@@ -926,7 +925,8 @@ export class WindowManager {
         //     图片加载需要时间，可能会有短暂的空白或延迟。
         // =================================
 
-        const bgStyle = `url('${url}')`;
+        // 修复：如果 url 已经包含 url(...)，则不再包裹
+        const bgStyle = url.startsWith('url') ? url : `url('${url}')`;
         document.documentElement.style.setProperty('--bg-wallpaper', bgStyle);
         localStorage.setItem('seraphim_wallpaper', bgStyle); // 💾 保存完整的 url(...) 字符串
 

@@ -218,7 +218,7 @@ export class AngelApp {
     // =================================
     buildModel() {
         this.group = new THREE.Group(); // 💖 创建一个组，把所有部件打包在一起
-        this.group.scale.set(0.45, 0.45, 0.45); // 💖 缩小模型尺寸 (0.7 / 1.5 ≈ 0.46)
+        this.group.scale.set(0.54, 0.54, 0.54); // 💖 放大模型尺寸 (0.45 * 1.2 = 0.54)
         const matSkin = new THREE.MeshLambertMaterial({ color: 0xffe0bd }); // 💖 皮肤材质
         const matDress = new THREE.MeshLambertMaterial({ color: 0xffffff }); // 💖 衣服材质
         const matHair = new THREE.MeshLambertMaterial({ color: 0xffb6c1 }); // 💖 头发材质
