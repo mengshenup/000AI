@@ -3,6 +3,10 @@ import sys
 import functools
 import traceback
 import asyncio
+import time
+
+# 🕒 版本控制 (每次修改后更新此处)
+DEBUG_VERSION = "v1.2.0 (2025-11-24)"
 
 # =================================
 #  🕵️‍♂️ 调试专用启动器 (Monkey Patch 模式)
@@ -35,7 +39,7 @@ def debug_send_packet_wrapper(original_func):
 
 # 3. 应用 Patch (偷梁换柱)
 print("\n" + "="*50)
-print("🐛 Angel Server 调试模式启动")
+print(f"🐛 Angel Server 调试模式启动 | {DEBUG_VERSION}")
 print("="*50)
 print(f"🎯 正在调试目标: routers.websocket_handler")
 print(f"🔍 监控函数: send_packet")

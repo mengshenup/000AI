@@ -20,6 +20,14 @@ if not exist "..\.venv\Scripts\activate.bat" (
 echo 🔌 正在激活 Python 虚拟环境...
 call ..\.venv\Scripts\activate.bat
 
+:: 3.5. 自动清理旧进程 (防止端口冲突)
+echo 🧹 正在检查并清理占用 8000 端口的旧进程...
+for /f "tokens=5" %%a in ('netstat -aon ^| find ":8000" ^| find "LISTENING"') do (
+    echo 🔪 发现旧进程 (PID: %%a)，正在强制结束...
+    taskkill /f /pid %%a >nul 2>&1
+)
+echo ✅ 端口清理完毕。
+
 :: 4. 启动调试脚本
 echo 🚀 正在启动调试器 (debug_run.py)...
 echo --------------------------------------------------------
