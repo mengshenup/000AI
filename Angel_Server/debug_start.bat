@@ -23,7 +23,9 @@ if %errorlevel% neq 0 goto :venv_error
 :: 3.5. 自动清理旧进程 (防止端口冲突)
 echo [信息] 正在检查并清理占用 8000 端口的旧进程...
 for /f "tokens=5" %%a in ('netstat -aon ^| find ":8000" ^| find "LISTENING"') do (
-    echo [清理] 发现旧进程 PID: %%a
+    for /f "tokens=1" %%b in ('tasklist /nh /fi "pid eq %%a"') do (
+        echo [清理] 发现旧进程 PID: %%a    %%b
+    )
     taskkill /f /pid %%a >nul 2>&1
 )
 echo [完成] 端口清理完毕。

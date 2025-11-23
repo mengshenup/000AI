@@ -21,6 +21,9 @@ set PYTHONIOENCODING=utf-8
 echo [1/2] 正在清理旧进程 (端口 8000)...
 :: 智能清理：只杀占用 8000 端口的进程，而不是杀掉所有 python.exe
 for /f "tokens=5" %%a in ('netstat -aon ^| find ":8000" ^| find "LISTENING"') do (
+    for /f "tokens=1" %%b in ('tasklist /nh /fi "pid eq %%a"') do (
+        echo [清理] 发现旧进程 PID: %%a    %%b
+    )
     taskkill /f /pid %%a >nul 2>&1
 )
 timeout /t 1 /nobreak >nul
@@ -58,6 +61,9 @@ if %errorlevel% neq 0 (
     echo [重启] 正在重新初始化...
     :: 再次清理端口，防止残留
     for /f "tokens=5" %%a in ('netstat -aon ^| find ":8000" ^| find "LISTENING"') do (
+        for /f "tokens=1" %%b in ('tasklist /nh /fi "pid eq %%a"') do (
+            echo [清理] 发现旧进程 PID: %%a    %%b
+        )
         taskkill /f /pid %%a >nul 2>&1
     )
     goto :start_loop

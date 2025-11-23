@@ -31,6 +31,6 @@ if __name__ == "__main__":
         port=8000,      # 🚪 监听 8000 端口
         reload=True,    # 🔄 开启热重载
         reload_dirs=["."], # 📂 监听当前目录
-        reload_excludes=["user_data", ".git", "__pycache__", "*.log"], # 🚫 排除不需要监听的目录
+        reload_excludes=["user_data", ".git", "__pycache__", "*.log", "Angel_Client"], # 🚫 排除不需要监听的目录
         workers=1       # 👷 使用 1 个工作进程
     )
