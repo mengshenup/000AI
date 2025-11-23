@@ -278,7 +278,9 @@ class AngelBrowser:
         #     图片处理（缩放、压缩）是 CPU 密集型操作。
         # =================================
         try:
-            if not self.page: return ""
+            if not self.page:
+                # print("⚠️ [Debug] 截图跳过: 页面对象未就绪")
+                return ""
 
             # 1. Playwright 截图 (获取原始二进制数据)
             # 使用 png 格式获取无损原图，然后用 PIL 处理

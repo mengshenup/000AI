@@ -337,13 +337,18 @@ async def websocket_endpoint(websocket: WebSocket):
                     sleep_time = frame_interval - (current_time - last_frame_time)
                     if sleep_time > 0:
                         await asyncio.sleep(sleep_time)
+    except WebSocketDisconnect:
+        print("👋 客户端已断开连接 (正常关闭)")
     except Exception as e:
         # ❌ 打印全局异常
-        print(f"❌ WebSocket 错误: {e}")
+        print(f"❌ WebSocket 运行时异常: {e}")
+        # 打印堆栈以便调试
+        import traceback
+        traceback.print_exc()
 
     finally:
         # 🧹 清理资源
         if receiver_task:
             receiver_task.cancel() # 🛑 取消接收任务
         await browser_service.stop() # 🛑 停止浏览器服务
-        print("🛑 WebSocket 连接已断开，资源已释放")
+        print("🛑 WebSocket 会话结束，相关资源(浏览器/任务)已释放")
