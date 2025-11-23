@@ -864,7 +864,7 @@ body {
     bottom: 100%; /* 在小天使上方 */
     left: 50%;
     transform: translateX(-50%) scale(0.9);
-    width: 260px;
+    width: 300px; /* 💖 增加宽度，防止按钮溢出 */
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -901,12 +901,14 @@ body {
 
 .chat-input-wrapper {
     display: flex;
-    gap: 5px;
+    gap: 4px; /* 💖 减小间距 */
     align-items: center;
+    width: 100%; /* 💖 确保占满容器 */
 }
 
 .angel-input {
     flex: 1;
+    min-width: 0; /* 💖 防止 flex 子项溢出 */
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 20px;
     padding: 8px 12px;
@@ -921,8 +923,9 @@ body {
 }
 
 .chat-btn {
-    width: 32px;
-    height: 32px;
+    width: 30px; /* 💖 稍微减小按钮尺寸 */
+    height: 30px;
+    flex-shrink: 0; /* 💖 防止按钮被压缩 */
     border-radius: 50%;
     border: none;
     cursor: pointer;

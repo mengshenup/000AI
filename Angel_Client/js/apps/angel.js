@@ -316,28 +316,28 @@ export class AngelApp {
             bone.rotation.z = dir * 0.1;
             wing.add(bone);
 
-            // 2. 内层绒羽 (填充根部)
-            for(let i = 0; i < 6; i++) {
-                const f = box(0.2, 0.45, 0.03, matFeather, dir * (0.15 + i*0.06), 0.05 + i*0.02, 0.02); // y 向上调整
-                f.rotation.z = dir * (0.1 + i * 0.05); // 角度向上
+            // 2. 内层绒羽 (填充根部) - 增加密度
+            for(let i = 0; i < 8; i++) {
+                const f = box(0.15, 0.45, 0.03, matFeather, dir * (0.15 + i*0.05), 0.05 + i*0.02, 0.02); 
+                f.rotation.z = dir * (0.1 + i * 0.08); 
                 f.rotation.x = 0.1; 
                 wing.add(f);
             }
 
-            // 3. 中层覆羽 (主要覆盖层)
-            for(let i = 0; i < 7; i++) {
-                const f = box(0.18, 0.7, 0.03, matFeather, dir * (0.2 + i*0.09), 0.15 + i*0.05, 0.04); // y 向上调整
-                f.rotation.z = dir * (0.2 + i * 0.1); // 角度向上
+            // 3. 中层覆羽 (主要覆盖层) - 增加层次感
+            for(let i = 0; i < 10; i++) {
+                const f = box(0.15, 0.7, 0.03, matFeather, dir * (0.2 + i*0.08), 0.15 + i*0.05, 0.04); 
+                f.rotation.z = dir * (0.2 + i * 0.12); 
                 f.rotation.x = 0.05;
                 wing.add(f);
             }
 
-            // 4. 外层飞羽 (长而有力，向上展开)
-            for(let i = 0; i < 8; i++) {
-                const len = 0.9 + Math.sin(i * 0.4) * 0.4; 
-                const f = box(0.15, len, 0.03, matFeather, dir * (0.25 + i*0.11), 0.2 + len/2 + i*0.05, 0.06); // y 向上调整
-                f.rotation.z = dir * (0.3 + i * 0.15); // 角度向上
-                f.rotation.y = dir * -0.15;
+            // 4. 外层飞羽 (长而有力，向上展开) - 更加修长和展开
+            for(let i = 0; i < 12; i++) {
+                const len = 1.0 + Math.sin(i * 0.3) * 0.5; // 增加长度变化
+                const f = box(0.12, len, 0.03, matFeather, dir * (0.25 + i*0.1), 0.2 + len/2 + i*0.06, 0.06); 
+                f.rotation.z = dir * (0.3 + i * 0.18); // 增加展开角度
+                f.rotation.y = dir * -0.2; // 增加立体感
                 wing.add(f);
             }
             
@@ -495,8 +495,8 @@ export class AngelApp {
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'zh-CN';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.2; // 稍微高一点，像女声
+        utterance.rate = 1.1; // 💖 语速稍快，更活泼
+        utterance.pitch = 1.5; // 💖 音调调高，模拟14岁少女声音
 
         // 尝试获取中文语音包
         const voices = window.speechSynthesis.getVoices();
