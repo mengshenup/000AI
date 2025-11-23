@@ -40,6 +40,11 @@ echo.
 for /f "usebackq tokens=*" %%i in (`powershell -command "(Get-CimInstance Win32_Process -Filter \"ProcessId = $PID\").ParentProcessId"`) do set BAT_PID=%%i
 echo [DEBUG] 当前 BAT 脚本 (start_client.bat) 的 PID: %BAT_PID%
 
+:: 尝试激活虚拟环境 (如果存在)
+if exist "..\.venv\Scripts\activate.bat" (
+    call "..\.venv\Scripts\activate.bat"
+)
+
 :: 使用 Python 内置 HTTP 服务器，如果报错跳转到错误处理
 python -m http.server 5500
 if %errorlevel% neq 0 goto :error

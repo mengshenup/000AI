@@ -22,14 +22,14 @@ class GeminiClient:
             self.model = genai.GenerativeModel('gemini-1.5-flash')
         else:
             self.model = None
-            print("⚠️ Gemini API Key not found or library missing. Brain capabilities disabled.")
+            print("⚠️ 未找到 Gemini API Key 或缺少库。大脑功能已禁用。")
 
     async def analyze_video(self, video_title, video_url, current_time=0):
-        print(f"🧠 Gemini analyzing: {video_title} at {current_time}s")
+        print(f"🧠 Gemini 正在分析: {video_title} (时间点: {current_time}s)")
         global_cost_tracker.track_ai(f"Analyze request: {video_title}", is_input=True)
 
         if not self.model:
-            return {"error": "Gemini API Key missing. Brain is offline."}
+            return {"error": "缺少 Gemini API Key。大脑已离线。"}
 
         try:
             prompt = f"""

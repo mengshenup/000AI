@@ -38,7 +38,7 @@ echo --------------------------------------------------------
 for /f "usebackq tokens=*" %%i in (`powershell -command "(Get-CimInstance Win32_Process -Filter \"ProcessId = $PID\").ParentProcessId"`) do set BAT_PID=%%i
 echo [DEBUG] 当前 BAT 脚本 (debug_start.bat) 的 PID: %BAT_PID%
 
-python debug_run.py
+python Debug/debug_run.py
 
 :: 5. 退出处理
 if %ERRORLEVEL% NEQ 0 goto :error

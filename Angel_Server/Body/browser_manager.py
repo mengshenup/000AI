@@ -47,7 +47,7 @@ class BrowserManager:
 
         try:
             if BROWSER_CHANNEL:
-                print(f"🚀 [Body] Waking up with System Browser ({BROWSER_CHANNEL})...")
+                print(f"🚀 [躯体] 正在使用系统浏览器唤醒 ({BROWSER_CHANNEL})...")
                 self.browser_context = await self.playwright.chromium.launch_persistent_context(
                     USER_DATA_DIR,
                     headless=True,
@@ -56,7 +56,7 @@ class BrowserManager:
                     viewport=VIEWPORT
                 )
             else:
-                print("🚀 [Body] Waking up with Built-in Chromium...")
+                print("🚀 [躯体] 正在使用内置 Chromium 唤醒...")
                 self.browser_context = await self.playwright.chromium.launch_persistent_context(
                     USER_DATA_DIR,
                     headless=True,
@@ -64,7 +64,7 @@ class BrowserManager:
                     viewport=VIEWPORT
                 )
         except Exception as e:
-            print(f"❌ [Body] Failed to wake up: {e}")
+            print(f"❌ [躯体] 唤醒失败: {e}")
             raise e
 
         self.page = self.browser_context.pages[0] if self.browser_context.pages else await self.browser_context.new_page()
