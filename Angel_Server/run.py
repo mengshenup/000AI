@@ -25,12 +25,13 @@ if __name__ == "__main__":
     
     # 🔌 使用 uvicorn.run 直接启动，开启 reload=True
     # 这会自动使用高效的文件系统监听 (watchfiles)，避免轮询造成的卡顿
+    # ⚠️ Windows 上 ProactorEventLoop 和 reload=True 可能有冲突，如果报错 NotImplementedError，请尝试 reload=False
     uvicorn.run(
         "main:app",
         host="0.0.0.0", # 🌐 监听所有网络接口
         port=8000,      # 🚪 监听 8000 端口
-        reload=True,    # 🔄 开启热重载
-        reload_dirs=["."], # 📂 监听当前目录
-        reload_excludes=["user_data", ".git", "__pycache__", "*.log", "Angel_Client"], # 🚫 排除不需要监听的目录
+        reload=False,    # 🔄 关闭热重载以修复 NotImplementedError
+        # reload_dirs=["."], # 📂 监听当前目录
+        # reload_excludes=["user_data", ".git", "__pycache__", "*.log", "Angel_Client"], # 🚫 排除不需要监听的目录
         workers=1       # 👷 使用 1 个工作进程
     )
