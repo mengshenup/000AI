@@ -51,7 +51,7 @@
 拿到钥匙后，要告诉小天使。
 
 1.  **找到配置文件**：
-    *   回到你的电脑文件夹：`C:\000AI\Angel_Server\`
+    *   回到你的电脑文件夹：你存储位置`\000AI\Angel_Server\Memorybank\`
     *   找到文件 `.env` (如果没有，就把 `.env.example` 重命名为 `.env`)。
 
 2.  **修改文件**：
@@ -71,7 +71,5 @@
 
 ---
 **常见问题**
-*   **Q: 还是提示 Unable to create?**
-    *   A: 确保你在第二阶段选的是 **"Existing project"** (现有项目)，而不是 New project。
 *   **Q: 启动后报错 "API Key missing"?**
     *   A: 检查 `.env` 文件名是不是对的 (前面有个点)，检查里面是不是保存了。
