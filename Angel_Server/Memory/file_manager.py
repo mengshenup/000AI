@@ -4,9 +4,25 @@ from pathlib import Path # 🛣️ 路径处理库
 from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-# 💖 修正：将数据存储路径指向 Memorybank/BrowserData，与前端缓存保持一致
-# 这样可以避免前端和后端数据混乱，统一管理
-DATA_DIR = Path(os.path.dirname(os.path.dirname(__file__))) / "Memorybank" / "BrowserData"
+# 💖 修正：尝试定位到 Angel_Client/Memorybank
+# 策略：先找 Angel_Server 的上级目录，再找 Angel_Client
+ROOT_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+CLIENT_DIR = ROOT_DIR / "Angel_Client"
+
+# 🕵️‍♂️ 动态查找 Client 目录 (防止用户重命名)
+# 如果找不到 Angel_Client，尝试搜索同级目录中包含 index.html 的文件夹
+if not CLIENT_DIR.exists():
+    found = False
+    for item in ROOT_DIR.iterdir():
+        if item.is_dir() and (item / "index.html").exists():
+            CLIENT_DIR = item
+            found = True
+            break
+    if not found:
+        # 如果实在找不到，回退到 Server 端的 Memorybank
+        CLIENT_DIR = Path(os.path.dirname(os.path.dirname(__file__)))
+
+DATA_DIR = CLIENT_DIR / "Memorybank"
 DATA_DIR.mkdir(parents=True, exist_ok=True) # 📁 确保目录存在
 
 class FileManager:
