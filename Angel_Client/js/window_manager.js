@@ -272,7 +272,11 @@ export class WindowManager {
                 return;
             }
 
-            // 💖 过滤掉不显示桌面图标的应用 (如系统应用)
+            // 💖 过滤掉系统应用 (System Apps)
+            // 用户要求：所有的系统应用都不显示在桌面图标
+            if (app.isSystem) return;
+
+            // 💖 过滤掉显式配置不显示的应用
             if (app.showDesktopIcon === false) return;
 
             // 📦 创建图标容器 div
@@ -804,6 +808,21 @@ export class WindowManager {
         //     这样最省地皮（内存），也不会有奇怪的声音（后台运行）吵到你。🏗️
         // =================================
 
+        // 💖 检查是否为系统应用
+        const app = store.getApp(id);
+        if (app && app.isSystem) {
+            console.log(`[WindowManager] 系统应用 ${id} 被关闭，正在重启...`);
+            
+            // 1. 先彻底销毁
+            this.killApp(id);
+
+            // 2. 延迟一小会儿后重新打开 (模拟重启效果)
+            setTimeout(() => {
+                this.openApp(id, false); // false 表示不播放语音
+            }, 1000);
+            return; 
+        }
+
         this.killApp(id); // 🔄 直接复用销毁逻辑
     }
 
@@ -1013,7 +1032,11 @@ export class WindowManager {
         container.innerHTML = ''; // 🧹 清空任务栏
 
         Object.entries(store.apps).forEach(([id, app]) => {
-            // 💖 过滤掉不显示任务栏图标的应用 (如系统应用)
+            // 💖 过滤掉系统应用 (System Apps)
+            // 用户要求：所有的系统应用都不显示在任务栏图标
+            if (app.isSystem) return;
+
+            // 💖 过滤掉显式配置不显示的应用
             if (app.showTaskbarIcon === false) return;
 
             const win = document.getElementById(id);

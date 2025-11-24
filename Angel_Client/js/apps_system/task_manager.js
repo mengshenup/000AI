@@ -55,6 +55,7 @@ export class TaskManagerApp {
         this.ctx = pm.getContext(this.id); // 💖 获取进程上下文
         this.selectedAppId = null; // 💖 当前选中的应用 ID
         this.pendingStates = new Map(); // 💖 记录正在操作中的应用状态 (id -> 'starting' | 'stopping')
+        this.isSystemAppsCollapsed = true; // 💖 系统应用折叠状态
         
         // 🚀 性能优化：DOM 缓存池
         // Map<AppId, { el: HTMLElement, refs: Object }>
@@ -101,8 +102,6 @@ export class TaskManagerApp {
         this.onOpen(); // 💖 立即执行一次打开逻辑
     }
 
-    // ...existing code...
-
     // =================================
     //  🎉 渲染列表 (高性能版)
     //
@@ -124,29 +123,76 @@ export class TaskManagerApp {
         }
 
         // 🛡️ 视图状态检查：如果容器为空（刚打开）或包含详情页元素（刚返回），强制重置
-        // 这解决了“返回按钮失效”和“列表空白”的问题
         if (this.listContainer.children.length === 0 || this.listContainer.querySelector('#btn-back')) {
             this.listContainer.innerHTML = ''; // 清理可能存在的详情页
             this.domCache.clear(); // 清空缓存，强制重建列表
+            
+            // 🏗️ 创建分组容器结构
+            this.listContainer.innerHTML = `
+                <div id="user-apps-container"></div>
+                <div id="system-apps-header" style="
+                    padding: 10px; margin-top: 15px; margin-bottom: 5px;
+                    background: #f1f2f6; border-radius: 5px; cursor: pointer;
+                    display: flex; justify-content: space-between; align-items: center;
+                    font-weight: bold; color: #636e72; font-size: 0.9em;
+                ">
+                    <span>🛡️ 系统核心进程</span>
+                    <span id="system-apps-toggle-icon">▶</span>
+                </div>
+                <div id="system-apps-container" style="display: none;"></div>
+            `;
+            
+            // 绑定折叠点击事件
+            const header = this.listContainer.querySelector('#system-apps-header');
+            header.onclick = () => {
+                this.isSystemAppsCollapsed = !this.isSystemAppsCollapsed;
+                this.render(); // 重新渲染以更新显示状态
+            };
+        }
+
+        // 获取容器引用
+        const userContainer = this.listContainer.querySelector('#user-apps-container');
+        const systemContainer = this.listContainer.querySelector('#system-apps-container');
+        const toggleIcon = this.listContainer.querySelector('#system-apps-toggle-icon');
+        
+        // 更新折叠状态 UI
+        if (systemContainer && toggleIcon) {
+            systemContainer.style.display = this.isSystemAppsCollapsed ? 'none' : 'block';
+            toggleIcon.innerText = this.isSystemAppsCollapsed ? '▶' : '▼';
         }
 
         const apps = store.apps;
         const activeIds = new Set(); // 记录本次渲染存在的 ID
 
-        // 1. 准备数据列表 (合并系统和用户应用)
-        const allApps = [];
-        Object.entries(apps).forEach(([id, app]) => allApps.push({ id, ...app }));
+        // 1. 准备数据列表 (分离系统和用户应用)
+        const userApps = [];
+        const systemApps = [];
         
-        // 排序：系统应用在前，然后按 ID 排序
-        allApps.sort((a, b) => {
-            if (a.system !== b.system) return a.system ? -1 : 1;
-            return a.id.localeCompare(b.id);
+        Object.entries(apps).forEach(([id, app]) => {
+            const appData = { id, ...app };
+            if (app.isSystem) {
+                systemApps.push(appData);
+            } else {
+                userApps.push(appData);
+            }
         });
+        
+        // 排序：按 ID 排序
+        userApps.sort((a, b) => a.id.localeCompare(b.id));
+        systemApps.sort((a, b) => a.id.localeCompare(b.id));
 
         // 2. 增量更新 DOM
-        allApps.forEach(app => {
+        // 渲染用户应用
+        userApps.forEach(app => {
             activeIds.add(app.id);
-            this.updateRow(app);
+            this.updateRow(app, userContainer);
+        });
+        
+        // 渲染系统应用 (即使折叠也要更新数据，或者可以选择不更新以节省性能？这里选择更新以保持状态同步)
+        // 优化：如果折叠了，其实可以不更新 DOM，但是为了简单起见，先更新
+        systemApps.forEach(app => {
+            activeIds.add(app.id);
+            this.updateRow(app, systemContainer);
         });
 
         // 3. 清理已移除的应用 DOM
@@ -161,7 +207,7 @@ export class TaskManagerApp {
     /**
      * 🔄 更新单行数据 (核心优化)
      */
-    updateRow(app) {
+    updateRow(app, targetContainer) {
         // 📊 计算数据
         let stats = { cpuTime: 0, startTime: Date.now(), longTasks: 0 };
         let resCount = { total: 0 };
@@ -272,7 +318,13 @@ export class TaskManagerApp {
             };
             if (btnDisabled) btn.disabled = true;
 
-            this.listContainer.appendChild(item);
+            // 💖 关键修改：添加到指定容器
+            if (targetContainer) {
+                targetContainer.appendChild(item);
+            } else {
+                // 兜底：如果没传容器，就加到主列表（兼容旧逻辑，虽然现在应该都有容器）
+                this.listContainer.appendChild(item);
+            }
 
             // 缓存引用
             this.domCache.set(app.id, {
@@ -290,7 +342,12 @@ export class TaskManagerApp {
         // 🅱️ 情况 B: DOM 已存在 -> 更新
         else {
             const cache = this.domCache.get(app.id);
-            const { refs, lastState } = cache;
+            const { refs, lastState, el } = cache;
+
+            // 💖 确保元素在正确的容器中 (防止从系统变用户或反之，虽然很少见)
+            if (targetContainer && el.parentElement !== targetContainer) {
+                targetContainer.appendChild(el);
+            }
 
             // 仅当数据变化时才操作 DOM (极致性能)
             if (lastState.cpuUsage !== cpuUsage) {
@@ -317,8 +374,6 @@ export class TaskManagerApp {
             }
         }
     }
-
-    // ...existing code...
 
     // =================================
     //  🎉 渲染详情页
