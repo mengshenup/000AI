@@ -54,6 +54,7 @@ export class TaskManagerApp {
         this.updateInterval = null; // 💖 自动刷新定时器 ID
         this.ctx = pm.getContext(this.id); // 💖 获取进程上下文
         this.selectedAppId = null; // 💖 当前选中的应用 ID
+        this.pendingStates = new Map(); // 💖 记录正在操作中的应用状态 (id -> 'starting' | 'stopping')
         
         // 🚀 性能优化：DOM 缓存池
         // Map<AppId, { el: HTMLElement, refs: Object }>
@@ -62,6 +63,20 @@ export class TaskManagerApp {
 
         // 监听窗口就绪事件
         bus.on(`app:ready:${config.id}`, () => this.init());
+        
+        // 监听应用状态变更，清除 pending 状态
+        bus.on('app:opened', (data) => {
+            if (this.pendingStates.has(data.id)) {
+                this.pendingStates.delete(data.id);
+                this.render(); // 立即刷新 UI
+            }
+        });
+        bus.on('app:closed', (data) => {
+            if (this.pendingStates.has(data.id)) {
+                this.pendingStates.delete(data.id);
+                this.render(); // 立即刷新 UI
+            }
+        });
         
         // 注册清理
         this.ctx.onCleanup(() => this.onClose());
@@ -158,8 +173,24 @@ export class TaskManagerApp {
         const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(1) : '0.0';
         const resUsage = app.isOpen ? resCount.total : 0;
         const statusColor = app.isOpen ? '#2ecc71' : '#b2bec3';
-        const btnColor = app.isOpen ? '#ff7675' : '#0984e3';
-        const btnText = app.isOpen ? '结束' : '启动';
+        
+        // 💖 处理 Pending 状态
+        const pendingAction = this.pendingStates.get(app.id);
+        let btnColor, btnText, btnDisabled;
+        
+        if (pendingAction === 'stopping') {
+            btnColor = '#b2bec3';
+            btnText = '清理中...';
+            btnDisabled = true;
+        } else if (pendingAction === 'starting') {
+            btnColor = '#b2bec3';
+            btnText = '启动中...';
+            btnDisabled = true;
+        } else {
+            btnColor = app.isOpen ? '#ff7675' : '#0984e3';
+            btnText = app.isOpen ? '结束' : '启动';
+            btnDisabled = false;
+        }
         
         // 🐢 卡顿指标 HTML
         const lagHtml = stats.longTasks > 0 
@@ -207,10 +238,20 @@ export class TaskManagerApp {
             const btn = item.querySelector('[data-ref="btn"]');
             btn.onclick = (e) => {
                 e.stopPropagation();
-                if (app.isOpen) wm.closeApp(app.id);
-                else wm.openApp(app.id);
-                setTimeout(() => this.render(), 100);
+                if (this.pendingStates.has(app.id)) return; // 防止重复点击
+
+                if (app.isOpen) {
+                    this.pendingStates.set(app.id, 'stopping');
+                    this.render(); // 立即刷新显示“清理中...”
+                    // 模拟一点延迟让用户看清状态，也给 UI 线程喘息机会
+                    setTimeout(() => wm.closeApp(app.id), 50);
+                } else {
+                    this.pendingStates.set(app.id, 'starting');
+                    this.render(); // 立即刷新显示“启动中...”
+                    setTimeout(() => wm.openApp(app.id), 50);
+                }
             };
+            if (btnDisabled) btn.disabled = true;
 
             this.listContainer.appendChild(item);
 
@@ -224,7 +265,7 @@ export class TaskManagerApp {
                     lag: item.querySelector('[data-ref="lag"]'),
                     btn: btn
                 },
-                lastState: { cpuUsage, resUsage, lagHtml, isOpen: app.isOpen } // 用于对比
+                lastState: { cpuUsage, resUsage, lagHtml, isOpen: app.isOpen, pendingAction } // 用于对比
             });
         } 
         // 🅱️ 情况 B: DOM 已存在 -> 更新
@@ -245,11 +286,15 @@ export class TaskManagerApp {
                 refs.lag.innerHTML = `卡顿: ${lagHtml}`;
                 lastState.lagHtml = lagHtml;
             }
-            if (lastState.isOpen !== app.isOpen) {
+            // 检查状态或 pending 状态是否变化
+            if (lastState.isOpen !== app.isOpen || lastState.pendingAction !== pendingAction) {
                 refs.status.style.background = statusColor;
                 refs.btn.style.background = btnColor;
                 refs.btn.innerText = btnText;
+                refs.btn.disabled = !!btnDisabled;
+                
                 lastState.isOpen = app.isOpen;
+                lastState.pendingAction = pendingAction;
             }
         }
     }
