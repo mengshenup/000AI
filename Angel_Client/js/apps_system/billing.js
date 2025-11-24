@@ -1,3 +1,5 @@
+import { bus } from '../apps_run/event_bus.js';
+
 export const config = {
     id: 'win-billing',
     name: '金色收获',
@@ -42,3 +44,37 @@ export const config = {
     `,
     contentStyle: 'background: transparent; padding: 0; box-shadow: none; border: none;'
 };
+
+// 💖 导出初始化函数，由 loader.js 调用
+export function init() {
+    // 监听网络统计数据更新 (费用)
+    let lastStatsUpdate = 0;
+    bus.on('net:stats', (stats) => {
+        const now = Date.now();
+        if (now - lastStatsUpdate < 500) return; // 500ms 节流
+        lastStatsUpdate = now;
+
+        // 辅助函数：安全更新 DOM 文本
+        const update = (id, val) => { 
+            const els = document.querySelectorAll(`#${id}`);
+            els.forEach(el => el.innerText = val);
+        }; 
+        
+        // 更新任务栏胶囊数据
+        update('bar-total', stats.grand_total);
+
+        // 更新详情窗口数据
+        update('ai-cost', stats.grand_total); // 💰 更新总费用
+        update('pop-net', stats.net.cost);    // 💸 更新弹窗里的流量费
+        update('pop-total', stats.grand_total); // 💵 更新弹窗里的总费用
+
+        // 更新账单详情列表 (支持多个实例)
+        const mbs = document.querySelectorAll('#pop-models'); // 🧾 账单详情容器
+        mbs.forEach(mb => {
+            if (stats.ai.details.length) {
+                // 将详情数组转换为 HTML 字符串并插入
+                mb.innerHTML = stats.ai.details.map(t => `<div class="bill-row bill-sub"><span>${t.split(': ')[0]}</span><span>${t.split(': ')[1]}</span></div>`).join(''); // 📝 生成账单HTML
+            }
+        });
+    });
+}

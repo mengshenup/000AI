@@ -1,3 +1,5 @@
+import { bus } from '../apps_run/event_bus.js';
+
 export const config = {
     id: 'win-traffic',
     name: '脉动监测',
@@ -33,3 +35,28 @@ export const config = {
     `,
     contentStyle: 'background: transparent; padding: 0; box-shadow: none; border: none;'
 };
+
+// 💖 导出初始化函数，由 loader.js 调用
+export function init() {
+    // 监听网络统计数据更新 (上传/下载速度)
+    let lastStatsUpdate = 0;
+    bus.on('net:stats', (stats) => {
+        const now = Date.now();
+        if (now - lastStatsUpdate < 500) return; // 500ms 节流
+        lastStatsUpdate = now;
+
+        // 辅助函数：安全更新 DOM 文本
+        const update = (id, val) => { 
+            const els = document.querySelectorAll(`#${id}`);
+            els.forEach(el => el.innerText = val);
+        }; 
+        
+        // 更新任务栏胶囊数据
+        update('bar-tx', stats.net.up);
+        update('bar-rx', stats.net.down);
+
+        // 更新详情窗口数据
+        update('tx-stat', stats.net.up);    // ⬆️ 更新上传速度
+        update('rx-stat', stats.net.down);  // ⬇️ 更新下载速度
+    });
+}

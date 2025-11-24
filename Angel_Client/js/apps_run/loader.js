@@ -27,40 +27,9 @@ function setupBusinessLogic() {
 
     // 监听网络统计数据更新 (上传/下载速度, 费用)
     // 优化：节流统计数据更新，每秒最多更新 2 次，减少 DOM 操作开销
-    let lastStatsUpdate = 0;
-    bus.on('net:stats', (stats) => {
-        const now = Date.now();
-        if (now - lastStatsUpdate < 500) return; // 500ms 节流
-        lastStatsUpdate = now;
-
-        // 辅助函数：安全更新 DOM 文本
-        const update = (id, val) => { 
-            // 尝试在多个可能的地方更新，因为现在有独立的APP窗口
-            const els = document.querySelectorAll(`#${id}`);
-            els.forEach(el => el.innerText = val);
-        }; 
-        
-        // 更新任务栏胶囊数据
-        update('bar-tx', stats.net.up);
-        update('bar-rx', stats.net.down);
-        update('bar-total', stats.grand_total);
-
-        // 更新详情窗口数据
-        update('tx-stat', stats.net.up);    // ⬆️ 更新上传速度
-        update('rx-stat', stats.net.down);  // ⬇️ 更新下载速度
-        update('ai-cost', stats.grand_total); // 💰 更新总费用
-        update('pop-net', stats.net.cost);    // 💸 更新弹窗里的流量费
-        update('pop-total', stats.grand_total); // 💵 更新弹窗里的总费用
-
-        // 更新账单详情列表 (支持多个实例)
-        const mbs = document.querySelectorAll('#pop-models'); // 🧾 账单详情容器
-        mbs.forEach(mb => {
-            if (stats.ai.details.length) {
-                // 将详情数组转换为 HTML 字符串并插入
-                mb.innerHTML = stats.ai.details.map(t => `<div class="bill-row bill-sub"><span>${t.split(': ')[0]}</span><span>${t.split(': ')[1]}</span></div>`).join(''); // 📝 生成账单HTML
-            }
-        });
-    });
+    // 💖 逻辑已迁移至 traffic.js 和 billing.js 的 init() 中
+    // let lastStatsUpdate = 0;
+    // bus.on('net:stats', (stats) => { ... });
 
     // 监听实时画面帧更新
     // 优化：使用 requestAnimationFrame 节流渲染，避免高频 DOM 操作导致卡顿
@@ -177,7 +146,8 @@ window.onload = async () => {
                 const m = await import(path);
                 // 只有导出了 config 的才被视为可注册的应用窗口
                 if (m.config) {
-                    return { id: m.config.id, config: m.config, isSystem };
+                    // 💖 返回完整模块，以便后续调用 init
+                    return { id: m.config.id, config: m.config, isSystem, init: m.init };
                 }
             } catch (e) {
                 console.error(`无法加载应用 ${path}:`, e);
@@ -195,11 +165,18 @@ window.onload = async () => {
 
         console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${userModules.length} 个`);
 
-        // 4. 注入元数据
-        allModules.forEach(({id, config, isSystem}) => {
+        // 4. 注入元数据并初始化
+        allModules.forEach((module) => {
+            const { id, config, isSystem } = module;
             // 标记系统应用，以便 store.js 识别
             config.isSystem = isSystem;
             store.setAppMetadata(id, config);
+
+            // 💖 如果应用导出了 init 函数，则执行初始化 (用于后台逻辑，如 traffic/billing)
+            if (typeof module.init === 'function') {
+                console.log(`初始化应用逻辑: ${id}`);
+                module.init();
+            }
         });
 
         // 5. 清理僵尸数据
