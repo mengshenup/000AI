@@ -4,20 +4,24 @@ from pathlib import Path # 🛣️ 路径处理库
 from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-# 💖 修正：尝试定位到 客户端数据库 (Client Database)
-# 策略：先找 Angel_Server 的上级目录，再找 Angel_Client
-# 💡 核心逻辑：
-#    由于浏览器安全限制，前端无法直接写硬盘。
-#    这里服务器充当“搬运工”，定位客户端文件夹并创建存储库，
-#    以便将前端传来的数据写入 window_memory.json。
+# 💖 修正：定位到 Web_Client 根目录
+# 策略：当前文件在 Web_Client/Client_Core/Memory/file_manager.py
+# 向上 3 层即为 Web_Client
 ROOT_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-CLIENT_DIR = ROOT_DIR / "Angel_Client"
+CLIENT_DIR = ROOT_DIR # 直接指向 Web_Client 根目录
 
 # 🕵️‍♂️ 动态查找 Client 目录 (防止用户重命名)
-# 如果找不到 Angel_Client，尝试搜索同级目录中包含 index.html 的文件夹
-if not CLIENT_DIR.exists():
+# 如果找不到 index.html，尝试搜索同级目录
+if not (CLIENT_DIR / "index.html").exists():
     found = False
-    for item in ROOT_DIR.iterdir():
+    # 向上找一级 (C:\000AI)
+    WORKSPACE_DIR = ROOT_DIR.parent
+    for item in WORKSPACE_DIR.iterdir():
+        if item.is_dir() and (item / "index.html").exists():
+            CLIENT_DIR = item
+            found = True
+            break
+
         if item.is_dir() and (item / "index.html").exists():
             CLIENT_DIR = item
             found = True
