@@ -21,6 +21,7 @@ class Store {
         //
         //  🎨 代码用途：
         //     初始化存储对象，尝试从 localStorage 读取数据。
+        //     💖 新增：尝试从后端 API 同步数据，以支持跨浏览器/跨设备持久化。
         //
         //  💡 易懂解释：
         //     翻开记事本，看看上次写了什么。
@@ -29,23 +30,41 @@ class Store {
         //     如果数据损坏，会自动重置为空。
         // =================================
 
-        // 尝试从浏览器缓存中读取上次保存的状态
-        // 使用通用 Key 'seraphim_apps_state'
-        const saved = localStorage.getItem('seraphim_apps_state'); // 📖 读取存档
+        this.apps = {}; // 🆕 初始化为空
 
+        // 1. 先尝试读取 LocalStorage (速度快，作为兜底)
+        const saved = localStorage.getItem('seraphim_apps_state'); 
         if (saved) {
             try {
-                // 如果有缓存，解析缓存
-                const savedApps = JSON.parse(saved); // 🧩 解析JSON
-                // 初始化为空对象，等待 setAppMetadata 注入
-                this.apps = savedApps; // 📥 加载数据
+                this.apps = JSON.parse(saved);
             } catch (e) {
-                console.error("本地数据库损坏，重置中...", e); // ❌ 报错
-                this.apps = {}; // 🧹 重置
+                console.error("本地数据库损坏，重置中...", e);
+                this.apps = {};
             }
-        } else {
-            // 如果没有缓存，初始化为空对象
-            this.apps = {}; // 🆕 全新开始
+        }
+
+        // 2. 💖 异步从后端加载最新布局 (权威数据)
+        // 这样即使更换了浏览器缓存，只要后端数据还在，就能恢复
+        this.syncFromBackend();
+    }
+
+    // 💖 从后端同步数据
+    async syncFromBackend() {
+        try {
+            const res = await fetch('http://localhost:8000/load_layout');
+            const data = await res.json();
+            if (data && Object.keys(data).length > 0) {
+                console.log("从后端成功加载布局配置 ✨");
+                // 合并数据：后端数据覆盖本地数据
+                this.apps = { ...this.apps, ...data };
+                // 触发一次保存到 LocalStorage，保持同步
+                localStorage.setItem('seraphim_apps_state', JSON.stringify(this.apps));
+                
+                // 如果此时窗口管理器已经初始化，可能需要刷新一下
+                // 但通常 store 初始化早于 wm，所以这里只是更新数据源
+            }
+        } catch (e) {
+            console.warn("无法连接后端获取布局配置，使用本地缓存", e);
         }
     }
 

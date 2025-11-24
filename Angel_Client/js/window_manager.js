@@ -106,6 +106,9 @@ export class WindowManager {
         win.id = id;
         win.className = 'window';
 
+        // 💖 图标容错处理：如果 app.icon 缺失，使用默认图标
+        const iconPath = app.icon || 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'; // 默认是个感叹号/信息图标
+
         // 🏷️ 创建标题栏 (仅当非无边框模式时)
         if (!app.frameless) {
             const titleBar = document.createElement('div');
@@ -123,7 +126,13 @@ export class WindowManager {
             const title = document.createElement('div');
             title.className = 'win-title';
             // 组合名称和提示 (使用空格分隔)
-            title.innerText = app.description ? `${app.name}     ${app.description}` : app.name;
+            // 💖 增加图标显示
+            title.innerHTML = `
+                <svg viewBox="0 0 24 24" style="width:16px; height:16px; fill:currentColor; margin-right:5px; vertical-align:text-bottom;">
+                    <path d="${iconPath}"></path>
+                </svg>
+                ${app.description ? `${app.name}     ${app.description}` : app.name}
+            `;
 
             // 交换顺序：按钮在右，标题在左 (恢复经典布局)
             titleBar.appendChild(title);

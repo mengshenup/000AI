@@ -4,8 +4,10 @@ from pathlib import Path # 🛣️ 路径处理库
 from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-DATA_DIR = Path(USER_DATA_DIR) # 💾 用户数据根目录 (与 BrowserData 保持一致)
-DATA_DIR.mkdir(parents=True, exist_ok=True) # 📁 确保目录存在 (使用 parents=True 以防父目录不存在)
+# 💖 修正：将数据存储路径指向 Memorybank/BrowserData，与前端缓存保持一致
+# 这样可以避免前端和后端数据混乱，统一管理
+DATA_DIR = Path(os.path.dirname(os.path.dirname(__file__))) / "Memorybank" / "BrowserData"
+DATA_DIR.mkdir(parents=True, exist_ok=True) # 📁 确保目录存在
 
 class FileManager:
     # =================================

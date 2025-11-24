@@ -167,8 +167,15 @@ export class AngelApp {
         // 3. 清除本地存储的静音设置等 (可选)
         localStorage.removeItem('angel_is_muted');
         localStorage.removeItem('angel_performance_mode');
+        localStorage.removeItem('angel_force_cpu'); // 💖 也要清除这个
+
+        // 4. 💖 触发全局 Store 重置 (窗口位置等)
+        import('../store.js').then(m => m.store.reset());
         
-        this.showBubble("已重置所有状态！✨");
+        this.showBubble("已重置所有状态！请刷新页面生效 ✨");
+        
+        // 延迟刷新
+        setTimeout(() => location.reload(), 1500);
     }
 
     // =================================
