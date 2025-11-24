@@ -1,5 +1,4 @@
-import { bus } from '../apps_run/event_bus.js';
-import { store } from '../apps_run/store.js';
+import { createCapsule } from '../apps_run/capsule_manager.js?v=1';
 
 // 💖 详情窗口配置 (点击胶囊后打开的窗口)
 const detailConfig = {
@@ -61,43 +60,15 @@ export const config = {
 
 // 💖 导出初始化函数，由 loader.js 调用
 export function init() {
-    // 注册详情窗口配置
-    store.setAppMetadata(detailConfig.id, detailConfig);
-
-    // 1. 动态创建胶囊 DOM
-    const container = document.getElementById('taskbar-status');
-    if (container) {
-        const el = document.createElement('div');
-        el.id = 'bar-billing';
-        el.className = 'status-capsule';
-        el.title = '点击查看账单详情';
-        el.style.display = 'none'; // 默认隐藏
-        el.innerHTML = `
+    createCapsule({
+        serviceConfig: config,
+        detailConfig: detailConfig,
+        html: `
             <span style="color: #fdcb6e; font-weight: bold;">¥</span>
             <span id="bar-total">0.00</span>
-        `;
-        
-        // 插入到时钟之前 (或者流量之前，保持顺序)
-        // 这里简单处理，直接插入到 container，顺序取决于 init 执行顺序
-        // 为了保持一致性，可以尝试插入到最前面
-        if (container.firstChild) container.insertBefore(el, container.firstChild);
-        else container.appendChild(el);
-
-        // 绑定点击事件
-        el.addEventListener('click', () => {
-            const wm = window.wm;
-            if (!wm) return;
-            
-            const appId = detailConfig.id;
-            const app = store.getApp(appId);
-            
-            if (app && app.isOpen) {
-                wm.closeApp(appId);
-            } else {
-                wm.openApp(appId, false);
-                setTimeout(() => {
-                    const win = document.getElementById(appId);
-                    if (win) {
+        `
+    });
+}
                         const cRect = el.getBoundingClientRect();
                         const wRect = win.getBoundingClientRect();
                         let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);

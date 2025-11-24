@@ -70,55 +70,7 @@ function setupBusinessLogic() {
     // === 监听 UI 命令 -> 发送网络请求 ===
     // (原本的 cmd:scan 和 cmd:remote_click 已移动到 browser.js)
 
-    // 💖 通用胶囊拖拽逻辑 (支持所有 .status-capsule 类元素)
-    const enableCapsuleDrag = () => {
-        const capsules = document.querySelectorAll('.status-capsule');
-        capsules.forEach(capsule => {
-            // 防止重复绑定
-            if (capsule.dataset.draggable === 'true') return;
-            capsule.dataset.draggable = 'true';
-
-            let isDragging = false;
-            let startX = 0;
-            let currentX = 0;
-
-            capsule.style.cursor = 'grab';
-            capsule.style.position = 'relative'; // 确保可以移动
-            capsule.style.transition = 'transform 0.1s'; // 平滑移动
-
-            capsule.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                startX = e.clientX - currentX;
-                capsule.style.cursor = 'grabbing';
-                capsule.style.transition = 'none'; // 拖拽时移除过渡，防止延迟
-                e.preventDefault(); // 防止选中文本
-                e.stopPropagation(); // 防止冒泡
-            });
-
-            document.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                currentX = e.clientX - startX;
-                capsule.style.transform = `translateX(${currentX}px)`;
-            });
-
-            document.addEventListener('mouseup', () => {
-                if (isDragging) {
-                    isDragging = false;
-                    capsule.style.cursor = 'grab';
-                    capsule.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; // 释放时添加回弹效果
-                    // 💖 修复：拖拽结束后恢复原位，或者保存位置？目前逻辑是恢复原位（因为没有保存逻辑）
-                    // 如果要保存位置，需要更复杂的逻辑。这里暂时保持回弹效果。
-                    capsule.style.transform = 'translateX(0px)'; 
-                }
-            });
-        });
-    };
-
-    // 初始化绑定
-    enableCapsuleDrag();
-    // 监听 DOM 变化，自动绑定新生成的胶囊 (如果有)
-    const observer = new MutationObserver(enableCapsuleDrag);
-    observer.observe(document.body, { childList: true, subtree: true });
+    // 💖 胶囊拖拽逻辑已迁移至 capsule_manager.js，此处移除
 }
 
 window.onload = async () => {

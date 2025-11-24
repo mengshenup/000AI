@@ -171,7 +171,11 @@ export class TaskManagerApp {
         Object.entries(apps).forEach(([id, app]) => {
             const appData = { id, ...app };
             if (app.isSystem) {
-                systemApps.push(appData);
+                // 💖 过滤规则：系统应用中，只显示服务(type='service')或有任务栏图标的应用
+                // 这样可以隐藏那些纯粹作为详情页存在的窗口 (如 win-traffic, win-billing)
+                if (app.type === 'service' || app.showTaskbarIcon) {
+                    systemApps.push(appData);
+                }
             } else {
                 userApps.push(appData);
             }

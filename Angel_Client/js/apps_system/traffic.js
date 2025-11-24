@@ -1,5 +1,4 @@
-import { bus } from '../apps_run/event_bus.js';
-import { store } from '../apps_run/store.js';
+import { createCapsule } from '../apps_run/capsule_manager.js?v=1';
 
 // 💖 详情窗口配置 (点击胶囊后打开的窗口)
 const detailConfig = {
@@ -53,51 +52,20 @@ export const config = {
 
 // 💖 导出初始化函数，由 loader.js 调用
 export function init() {
-    // 注册详情窗口配置
-    store.setAppMetadata(detailConfig.id, detailConfig);
-
-    // 1. 动态创建胶囊 DOM
-    const container = document.getElementById('taskbar-status');
-    if (container) {
-        const el = document.createElement('div');
-        el.id = 'bar-traffic';
-        el.className = 'status-capsule';
-        el.title = '点击查看流量详情';
-        el.style.display = 'none'; // 默认隐藏
-        el.innerHTML = `
+    createCapsule({
+        serviceConfig: config,
+        detailConfig: detailConfig,
+        html: `
             <span style="color: #aaa;">▲</span>
             <span id="bar-tx">0B</span>
             <span style="width: 1px; height: 10px; background: rgba(0,0,0,0.2); margin: 0 5px;"></span>
             <span style="color: #aaa;">▼</span>
             <span id="bar-rx">0B</span>
-        `;
-        
-        // 插入到时钟之前
-        const clock = document.getElementById('clock-time');
-        if (clock) container.insertBefore(el, clock);
-        else container.appendChild(el);
-
-        // 绑定点击事件 (打开详情窗口)
-        // 辅助函数：在胶囊上方打开窗口 (复用 loader.js 中的逻辑，或者重新实现)
-        // 由于 loader.js 的 toggleCapsuleWindow 是内部函数，这里我们需要自己实现一个简单的版本
-        // 或者通过 bus 发送命令。为了解耦，建议通过 bus 发送命令，但目前没有这个命令。
-        // 简单起见，直接调用 wm
-        el.addEventListener('click', () => {
-            const wm = window.wm; // 获取全局 wm 实例
-            if (!wm) return;
-            
-            const appId = detailConfig.id;
-            const app = store.getApp(appId);
-            
-            if (app && app.isOpen) {
-                wm.closeApp(appId);
-            } else {
-                wm.openApp(appId, false);
-                // 延迟一帧计算位置，确保 DOM 已创建
-                setTimeout(() => {
-                    const win = document.getElementById(appId);
-                    if (win) {
-                        const cRect = el.getBoundingClientRect();
+        `
+        // 不需要 onMount，因为 traffic 的数据更新逻辑在 loader.js 或 network.js 中通过 id 查找 DOM
+        // 只要 ID 匹配 (bar-tx, bar-rx)，现有的更新逻辑就能工作
+    });
+}
                         const wRect = win.getBoundingClientRect();
                         let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
                         let top = cRect.top - wRect.height - 10;

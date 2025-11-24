@@ -1,5 +1,4 @@
-import { bus } from '../apps_run/event_bus.js';
-import { store } from '../apps_run/store.js';
+import { createCapsule } from '../apps_run/capsule_manager.js?v=1';
 
 export const config = {
     // =================================
@@ -31,67 +30,40 @@ export function init() {
     //     创建 FPS 胶囊 DOM，并启动 requestAnimationFrame 循环计算帧率。
     // =================================
 
-    // 1. 创建 DOM 元素
-    const container = document.getElementById('taskbar-status');
-    if (!container) return;
+    createCapsule({
+        serviceConfig: config,
+        html: 'FPS: --',
+        onMount: (el) => {
+            el.style.color = '#666';
+            el.style.fontWeight = 'bold';
+            el.style.fontFamily = 'monospace';
 
-    const el = document.createElement('div');
-    el.id = 'fps-display';
-    el.className = 'status-capsule';
-    el.style.color = '#666';
-    el.style.fontWeight = 'bold';
-    el.style.fontFamily = 'monospace';
-    el.style.display = 'none'; // 默认隐藏，由 isOpen 控制
-    el.innerText = 'FPS: --';
-    
-    // 插入到时钟之前 (时钟通常是最后一个)
-    const clock = document.getElementById('clock-time');
-    if (clock) {
-        container.insertBefore(el, clock);
-    } else {
-        container.appendChild(el);
-    }
+            // FPS 计算逻辑
+            let frameCount = 0;
+            let lastTime = performance.now();
+            let fps = 0;
 
-    // 2. FPS 计算逻辑
-    let frameCount = 0;
-    let lastTime = performance.now();
-    let fps = 0;
-
-    const loop = () => {
-        frameCount++;
-        const now = performance.now();
-        if (now - lastTime >= 1000) {
-            fps = frameCount;
-            frameCount = 0;
-            lastTime = now;
-            el.innerText = `FPS: ${fps}`;
-            
-            // 颜色指示
-            if (fps < 30) el.style.color = '#d63031'; // 红色警告
-            else if (fps < 50) el.style.color = '#e17055'; // 橙色注意
-            else el.style.color = '#00b894'; // 绿色健康
+            const loop = () => {
+                frameCount++;
+                const now = performance.now();
+                if (now - lastTime >= 1000) {
+                    fps = frameCount;
+                    frameCount = 0;
+                    lastTime = now;
+                    el.innerText = `FPS: ${fps}`;
+                    
+                    // 颜色指示
+                    if (fps < 30) el.style.color = '#d63031'; // 红色警告
+                    else if (fps < 50) el.style.color = '#e17055'; // 橙色注意
+                    else el.style.color = '#00b894'; // 绿色健康
+                }
+                requestAnimationFrame(loop);
+            };
+            requestAnimationFrame(loop);
+        },
+        onClick: () => {
+            // FPS 胶囊点击暂时没有功能，或者可以切换显示模式
+            console.log('FPS Capsule Clicked');
         }
-        requestAnimationFrame(loop);
-    };
-    requestAnimationFrame(loop);
-
-    // 3. 状态控制
-    const updateVisibility = () => {
-        const app = store.getApp(config.id);
-        // 如果 store 里还没数据（刚加载），或者 isOpen 为 true，则显示
-        // 注意：store.getApp 可能返回 undefined，此时默认为 config.isOpen
-        const isOpen = app ? app.isOpen : config.isOpen;
-        el.style.display = isOpen ? 'flex' : 'none';
-    };
-
-    // 监听开启/关闭事件
-    bus.on('app:opened', ({ id }) => {
-        if (id === config.id) updateVisibility();
     });
-    bus.on('app:closed', ({ id }) => {
-        if (id === config.id) updateVisibility();
-    });
-
-    // 初始状态检查
-    updateVisibility();
 }
