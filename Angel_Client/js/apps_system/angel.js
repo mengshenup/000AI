@@ -1,6 +1,6 @@
-import { bus } from '../apps_run/event_bus.js';
-import { wm } from '../apps_run/window_manager.js';
-import { pm } from '../apps_run/process_manager.js'; // 🛡️ 导入进程管理器
+import { bus } from '../system/event_bus.js';
+import { wm } from '../system/window_manager.js';
+import { pm } from '../system/process_manager.js'; // 🛡️ 导入进程管理器
 import { ANGEL_QUOTES, APP_OPEN_MESSAGES } from './angel_data.js';
 
 export const config = {
@@ -18,6 +18,7 @@ export const config = {
     // =================================
     id: 'win-companion',
     name: '守护天使',
+    version: '1.0.0', // 🆕 版本号
     description: '永远陪伴在你身边的守护者', // 💖 更长的描述
     icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z',
     color: '#ff7675',
@@ -141,7 +142,7 @@ export class AngelApp {
         localStorage.removeItem('angel_force_cpu'); // 💖 也要清除这个
 
         // 4. 💖 触发全局 Store 重置 (窗口位置等)
-        import('../apps_run/store.js').then(m => m.store.reset());
+        import('../system/store.js').then(m => m.store.reset());
         
         this.showBubble("已重置所有状态！请刷新页面生效 ✨");
         

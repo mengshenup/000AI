@@ -19,4 +19,6 @@ export const APP_OPEN_MESSAGES = {
     'win-traffic': "脉动监测中，感受数据的每一次跳动！💓",
     'win-companion': "Seraphim 已上线，愿你的每一天都充满阳光！✨",
     'default': "应用已启动，随时为你服务！✨"
-};
+];
+
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号

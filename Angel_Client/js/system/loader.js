@@ -8,6 +8,8 @@ import { store } from './store.js'; // 💾 导入状态存储
 // import './apps/browser.js'; 
 // ...
 
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号
+
 function setupBusinessLogic() {
     // =================================
     //  🎉 设置业务逻辑 (无参数)
@@ -93,11 +95,31 @@ window.onload = async () => {
     try {
         // 1. 获取应用列表 (动态加载)
         const res = await fetch('http://localhost:8000/get_apps_list');
-        const { apps, system_apps } = await res.json();
+        const { apps, system_apps, system_core } = await res.json();
+
+        // 辅助函数：检查是否需要更新 (优先对比行数)
+        const checkUpdate = (serverApp, cachedApp) => {
+            if (!cachedApp) return true;
+            // 🛡️ 安全检查：优先对比代码行数 (防篡改/漏改版本号)
+            // 注意：system_core 文件可能没有 id，这里主要针对 apps 和 system_apps
+            if (serverApp.line_count !== undefined && cachedApp.line_count !== undefined) {
+                if (serverApp.line_count !== cachedApp.line_count) {
+                    console.warn(`[Security] 文件行数变更 detected: ${serverApp.filename || serverApp.id} (${cachedApp.line_count} -> ${serverApp.line_count})`);
+                    return true;
+                }
+            }
+            // 检查版本号
+            if (serverApp.version !== cachedApp.version) {
+                return true;
+            }
+            return false;
+        };
 
         // 2. 动态导入应用辅助函数
         const loadApp = async (path, isSystem) => {
             try {
+                // 添加版本号参数以破坏浏览器缓存 (如果需要)
+                // const url = `${path}?v=${Date.now()}`; 
                 const m = await import(path);
                 // 只有导出了 config 的才被视为可注册的应用窗口
                 if (m.config) {
@@ -112,13 +134,53 @@ window.onload = async () => {
 
         // 3. 并行加载所有应用
         // 优先加载系统应用
-        // 💖 路径修正：因为 loader.js 在 apps_run/ 下，所以要往上跳一级
-        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`../apps_system/${f}`, true)))).filter(Boolean);
-        const userModules = (await Promise.all(apps.map(f => loadApp(`../apps/${f}`, false)))).filter(Boolean);
+        // 💖 路径修正：因为 loader.js 在 system/ 下，所以要往上跳一级
+        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`../apps_system/${f.filename}`, true)))).filter(Boolean);
         
-        const allModules = [...systemModules, ...userModules];
+        // 💖 懒加载优化：不再一次性加载所有用户应用
+        // const userModules = (await Promise.all(apps.map(f => loadApp(`../apps/${f}`, false)))).filter(Boolean);
+        
+        // 注册用户应用到懒加载列表
+        apps.forEach(app => {
+            if (app.id && app.filename) {
+                // 💖 检查版本号，决定是否更新元数据
+                const cached = store.installedApps[app.id];
+                if (checkUpdate(app, cached)) {
+                    console.log(`[Loader] 更新应用元数据: ${app.id} (v${app.version}, lines:${app.line_count})`);
+                    store.registerLazyApp(app.id, `../apps/${app.filename}`, app);
+                } else {
+                    // 版本一致，仅注册路径，不更新元数据 (使用缓存)
+                    store.registerLazyApp(app.id, `../apps/${app.filename}`, cached);
+                }
+            } else if (typeof app === 'string') {
+                // 兼容旧格式 (虽然 server 已经改了，但为了健壮性)
+                // 无法获取 ID，只能跳过或尝试加载
+                // console.warn("无法注册懊加载应用 (缺少ID):", app);
+            }
+        });
+        
+        // 💾 保存最新的元数据到本地数据库 (如果发生了更新)
+        store.save();
 
-        console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${userModules.length} 个`);
+        // 💖 只加载那些在 store 中标记为 isOpen 的应用，或者系统核心需要的应用
+        // 我们需要遍历 store.apps，找到 isOpen: true 的，然后去 lazyRegistry 里找路径加载
+        const userModules = [];
+        const pendingLoads = [];
+
+        Object.entries(store.apps).forEach(([id, appState]) => {
+            if (appState.isOpen && !appState.isSystem) {
+                const path = store.getLazyAppPath(id);
+                if (path) {
+                    pendingLoads.push(loadApp(path, false));
+                }
+            }
+        });
+
+        const loadedUserModules = (await Promise.all(pendingLoads)).filter(Boolean);
+        
+        const allModules = [...systemModules, ...loadedUserModules];
+
+        console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${loadedUserModules.length} 个 (懒加载模式)`);
 
         // 4. 注入元数据并初始化
         allModules.forEach((module) => {

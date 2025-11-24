@@ -74,3 +74,5 @@ export const DEFAULT_WALLPAPER = `${ASSETS_PATH}wp-0.avif`; // 🖼️ 默认显
 //     保留此空对象是为了兼容旧代码引用。
 // =================================
 export const DEFAULT_APPS = {}; // 🗑️ 已废弃的应用配置占位符
+
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号

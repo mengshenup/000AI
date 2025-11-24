@@ -15,6 +15,7 @@ export const config = {
     name: '活力源泉', // 💖 窗口标题栏显示的名称
     description: '掌控系统能量的指挥中心', // 💖 功能描述
     icon: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z', // 💖 SVG 图标路径（列表形状）
+    version: '1.0.0', // 💖 版本号
     color: '#d63031', // 💖 窗口的主题颜色（红色）
     pos: { x: 20, y: 380 }, // 💖 桌面图标的默认位置
     winPos: { x: 300, y: 300 }, // 💖 窗口打开时的默认屏幕坐标
@@ -27,10 +28,10 @@ export const config = {
     `
 };
 
-import { store } from '../apps_run/store.js'; // 💖 导入全局状态存储
-import { bus } from '../apps_run/event_bus.js'; // 💖 导入事件总线
-import { wm } from '../apps_run/window_manager.js'; // 💖 导入窗口管理器
-import { pm } from '../apps_run/process_manager.js'; // 💖 导入进程管理器
+import { store } from '../system/store.js'; // 💖 导入全局状态存储
+import { bus } from '../system/event_bus.js'; // 💖 导入事件总线
+import { wm } from '../system/window_manager.js'; // 💖 导入窗口管理器
+import { pm } from '../system/process_manager.js'; // 💖 导入进程管理器
 
 export const APP_NAME = 'Vitality Source'; // 💖 导出应用名称常量
 // export const APP_OPEN_MSG = "活力源泉已启动，系统能量充沛！💪"; // 💖 已移除

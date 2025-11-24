@@ -4,8 +4,8 @@ import { DEFAULT_WALLPAPER } from './config.js'; // 🖼️ 导入壁纸配置
 import { WALLPAPERS } from '../apps/personalization.js'; // 🖼️ 导入壁纸列表
 import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器
 import { contextMenuApp } from '../apps_system/context_menu.js'; // 📖 导入右键菜单
-import { DesktopManager } from './desktop_manager.js';
-import { TaskbarManager } from './taskbar_manager.js';
+
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号
 
 export class WindowManager {
     // =================================
@@ -44,10 +44,6 @@ export class WindowManager {
         this.activeWindowId = null;
         // ⏳ 点击节流记录 (防止双击导致窗口闪烁)
         this.lastClickTime = 0;
-        
-        // 🧩 初始化子管理器
-        this.desktopManager = new DesktopManager(this);
-        this.taskbarManager = new TaskbarManager(this);
     }
 
     init() {
@@ -65,8 +61,6 @@ export class WindowManager {
         // =================================
 
         this.loadWallpaper();      // 🖼️ 加载上次保存的壁纸
-        this.renderDesktopIcons(); // 📱 渲染桌面图标
-        // this.renderTrayIcons();    // 📡 渲染托盘图标 (已移除)
         
         // ⚡ 懒加载：只创建那些状态为“打开”的窗口 DOM
         // 这样可以避免一次性创建所有 DOM，减少内存占用，并解决“100+应用同时运行”的问题
@@ -76,7 +70,7 @@ export class WindowManager {
             }
         });
 
-        this.updateTaskbar();      // 📊 更新任务栏
+        // this.updateTaskbar();      // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
         this.initWallpaperApp();   // 🎨 初始化壁纸设置 APP 的内容
         this.restoreWindows();     // 🔄 恢复上次窗口的位置和状态
         this.setupGlobalEvents();  // 🖱️ 设置全局鼠标点击等事件监听
@@ -258,11 +252,7 @@ export class WindowManager {
         if (desktop) desktop.style.backgroundImage = bgStyle;
     }
 
-    renderDesktopIcons() {
-        this.desktopManager.render();
-    }
-
-    initWallpaperApp() {
+    changeWallpaper(url, el) {
         // =================================
         //  🎉 初始化壁纸应用 ()
         //
@@ -501,7 +491,9 @@ export class WindowManager {
                                 if (newName && newName !== '') {
                                     // 保存自定义名称到 customName 字段，并更新 name
                                     store.updateApp(id, { customName: newName, name: newName });
-                                    this.renderDesktopIcons(); // 重新渲染图标
+                                    
+                                    // 📢 通知桌面更新图标
+                                    bus.emit('app:renamed', { id, newName });
                                     
                                     // 如果窗口已打开，也更新窗口标题
                                     const winTitle = document.querySelector(`#${id} .win-title`);
@@ -731,8 +723,42 @@ export class WindowManager {
         // ⚡ 懒加载检查：如果 DOM 不存在，先创建
         let win = document.getElementById(id);
         if (!win) {
-            const appInfo = store.getApp(id);
+            let appInfo = store.getApp(id);
+            
+            // 💖 懒加载逻辑：如果 store 里有配置但没有加载代码 (通常不会发生，因为 store.apps 是运行时内存)
+            // 或者如果 store 里根本没有这个 app (可能是新安装的，或者懒加载未触发)
+            // 我们需要检查 lazyRegistry
+            if (!appInfo) {
+                const lazyPath = store.getLazyAppPath(id);
+                if (lazyPath) {
+                    console.log(`[WindowManager] 触发懒加载: ${id} -> ${lazyPath}`);
+                    // 动态加载模块
+                    // 注意：这里需要异步处理，但 openApp 是同步的。
+                    // 我们需要把 openApp 变成 async，或者在这里使用 .then
+                    // 为了保持兼容性，我们使用 .then 并在加载完成后重新调用 openApp
+                    import(lazyPath).then(m => {
+                        if (m.config) {
+                            // 注册元数据
+                            store.setAppMetadata(m.config.id, m.config);
+                            if (typeof m.init === 'function') m.init();
+                            // 重新打开
+                            this.openApp(id, speak);
+                        }
+                    }).catch(err => {
+                        console.error(`无法懒加载应用 ${id}:`, err);
+                    });
+                    return; // 退出当前执行，等待异步加载完成
+                }
+            }
+
             if (appInfo) {
+                // 💖 如果是服务类型，不需要创建窗口，直接标记为打开
+                if (appInfo.type === 'service') {
+                    store.updateApp(id, { isOpen: true });
+                    bus.emit('app:opened', { id });
+                    return;
+                }
+
                 this.createWindow(id, appInfo);
                 win = document.getElementById(id);
             } else {
@@ -740,6 +766,8 @@ export class WindowManager {
                 return;
             }
         }
+
+        if (!win) return; // 🛡️ 双重保险
 
         win.classList.remove('minimized'); // 🔼 移除最小化状态
         win.classList.add('open');         // 🔓 添加打开状态
@@ -752,7 +780,7 @@ export class WindowManager {
 
         // 🔊 播放打开语音 (已移交 AngelApp 处理)
         // if (speak) { ... } 
-        this.updateTaskbar(); // 📊 更新任务栏
+        // this.updateTaskbar(); // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
     }
 
     closeApp(id) {
@@ -811,7 +839,7 @@ export class WindowManager {
         // 🛡️ 调用进程管理器，清理该应用名下的所有资源
         pm.kill(id);
         
-        this.updateTaskbar(); // 📊 更新任务栏
+        // this.updateTaskbar(); // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
     }
 
     minimizeApp(id) {
@@ -833,7 +861,7 @@ export class WindowManager {
             win.classList.add('minimized'); // 🔽 添加最小化类名 (CSS控制隐藏)
             store.updateApp(id, { isMinimized: true }); // 💾 保存状态
         }
-        this.updateTaskbar();
+        // this.updateTaskbar(); // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
     }
 
     restoreApp(id) {
@@ -852,7 +880,7 @@ export class WindowManager {
             win.classList.remove('minimized');
             store.updateApp(id, { isMinimized: false });
         }
-        this.updateTaskbar();
+        // this.updateTaskbar(); // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
     }
 
     toggleApp(id) {
@@ -930,8 +958,8 @@ export class WindowManager {
             // 同时更新 store 中的 zIndex (可选，用于持久化层级)
             store.updateApp(id, { zIndex: this.zIndexCounter });
             
-            // 更新任务栏高亮
-            this.updateTaskbar();
+            // 📢 发送窗口聚焦事件，通知任务栏等组件更新
+            bus.emit('window:focus', { id });
         }
     }
 
@@ -972,51 +1000,6 @@ export class WindowManager {
             el.classList.add('active');
         }
         bus.emit('system:speak', "壁纸换好啦！🌿");
-    }
-
-    updateTaskbar() {
-        this.taskbarManager.update();
-    }
-
-    renderTrayIcons() {
-        // =================================
-        //  🎉 渲染托盘图标 ()
-        //
-        //  🎨 代码用途：
-        //     在任务栏右下角渲染系统应用图标 (如流量、计费)。
-        //
-        //  💡 易懂解释：
-        //     把那些默默工作的小助手放在角落里，不占地方，但随时能找到！📡
-        // =================================
-
-        const container = document.getElementById('tray-icons');
-        if (!container) return;
-        container.innerHTML = ''; // 🧹 清空
-
-        Object.entries(store.apps).forEach(([id, app]) => {
-            // 💖 只渲染标记为系统应用且未明确禁止显示的应用
-            if (app.system === true) {
-                const div = document.createElement('div');
-                div.className = 'tray-icon';
-                div.dataset.id = id;
-                div.title = app.name;
-                div.style.cursor = 'pointer';
-                div.style.width = '20px';
-                div.style.height = '20px';
-                div.style.display = 'flex';
-                div.style.alignItems = 'center';
-                div.style.justifyContent = 'center';
-                
-                // 🎨 插入图标 SVG
-                const iconPath = app.icon || app.iconPath;
-                div.innerHTML = `<svg style="width:16px; height:16px; fill:${app.color || '#ccc'}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`;
-                
-                // 🖱️ 绑定点击事件
-                div.onclick = () => this.toggleApp(id);
-                
-                container.appendChild(div);
-            }
-        });
     }
 }
 

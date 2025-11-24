@@ -174,3 +174,5 @@ export function createCapsule(options) {
 
     return el;
 }
+
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号

@@ -114,3 +114,5 @@ export class Network {
 
 // 导出 Network 类的单例实例，确保整个应用只使用一个网络连接
 export const network = new Network(); // 🌐 全局唯一的网络实例
+
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号

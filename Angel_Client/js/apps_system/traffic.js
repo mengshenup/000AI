@@ -1,9 +1,10 @@
-import { createCapsule } from '../apps_run/capsule_manager.js?v=1';
+import { createCapsule } from '../system/capsule_manager.js?v=1';
 
 // 💖 详情窗口配置 (点击胶囊后打开的窗口)
 const detailConfig = {
     id: 'win-traffic',
     name: '脉动监测',
+    version: '1.0.0', // 🆕 版本号
     description: '感受数据的每一次跳动',
     icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z',
     color: '#00cec9',
@@ -65,24 +66,32 @@ export function init() {
         // 不需要 onMount，因为 traffic 的数据更新逻辑在 loader.js 或 network.js 中通过 id 查找 DOM
         // 只要 ID 匹配 (bar-tx, bar-rx)，现有的更新逻辑就能工作
     });
-}
-                        const wRect = win.getBoundingClientRect();
-                        let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
-                        let top = cRect.top - wRect.height - 10;
-                        
-                        // 边界检查
-                        if (left + wRect.width > window.innerWidth) left = window.innerWidth - wRect.width - 10;
-                        if (left < 10) left = 10;
-                        if (top < 10) top = 10;
 
-                        win.style.left = `${left}px`;
-                        win.style.top = `${top}px`;
-                        store.updateApp(appId, { winPos: { x: left, y: top } });
-                    }
-                }, 0);
-            }
-        });
-    }
+    // 监听窗口打开事件，自动定位到胶囊上方
+    bus.on('app:opened', ({ id }) => {
+        if (id === detailConfig.id) {
+            setTimeout(() => {
+                const win = document.getElementById(detailConfig.id);
+                const capsule = document.getElementById('bar-traffic');
+                if (win && capsule) {
+                    const cRect = capsule.getBoundingClientRect();
+                    const wRect = win.getBoundingClientRect();
+                    let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
+                    let top = cRect.top - wRect.height - 10;
+                    
+                    // 边界检查
+                    if (left + wRect.width > window.innerWidth) left = window.innerWidth - wRect.width - 10;
+                    if (left < 10) left = 10;
+                    if (top < 10) top = 10;
+
+                    win.style.left = `${left}px`;
+                    win.style.top = `${top}px`;
+                    store.updateApp(id, { winPos: { x: left, y: top } });
+                }
+            }, 0);
+        }
+    });
+}
 
     // 监听网络统计数据更新 (上传/下载速度)
     let lastStatsUpdate = 0;

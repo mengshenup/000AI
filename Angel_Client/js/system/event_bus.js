@@ -84,3 +84,5 @@ class EventBus {
 
 // 导出单例，确保全站共用一个广播站
 export const bus = new EventBus(); // 🚌 全局唯一的事件总线实例
+
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号

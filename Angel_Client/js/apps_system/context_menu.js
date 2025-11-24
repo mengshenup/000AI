@@ -1,4 +1,4 @@
-import { bus } from '../apps_run/event_bus.js'; // 💖 导入事件总线，虽然当前文件暂未使用，但保留以备扩展
+import { bus } from '../system/event_bus.js'; // 💖 导入事件总线，虽然当前文件暂未使用，但保留以备扩展
 
 export class ContextMenuApp {
     // =================================
@@ -14,6 +14,13 @@ export class ContextMenuApp {
     //     菜单的样式（如背景色、边框）依赖 CSS 类 .context-menu 和 .menu-item，修改样式时请注意。
     // =================================
     constructor() {
+        this.config = {
+            id: 'sys-context-menu',
+            name: '右键菜单',
+            version: '1.0.0',
+            type: 'service',
+            isSystem: true
+        };
         this.menu = null; // 💖 菜单 DOM 元素，稍后在 init 中获取
         this.isVisible = false; // 💖 菜单当前是否可见的状态标记
 

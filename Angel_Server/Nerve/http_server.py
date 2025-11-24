@@ -87,29 +87,94 @@ async def get_apps_list():
     #  🎉 获取应用列表 (无参数)
     #
     #  🎨 代码用途：
-    #     扫描客户端目录下的 js/apps 和 js/apps_system 文件夹，返回所有可用的应用文件列表。
+    #     扫描客户端目录下的 js/apps, js/apps_system 和 js/system 文件夹，返回所有可用的应用文件列表。
+    #     同时计算文件行数，用于防篡改校验。
     #
     #  💡 易懂解释：
     #     点名啦！👨‍🏫 看看班里（文件夹）都有哪些同学（应用）来上课了。
+    #     还要检查作业（代码行数）有没有被坏人改过哦！
     # =================================
     """获取应用列表"""
     apps_dir = CLIENT_DIR / "js" / "apps"
     system_apps_dir = CLIENT_DIR / "js" / "apps_system"
+    system_core_dir = CLIENT_DIR / "js" / "system"
     
     apps = []
     system_apps = []
+    system_core = []
 
-    # 扫描普通应用
+    # 辅助函数：计算行数
+    def count_lines(text):
+        return len(text.splitlines())
+
+    # 辅助函数：提取字段
+    import re
+    def extract(key, text):
+        match = re.search(rf"{key}:\s*['\"]([^'\"]+)['\"]", text)
+        return match.group(1) if match else None
+    
+    def extract_const_version(text):
+        match = re.search(r"export\s+const\s+VERSION\s*=\s*['\"]([^'\"]+)['\"]", text)
+        return match.group(1) if match else None
+
+    # 1. 扫描普通应用
     if apps_dir.exists():
         for file in apps_dir.glob("*.js"):
-            apps.append(file.name)
+            try:
+                content = file.read_text(encoding='utf-8')
+                app_id = extract('id', content)
+                app_name = extract('name', content)
+                app_icon = extract('icon', content) or extract('iconPath', content)
+                app_version = extract('version', content) or '1.0.0'
+                line_count = count_lines(content)
 
-    # 扫描系统应用
+                if app_id:
+                    apps.append({
+                        "filename": file.name, 
+                        "id": app_id,
+                        "name": app_name,
+                        "icon": app_icon,
+                        "version": app_version,
+                        "line_count": line_count
+                    })
+                else:
+                    apps.append({"filename": file.name, "id": None, "line_count": line_count})
+            except Exception as e:
+                print(f"Error reading {file.name}: {e}")
+                apps.append({"filename": file.name, "id": None})
+
+    # 2. 扫描系统应用 (apps_system)
     if system_apps_dir.exists():
         for file in system_apps_dir.glob("*.js"):
-            system_apps.append(file.name)
+            try:
+                content = file.read_text(encoding='utf-8')
+                app_version = extract('version', content) or '1.0.0'
+                line_count = count_lines(content)
+                system_apps.append({
+                    "filename": file.name, 
+                    "version": app_version,
+                    "line_count": line_count
+                })
+            except:
+                system_apps.append({"filename": file.name, "version": '1.0.0', "line_count": 0})
+
+    # 3. 扫描系统核心 (system)
+    if system_core_dir.exists():
+        for file in system_core_dir.glob("*.js"):
+            try:
+                content = file.read_text(encoding='utf-8')
+                app_version = extract('version', content) or extract_const_version(content) or '1.0.0'
+                line_count = count_lines(content)
+                system_core.append({
+                    "filename": file.name,
+                    "version": app_version,
+                    "line_count": line_count
+                })
+            except:
+                system_core.append({"filename": file.name, "version": '1.0.0', "line_count": 0})
 
     return {
         "apps": apps,
-        "system_apps": system_apps
+        "system_apps": system_apps,
+        "system_core": system_core
     }

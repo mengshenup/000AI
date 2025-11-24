@@ -1,5 +1,7 @@
 import { bus } from './event_bus.js';
 
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号
+
 class ProcessManager {
     // =================================
     //  🎉 进程管理器 (Process Manager)

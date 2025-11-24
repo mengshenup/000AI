@@ -1,9 +1,10 @@
-import { createCapsule } from '../apps_run/capsule_manager.js?v=1';
+import { createCapsule } from '../system/capsule_manager.js?v=1';
 
 // 💖 详情窗口配置 (点击胶囊后打开的窗口)
 const detailConfig = {
     id: 'win-billing',
     name: '金色收获',
+    version: '1.0.0', // 🆕 版本号
     description: '每一分价值都值得被记录',
     icon: 'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
     color: '#fdcb6e',
@@ -68,24 +69,31 @@ export function init() {
             <span id="bar-total">0.00</span>
         `
     });
-}
-                        const cRect = el.getBoundingClientRect();
-                        const wRect = win.getBoundingClientRect();
-                        let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
-                        let top = cRect.top - wRect.height - 10;
-                        
-                        if (left + wRect.width > window.innerWidth) left = window.innerWidth - wRect.width - 10;
-                        if (left < 10) left = 10;
-                        if (top < 10) top = 10;
 
-                        win.style.left = `${left}px`;
-                        win.style.top = `${top}px`;
-                        store.updateApp(appId, { winPos: { x: left, y: top } });
-                    }
-                }, 0);
-            }
-        });
-    }
+    // 监听窗口打开事件，自动定位到胶囊上方
+    bus.on('app:opened', ({ id }) => {
+        if (id === detailConfig.id) {
+            setTimeout(() => {
+                const win = document.getElementById(detailConfig.id);
+                const capsule = document.getElementById('bar-billing');
+                if (win && capsule) {
+                    const cRect = capsule.getBoundingClientRect();
+                    const wRect = win.getBoundingClientRect();
+                    let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
+                    let top = cRect.top - wRect.height - 10;
+                    
+                    if (left + wRect.width > window.innerWidth) left = window.innerWidth - wRect.width - 10;
+                    if (left < 10) left = 10;
+                    if (top < 10) top = 10;
+
+                    win.style.left = `${left}px`;
+                    win.style.top = `${top}px`;
+                    store.updateApp(id, { winPos: { x: left, y: top } });
+                }
+            }, 0);
+        }
+    });
+}
 
     // 监听网络统计数据更新 (费用)
     let lastStatsUpdate = 0;

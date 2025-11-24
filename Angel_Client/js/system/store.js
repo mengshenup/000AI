@@ -1,5 +1,7 @@
 import { DEFAULT_APPS } from './config.js'; // ⚙️ 导入默认配置
 
+export const VERSION = '1.0.0'; // 💖 系统核心模块版本号
+
 class Store {
     // =================================
     //  🎉 状态存储类 (无参数)
@@ -31,10 +33,26 @@ class Store {
         // =================================
 
         this.apps = {}; // 🆕 初始化为空
+        this.lazyRegistry = {}; // 🆕 懒加载注册表 (ID -> 文件路径)
+        this.installedApps = {}; // 🆕 已安装应用缓存 (ID -> 元数据)
 
         // 1. 💖 异步从 客户端数据库 加载最新布局 (权威数据)
         // 创建一个 Promise，以便外部等待初始化完成
         this.readyPromise = this.syncFromClientDB();
+    }
+
+    // 💖 注册懒加载应用
+    registerLazyApp(id, path, metadata = {}) {
+        this.lazyRegistry[id] = path;
+        // 如果 metadata 包含 name/icon，存入 installedApps 以便桌面渲染
+        if (metadata.name) {
+            this.installedApps[id] = { ...metadata, path };
+        }
+    }
+
+    // 💖 获取懒加载路径
+    getLazyAppPath(id) {
+        return this.lazyRegistry[id];
     }
 
     // 💖 等待初始化完成
@@ -48,42 +66,16 @@ class Store {
     async syncFromClientDB() {
         try {
             const res = await fetch('http://localhost:8000/load_layout');
-            let data = await res.json();
-            
+            const data = await res.json();
             if (data) {
-                console.log("从 客户端数据库 成功加载布局配置 ✨");
-                
-                // 🔄 格式兼容处理
-                let appsData = {};
-                if (data.version) {
-                    // 新格式: { version: "1.0", apps: { ... } }
-                    console.log(`检测到数据库版本: ${data.version}`);
-                    appsData = data.apps || {};
-                } else {
-                    // 旧格式: { "win-angel": { ... } }
-                    console.log("检测到旧版数据库格式，自动兼容");
-                    appsData = data;
+                this.apps = data.apps || {};
+                // 💖 加载已安装应用缓存 (如果有)
+                if (data.installedApps) {
+                    this.installedApps = data.installedApps;
                 }
-
-                if (Object.keys(appsData).length > 0) {
-                    // 💖 修复：合并数据而不是覆盖，防止丢失 content 等元数据
-                    Object.keys(appsData).forEach(id => {
-                        if (this.apps[id]) {
-                            // 如果应用已存在（已注册），合并状态
-                            this.apps[id] = { ...this.apps[id], ...appsData[id] };
-                        } else {
-                            // 如果应用未注册（可能是旧数据），先存着
-                            this.apps[id] = appsData[id];
-                        }
-                    });
-                }
-            } else {
-                console.log("客户端数据库 无配置或为空，使用默认配置");
-                // 保持不变，使用默认值
             }
         } catch (e) {
-            console.warn("无法连接 客户端数据库 获取布局配置，使用默认配置", e);
-            // 保持不变
+            console.error("无法加载布局:", e);
         }
     }
 
@@ -114,51 +106,22 @@ class Store {
         */
     }
 
-    save() {
-        // =================================
-        //  🎉 保存 (无参数)
-        //
-        //  🎨 代码用途：
-        //     将当前内存中的状态发送给 客户端数据库 保存。
-        //     只保存关键的动态状态字段，避免数据膨胀。
-        //
-        //  💡 易懂解释：
-        //     把记在脑子里的东西写到硬盘上，防止断电忘记。
-        //
-        //  ⚠️ 警告：
-        //     网络请求是异步的。
-        // =================================
-
-        // 定义只保存这些动态字段，过滤掉静态 HTML 内容
-        // 💖 修改：移除 description，它是动态的，不应保存
-        const DYNAMIC_KEYS = ['pos', 'winPos', 'isOpen', 'zIndex', 'isMinimized', 'isMaximized', 'size', 'customName']; // 🔑 关键字段列表
-        
-        const appsToSave = {}; // 📦 待保存对象
-        Object.entries(this.apps).forEach(([id, app]) => {
-            appsToSave[id] = {};
-            DYNAMIC_KEYS.forEach(key => {
-                // 💖 系统应用不保存 isOpen 状态 (每次启动强制打开)
-                if (key === 'isOpen' && app.isSystem) {
-                    return;
-                }
-                if (app[key] !== undefined) {
-                    appsToSave[id][key] = app[key]; // 📥 复制字段
-                }
+    // 💖 保存数据到 客户端数据库
+    async save() {
+        try {
+            await fetch('http://localhost:8000/save_layout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    data: { 
+                        apps: this.apps,
+                        installedApps: this.installedApps // 💾 持久化安装列表
+                    } 
+                })
             });
-        });
-
-        // 📦 封装版本号
-        const payload = {
-            version: "1.0",
-            apps: appsToSave
-        };
-
-        // 🚀 发送给 客户端数据库 保存
-        fetch('http://127.0.0.1:8000/save_layout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: payload })
-        }).catch(err => console.error("保存失败:", err));
+        } catch (e) {
+            console.error("无法保存布局:", e);
+        }
     }
 
     // =================================
