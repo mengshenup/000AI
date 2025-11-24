@@ -1,10 +1,11 @@
 import json # 🧩 JSON 处理库
 import os # 📂 操作系统接口
 from pathlib import Path # 🛣️ 路径处理库
+from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-DATA_DIR = Path("user_data") # 💾 用户数据根目录
-DATA_DIR.mkdir(exist_ok=True) # 📁 确保目录存在
+DATA_DIR = Path(USER_DATA_DIR) # 💾 用户数据根目录 (与 BrowserData 保持一致)
+DATA_DIR.mkdir(parents=True, exist_ok=True) # 📁 确保目录存在 (使用 parents=True 以防父目录不存在)
 
 class FileManager:
     # =================================

@@ -211,11 +211,19 @@ export class AngelApp {
 
         // 创建渲染器
         // 💖 性能优化：根据配置决定是否开启抗锯齿
-        this.renderer = new THREE.WebGLRenderer({ 
-            alpha: true, 
-            antialias: this.perfMode === 'high',
-            powerPreference: "high-performance"
-        }); 
+        try {
+            this.renderer = new THREE.WebGLRenderer({ 
+                alpha: true, 
+                antialias: this.perfMode === 'high',
+                powerPreference: "default", // 💖 改为 default，提高兼容性
+                failIfMajorPerformanceCaveat: true // 💖 如果只能用软件渲染（太卡），不如直接报错
+            }); 
+        } catch (e) {
+            console.error("WebGL 初始化失败", e);
+            alert("启动失败：您的显卡或浏览器不支持 WebGL 硬件加速，小天使无法显示。\n\n错误详情：" + e.message);
+            return;
+        }
+
         // 确保容器有尺寸
         const width = this.container.clientWidth || 300;
         const height = this.container.clientHeight || 400;
