@@ -142,8 +142,8 @@ export class AngelApp {
         // 绑定 animate
         this.animate = this.animate.bind(this);
 
-        // 监听窗口就绪事件
-        this.ctx.on(`app:ready:${this.id}`, () => this.init());
+        // 监听窗口就绪事件 (使用 bus.on 而不是 ctx.on，确保在进程被 kill 后仍能响应重启信号)
+        bus.on(`app:ready:${this.id}`, () => this.init());
 
         // 注册清理函数
         this.ctx.onCleanup(() => this.onDestroy());
@@ -212,16 +212,28 @@ export class AngelApp {
         // 创建渲染器
         // 💖 性能优化：根据配置决定是否开启抗锯齿
         try {
+            // 第一次尝试：标准模式 (检测性能陷阱)
             this.renderer = new THREE.WebGLRenderer({ 
                 alpha: true, 
                 antialias: this.perfMode === 'high',
-                powerPreference: "default", // 💖 改为 default，提高兼容性
-                failIfMajorPerformanceCaveat: true // 💖 如果只能用软件渲染（太卡），不如直接报错
+                powerPreference: "default",
+                failIfMajorPerformanceCaveat: true 
             }); 
-        } catch (e) {
-            console.error("WebGL 初始化失败", e);
-            alert("启动失败：您的显卡或浏览器不支持 WebGL 硬件加速，小天使无法显示。\n\n错误详情：" + e.message);
-            return;
+        } catch (e1) {
+            console.warn("WebGL 标准模式启动失败，尝试兼容模式...", e1);
+            try {
+                // 第二次尝试：兼容模式 (允许软件渲染，虽然可能会被浏览器拦截)
+                this.renderer = new THREE.WebGLRenderer({ 
+                    alpha: true, 
+                    antialias: false,
+                    powerPreference: "low-power",
+                    failIfMajorPerformanceCaveat: false
+                });
+            } catch (e2) {
+                console.error("WebGL 启动彻底失败", e2);
+                alert("启动失败：您的浏览器无法创建 WebGL 上下文。\n\n可能原因：\n1. 显卡驱动未安装或过旧。\n2. 浏览器硬件加速被禁用 (请检查 edge://settings/system)。\n3. 系统资源耗尽 (请尝试关闭服务端或其他大型软件)。");
+                return;
+            }
         }
 
         // 确保容器有尺寸
