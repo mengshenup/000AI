@@ -7,24 +7,28 @@
         "y": 100
       },
       "winPos": {
-        "x": 594,
-        "y": 253
+        "x": 755,
+        "y": 381
       },
-      "zIndex": 105
+      "zIndex": 106
     },
     "win-billing": {
       "pos": {
         "x": 0,
         "y": 0
       },
-      "zIndex": 109
+      "winPos": {
+        "x": 811,
+        "y": 212
+      },
+      "zIndex": 134
     },
     "win-traffic": {
       "pos": {
         "x": 0,
         "y": 0
       },
-      "zIndex": 108
+      "zIndex": 136
     },
     "win-angel": {
       "pos": {
@@ -82,9 +86,13 @@
         "y": 380
       },
       "winPos": {
-        "x": 300,
-        "y": 300
-      }
-    }
+        "x": 326,
+        "y": 165
+      },
+      "isOpen": true,
+      "zIndex": 135,
+      "isMinimized": true
+    },
+    "svc-fps": {}
   }
 }

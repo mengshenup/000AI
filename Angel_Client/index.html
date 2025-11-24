@@ -92,29 +92,10 @@
                 <!-- 💖 任务栏应用图标将由 JS 动态生成 -->
             </div>
 
-            <div style="display:flex; gap:10px; font-size:12px; color:#666; align-items:center; padding-right: 15px;"> <!-- 💖 右侧状态栏容器 -->
+            <div id="taskbar-status" style="display:flex; gap:10px; font-size:12px; color:#666; align-items:center; padding-right: 15px;"> <!-- 💖 右侧状态栏容器 -->
                 
-                <!-- 💖 计费胶囊 (常驻显示) -->
-                <div id="bar-billing" class="status-capsule" title="点击查看账单详情" style="display: none;">
-                    <span style="color: #fdcb6e; font-weight: bold;">¥</span>
-                    <span id="bar-total">0.00</span>
-                </div>
+                <!-- 💖 胶囊区域 (由 JS 动态注入) -->
 
-                <!-- 💖 流量胶囊 (常驻显示) -->
-                <div id="bar-traffic" class="status-capsule" title="点击查看流量详情" style="display: none;">
-                    <span style="color: #aaa;">▲</span>
-                    <span id="bar-tx">0B</span>
-                    <span style="width: 1px; height: 10px; background: rgba(0,0,0,0.2); margin: 0 5px;"></span>
-                    <span style="color: #aaa;">▼</span>
-                    <span id="bar-rx">0B</span>
-                </div>
-
-                <!-- 💖 托盘图标区域 (已移除) -->
-                <!-- <div id="tray-icons" style="display:flex; gap:10px; align-items:center;"></div> -->
-                
-                <!-- 💖 FPS 胶囊 -->
-                <div id="fps-display" class="status-capsule" style="color:#666; font-weight:bold; font-family: monospace;">FPS: 60</div> <!-- 💖 当前帧率显示 -->
-                
                 <!-- 💖 时钟区域 -->
                 <div id="clock-time" style="font-weight:bold; color:#333;">12:00</div> <!-- 💖 当前时间显示 -->
             </div>

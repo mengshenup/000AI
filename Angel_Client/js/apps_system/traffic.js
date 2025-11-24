@@ -56,6 +56,66 @@ export function init() {
     // 注册详情窗口配置
     store.setAppMetadata(detailConfig.id, detailConfig);
 
+    // 1. 动态创建胶囊 DOM
+    const container = document.getElementById('taskbar-status');
+    if (container) {
+        const el = document.createElement('div');
+        el.id = 'bar-traffic';
+        el.className = 'status-capsule';
+        el.title = '点击查看流量详情';
+        el.style.display = 'none'; // 默认隐藏
+        el.innerHTML = `
+            <span style="color: #aaa;">▲</span>
+            <span id="bar-tx">0B</span>
+            <span style="width: 1px; height: 10px; background: rgba(0,0,0,0.2); margin: 0 5px;"></span>
+            <span style="color: #aaa;">▼</span>
+            <span id="bar-rx">0B</span>
+        `;
+        
+        // 插入到时钟之前
+        const clock = document.getElementById('clock-time');
+        if (clock) container.insertBefore(el, clock);
+        else container.appendChild(el);
+
+        // 绑定点击事件 (打开详情窗口)
+        // 辅助函数：在胶囊上方打开窗口 (复用 loader.js 中的逻辑，或者重新实现)
+        // 由于 loader.js 的 toggleCapsuleWindow 是内部函数，这里我们需要自己实现一个简单的版本
+        // 或者通过 bus 发送命令。为了解耦，建议通过 bus 发送命令，但目前没有这个命令。
+        // 简单起见，直接调用 wm
+        el.addEventListener('click', () => {
+            const wm = window.wm; // 获取全局 wm 实例
+            if (!wm) return;
+            
+            const appId = detailConfig.id;
+            const app = store.getApp(appId);
+            
+            if (app && app.isOpen) {
+                wm.closeApp(appId);
+            } else {
+                wm.openApp(appId, false);
+                // 延迟一帧计算位置，确保 DOM 已创建
+                setTimeout(() => {
+                    const win = document.getElementById(appId);
+                    if (win) {
+                        const cRect = el.getBoundingClientRect();
+                        const wRect = win.getBoundingClientRect();
+                        let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
+                        let top = cRect.top - wRect.height - 10;
+                        
+                        // 边界检查
+                        if (left + wRect.width > window.innerWidth) left = window.innerWidth - wRect.width - 10;
+                        if (left < 10) left = 10;
+                        if (top < 10) top = 10;
+
+                        win.style.left = `${left}px`;
+                        win.style.top = `${top}px`;
+                        store.updateApp(appId, { winPos: { x: left, y: top } });
+                    }
+                }, 0);
+            }
+        });
+    }
+
     // 监听网络统计数据更新 (上传/下载速度)
     let lastStatsUpdate = 0;
     bus.on('net:stats', (stats) => {
@@ -79,17 +139,21 @@ export function init() {
     });
 
     // 监听服务开启/关闭事件，控制胶囊显示
+    const updateVisibility = () => {
+        const app = store.getApp(config.id);
+        const isOpen = app ? app.isOpen : config.isOpen;
+        const el = document.getElementById('bar-traffic');
+        if (el) el.style.display = isOpen ? 'flex' : 'none';
+    };
+
     bus.on('app:opened', ({ id }) => {
-        if (id === config.id) {
-            const el = document.getElementById('bar-traffic');
-            if (el) el.style.display = 'flex';
-        }
+        if (id === config.id) updateVisibility();
     });
 
     bus.on('app:closed', ({ id }) => {
-        if (id === config.id) {
-            const el = document.getElementById('bar-traffic');
-            if (el) el.style.display = 'none';
-        }
+        if (id === config.id) updateVisibility();
     });
+    
+    // 初始状态
+    updateVisibility();
 }

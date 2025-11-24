@@ -64,6 +64,58 @@ export function init() {
     // 注册详情窗口配置
     store.setAppMetadata(detailConfig.id, detailConfig);
 
+    // 1. 动态创建胶囊 DOM
+    const container = document.getElementById('taskbar-status');
+    if (container) {
+        const el = document.createElement('div');
+        el.id = 'bar-billing';
+        el.className = 'status-capsule';
+        el.title = '点击查看账单详情';
+        el.style.display = 'none'; // 默认隐藏
+        el.innerHTML = `
+            <span style="color: #fdcb6e; font-weight: bold;">¥</span>
+            <span id="bar-total">0.00</span>
+        `;
+        
+        // 插入到时钟之前 (或者流量之前，保持顺序)
+        // 这里简单处理，直接插入到 container，顺序取决于 init 执行顺序
+        // 为了保持一致性，可以尝试插入到最前面
+        if (container.firstChild) container.insertBefore(el, container.firstChild);
+        else container.appendChild(el);
+
+        // 绑定点击事件
+        el.addEventListener('click', () => {
+            const wm = window.wm;
+            if (!wm) return;
+            
+            const appId = detailConfig.id;
+            const app = store.getApp(appId);
+            
+            if (app && app.isOpen) {
+                wm.closeApp(appId);
+            } else {
+                wm.openApp(appId, false);
+                setTimeout(() => {
+                    const win = document.getElementById(appId);
+                    if (win) {
+                        const cRect = el.getBoundingClientRect();
+                        const wRect = win.getBoundingClientRect();
+                        let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
+                        let top = cRect.top - wRect.height - 10;
+                        
+                        if (left + wRect.width > window.innerWidth) left = window.innerWidth - wRect.width - 10;
+                        if (left < 10) left = 10;
+                        if (top < 10) top = 10;
+
+                        win.style.left = `${left}px`;
+                        win.style.top = `${top}px`;
+                        store.updateApp(appId, { winPos: { x: left, y: top } });
+                    }
+                }, 0);
+            }
+        });
+    }
+
     // 监听网络统计数据更新 (费用)
     let lastStatsUpdate = 0;
     bus.on('net:stats', (stats) => {
@@ -95,17 +147,21 @@ export function init() {
     });
 
     // 监听服务开启/关闭事件，控制胶囊显示
+    const updateVisibility = () => {
+        const app = store.getApp(config.id);
+        const isOpen = app ? app.isOpen : config.isOpen;
+        const el = document.getElementById('bar-billing');
+        if (el) el.style.display = isOpen ? 'flex' : 'none';
+    };
+
     bus.on('app:opened', ({ id }) => {
-        if (id === config.id) {
-            const el = document.getElementById('bar-billing');
-            if (el) el.style.display = 'flex';
-        }
+        if (id === config.id) updateVisibility();
     });
 
     bus.on('app:closed', ({ id }) => {
-        if (id === config.id) {
-            const el = document.getElementById('bar-billing');
-            if (el) el.style.display = 'none';
-        }
+        if (id === config.id) updateVisibility();
     });
+
+    // 初始状态
+    updateVisibility();
 }

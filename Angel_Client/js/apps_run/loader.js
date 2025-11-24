@@ -106,6 +106,9 @@ function setupBusinessLogic() {
                     isDragging = false;
                     capsule.style.cursor = 'grab';
                     capsule.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; // 释放时添加回弹效果
+                    // 💖 修复：拖拽结束后恢复原位，或者保存位置？目前逻辑是恢复原位（因为没有保存逻辑）
+                    // 如果要保存位置，需要更复杂的逻辑。这里暂时保持回弹效果。
+                    capsule.style.transform = 'translateX(0px)'; 
                 }
             });
         });
@@ -213,62 +216,13 @@ window.onload = async () => {
     // === 特定 UI 绑定 (非通用部分) ===
 
     // 辅助函数：在胶囊上方打开窗口
-    const toggleCapsuleWindow = (capsuleId, appId) => {
-        const app = store.getApp(appId);
-        if (app && app.isOpen) {
-            wm.closeApp(appId);
-        } else {
-            // 1. 先打开应用，确保 DOM 存在
-            wm.openApp(appId, false);
-            
-            // 2. 计算位置
-            const capsule = document.getElementById(capsuleId);
-            const win = document.getElementById(appId);
-            
-            if (capsule && win) {
-                const cRect = capsule.getBoundingClientRect();
-                const wRect = win.getBoundingClientRect(); // 获取实际渲染尺寸，比配置更准
-                
-                // 计算水平居中位置
-                let left = cRect.left + (cRect.width / 2) - (wRect.width / 2);
-                // 计算垂直位置 (胶囊上方 10px)
-                let top = cRect.top - wRect.height - 10;
-
-                // 🛡️ 防超出逻辑
-                // 右边界检查
-                if (left + wRect.width > window.innerWidth) {
-                    left = window.innerWidth - wRect.width - 10;
-                }
-                // 左边界检查
-                if (left < 10) {
-                    left = 10;
-                }
-                // 上边界检查
-                if (top < 10) {
-                    top = 10;
-                }
-
-                // 应用位置
-                win.style.left = `${left}px`;
-                win.style.top = `${top}px`;
-                win.style.right = 'auto';
-                win.style.bottom = 'auto';
-                
-                // 强制更新 store 中的位置，防止下次打开错位 (虽然这里是动态计算的)
-                store.updateApp(appId, { winPos: { x: left, y: top } });
-            }
-        }
-    };
+    // 💖 已废弃：逻辑已迁移至各个胶囊应用的 init() 中
+    // const toggleCapsuleWindow = (capsuleId, appId) => { ... };
 
     // 绑定任务栏胶囊点击事件 -> 打开详情窗口
-    // 💖 注意：这里打开的是详情窗口 ID (win-traffic/win-billing)，而不是服务 ID (svc-traffic/svc-billing)
-    document.getElementById('bar-traffic')?.addEventListener('click', () => {
-        toggleCapsuleWindow('bar-traffic', 'win-traffic');
-    });
-
-    document.getElementById('bar-billing')?.addEventListener('click', () => {
-        toggleCapsuleWindow('bar-billing', 'win-billing');
-    });
+    // 💖 已废弃：逻辑已迁移至各个胶囊应用的 init() 中
+    // document.getElementById('bar-traffic')?.addEventListener('click', ...);
+    // document.getElementById('bar-billing')?.addEventListener('click', ...);
 
     // 绑定扫描按钮点击事件 (保留在这里，因为它可能属于全局工具栏，或者也可以移到 browser.js，但目前先保留)
     // 实际上 browser.js 已经监听了 cmd:scan，这里只是触发事件
