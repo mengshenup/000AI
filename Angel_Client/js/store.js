@@ -32,28 +32,51 @@ class Store {
 
         this.apps = {}; // 🆕 初始化为空
 
-        // 1. 💖 异步从 服务器数给客户端新建文件夹，防止网站客户端无法新建存储库？ 
-        this.syncFromClientDB();
+        // 1. 💖 异步从 客户端数据库 加载最新布局 (权威数据)
+        // 创建一个 Promise，以便外部等待初始化完成
+        this.readyPromise = this.syncFromClientDB();
+    }
+
+    // 💖 等待初始化完成
+    async ready() {
+        if (this.readyPromise) {
+            await this.readyPromise;
+        }
     }
 
     // 💖 从 客户端数据库 同步数据
     async syncFromClientDB() {
         try {
             const res = await fetch('http://localhost:8000/load_layout');
-            const data = await res.json();
-            if (data && Object.keys(data).length > 0) {
+            let data = await res.json();
+            
+            if (data) {
                 console.log("从 客户端数据库 成功加载布局配置 ✨");
-                // 💖 修复：合并数据而不是覆盖，防止丢失 content 等元数据
-                // 之前直接 this.apps = data 会导致 setAppMetadata 设置的 content 被覆盖，导致窗口空白
-                Object.keys(data).forEach(id => {
-                    if (this.apps[id]) {
-                        // 如果应用已存在（已注册），合并状态
-                        this.apps[id] = { ...this.apps[id], ...data[id] };
-                    } else {
-                        // 如果应用未注册（可能是旧数据），先存着
-                        this.apps[id] = data[id];
-                    }
-                });
+                
+                // 🔄 格式兼容处理
+                let appsData = {};
+                if (data.version) {
+                    // 新格式: { version: "1.0", apps: { ... } }
+                    console.log(`检测到数据库版本: ${data.version}`);
+                    appsData = data.apps || {};
+                } else {
+                    // 旧格式: { "win-angel": { ... } }
+                    console.log("检测到旧版数据库格式，自动兼容");
+                    appsData = data;
+                }
+
+                if (Object.keys(appsData).length > 0) {
+                    // 💖 修复：合并数据而不是覆盖，防止丢失 content 等元数据
+                    Object.keys(appsData).forEach(id => {
+                        if (this.apps[id]) {
+                            // 如果应用已存在（已注册），合并状态
+                            this.apps[id] = { ...this.apps[id], ...appsData[id] };
+                        } else {
+                            // 如果应用未注册（可能是旧数据），先存着
+                            this.apps[id] = appsData[id];
+                        }
+                    });
+                }
             } else {
                 console.log("客户端数据库 无配置或为空，使用默认配置");
                 // 保持不变，使用默认值
@@ -110,21 +133,31 @@ class Store {
         // 💖 修改：移除 description，它是动态的，不应保存
         const DYNAMIC_KEYS = ['pos', 'winPos', 'isOpen', 'zIndex', 'isMinimized', 'isMaximized', 'size', 'customName']; // 🔑 关键字段列表
         
-        const stateToSave = {}; // 📦 待保存对象
+        const appsToSave = {}; // 📦 待保存对象
         Object.entries(this.apps).forEach(([id, app]) => {
-            stateToSave[id] = {};
+            appsToSave[id] = {};
             DYNAMIC_KEYS.forEach(key => {
+                // 💖 系统应用不保存 isOpen 状态 (每次启动强制打开)
+                if (key === 'isOpen' && app.isSystem) {
+                    return;
+                }
                 if (app[key] !== undefined) {
-                    stateToSave[id][key] = app[key]; // 📥 复制字段
+                    appsToSave[id][key] = app[key]; // 📥 复制字段
                 }
             });
         });
+
+        // 📦 封装版本号
+        const payload = {
+            version: "1.0",
+            apps: appsToSave
+        };
 
         // 🚀 发送给 客户端数据库 保存
         fetch('http://127.0.0.1:8000/save_layout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data: stateToSave })
+            body: JSON.stringify({ data: payload })
         }).catch(err => console.error("保存失败:", err));
     }
 

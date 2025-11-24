@@ -2,7 +2,7 @@ import { store } from './store.js'; // 📦 导入状态存储
 import { bus } from './event_bus.js'; // 🚌 导入事件总线
 import { WALLPAPERS, DEFAULT_WALLPAPER } from './config.js'; // 🖼️ 导入壁纸配置
 import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器
-import { contextMenuApp } from './apps/context_menu.js'; // 📖 导入右键菜单
+import { contextMenuApp } from './apps_system/context_menu.js'; // 📖 导入右键菜单
 
 export class WindowManager {
     // =================================

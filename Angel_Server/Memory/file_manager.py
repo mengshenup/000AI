@@ -6,8 +6,10 @@ from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 # 📂 定义数据存储目录
 # 💖 修正：尝试定位到 客户端数据库 (Client Database)
 # 策略：先找 Angel_Server 的上级目录，再找 Angel_Client
-# ⚠️ 注意：目前假设 Server 和 Client 在同一台机器上。
-# 如果未来分离部署，Server 不应直接索引客户端文件，而应由客户端自行管理或通过 API 传输。
+# 💡 核心逻辑：
+#    由于浏览器安全限制，前端无法直接写硬盘。
+#    这里服务器充当“搬运工”，定位客户端文件夹并创建存储库，
+#    以便将前端传来的数据写入 window_memory.json。
 ROOT_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 CLIENT_DIR = ROOT_DIR / "Angel_Client"
 

@@ -4,17 +4,9 @@ import { network as net } from './network.js'; // 🌐 导入网络模块
 import { wm } from './window_manager.js'; // 🪟 导入窗口管理器
 import { store } from './store.js'; // 💾 导入状态存储
 
-// 导入应用模块以确保它们被加载
-import './apps/browser.js'; // 🌍 浏览器应用
-import './apps/settings.js'; // ⚙️ 设置应用
-import './apps/manual.js'; // 📖 说明书应用
-import './apps/intelligence.js'; // 🧠 情报应用
-import './apps/task_manager.js'; // 📊 任务管理器
-import './apps/context_menu.js'; // 🖱️ 右键菜单
-import './apps/angel.js'; // 👼 小天使应用
-import './apps/traffic.js'; // 📡 流量监控
-import './apps/billing.js'; // 💰 账单助手
-import './apps/performance.js'; // 🚀 性能调优
+// 🗑️ 移除静态导入，改为动态加载
+// import './apps/browser.js'; 
+// ...
 
 function setupBusinessLogic() {
     // =================================
@@ -157,7 +149,7 @@ function setupBusinessLogic() {
     observer.observe(document.body, { childList: true, subtree: true });
 }
 
-window.onload = () => {
+window.onload = async () => {
     // =================================
     //  🎉 窗口加载完成回调 (无参数)
     //
@@ -171,63 +163,67 @@ window.onload = () => {
     //     如果 JS 报错，可能会导致这里的初始化代码中断执行，整个页面瘫痪。
     // =================================
 
-    // 初始化各个模块
-    // angel.init(); // 移除：小天使现在作为应用由 WindowManager 初始化
+    // 0. 等待 Store 初始化完成 (修复刷新重置 bug)
+    await store.ready();
 
-    // 注入应用元数据 (解耦名称和配置)
-    // 使用 Promise.all 确保所有元数据都加载完成后，再初始化窗口管理器
-    Promise.all([
-        import('./apps/manual.js').then(m => ({id: 'win-manual', config: m.config})),
-        import('./apps/browser.js').then(m => ({id: 'win-angel', config: m.config})),
-        import('./apps/intelligence.js').then(m => ({id: 'win-intel', config: m.config})),
-        import('./apps/settings.js').then(m => ({id: 'win-settings', config: m.config})),
-        import('./apps/task_manager.js').then(m => ({id: 'win-taskmgr', config: m.config})),
-        import('./apps/angel.js').then(m => ({id: 'win-companion', config: m.config})),
-        import('./apps/traffic.js').then(m => ({id: 'win-traffic', config: m.config})),
-        import('./apps/billing.js').then(m => ({id: 'win-billing', config: m.config}))
-    ]).then((modules) => {
-        console.log("应用元数据注入完成，启动窗口管理器..."); // 📝 日志记录
+    try {
+        // 1. 获取应用列表 (动态加载)
+        const res = await fetch('http://localhost:8000/get_apps_list');
+        const { apps, system_apps } = await res.json();
+
+        // 2. 动态导入应用辅助函数
+        const loadApp = async (path, isSystem) => {
+            try {
+                const m = await import(path);
+                // 只有导出了 config 的才被视为可注册的应用窗口
+                if (m.config) {
+                    return { id: m.config.id, config: m.config, isSystem };
+                }
+            } catch (e) {
+                console.error(`无法加载应用 ${path}:`, e);
+            }
+            return null;
+        };
+
+        // 3. 并行加载所有应用
+        // 优先加载系统应用
+        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`./apps_system/${f}`, true)))).filter(Boolean);
+        const userModules = (await Promise.all(apps.map(f => loadApp(`./apps/${f}`, false)))).filter(Boolean);
         
-        // 1. 收集所有配置
-        const metadataMap = {};
-        modules.forEach(({id, config}) => {
-            metadataMap[id] = config;
-        });
+        const allModules = [...systemModules, ...userModules];
 
-        // 2. 执行动态版本检查 (在注入之前)
-        store.checkVersion(metadataMap);
+        console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${userModules.length} 个`);
 
-        // 3. 注入元数据
-        modules.forEach(({id, config}) => {
+        // 4. 注入元数据
+        allModules.forEach(({id, config, isSystem}) => {
+            // 标记系统应用，以便 store.js 识别
+            config.isSystem = isSystem;
             store.setAppMetadata(id, config);
         });
 
-        // 4. 清理僵尸数据
-        store.prune(modules.map(m => m.id));
+        // 5. 清理僵尸数据
+        store.prune(allModules.map(m => m.id));
 
-        wm.init();    // 🚀 启动窗口管理器 (此时 store 中已经有了名字)
-        setupBusinessLogic(); // 🔗 绑定业务逻辑
-        net.connect(); // 🔌 连接服务器
+        // 6. 启动窗口管理器
+        wm.init();
+        setupBusinessLogic();
+        net.connect();
 
-        // 🌟 启动系统级应用 (优先加载)
-        // 这些应用默认应该在后台或前台运行
-        const SYSTEM_APPS = ['win-companion']; // 💖 移除 traffic 和 billing，因为它们现在默认关闭，点击才显示
-        SYSTEM_APPS.forEach(id => {
-            // 如果没有打开，则强制打开
-            // 注意：openApp 会检查是否已存在，不会重复创建
-            // 传递 false 表示不播放语音，避免启动时太吵
-            if (!store.apps[id]?.isOpen) {
-                wm.openApp(id, false);
-            }
+        // 7. 启动系统级应用 (强制启动，不依赖记忆)
+        // 用户要求：系统apps应该是最优先加载的... 无需手动打开
+        systemModules.forEach(({id}) => {
+            // 强制打开，不播放语音
+            // 注意：openApp 内部会检查是否已打开
+            wm.openApp(id, false);
         });
 
-    }).catch(err => {
-        console.error("应用元数据加载失败:", err); // ❌ 错误日志
-        // 即使失败也尝试启动，避免完全白屏
-        wm.init(); // ⚠️ 强制启动窗口管理器
-        setupBusinessLogic(); // ⚠️ 强制绑定逻辑
-        net.connect(); // ⚠️ 强制连接网络
-    });
+    } catch (err) {
+        console.error("初始化失败:", err);
+        // 即使失败也尝试启动核心服务
+        wm.init();
+        setupBusinessLogic();
+        net.connect();
+    }
 
     // 启动时钟逻辑 (每秒更新一次)
     setInterval(() => {

@@ -1,15 +1,13 @@
 {
   "win-manual": {
     "pos": {
-      "x": 357,
-      "y": 170
+      "x": 20,
+      "y": 20
     },
     "winPos": {
       "x": 100,
       "y": 50
-    },
-    "isOpen": true,
-    "zIndex": 102
+    }
   },
   "win-angel": {
     "pos": {

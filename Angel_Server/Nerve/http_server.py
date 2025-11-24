@@ -1,8 +1,9 @@
 from fastapi import APIRouter # 🛣️ 路由管理
 from pydantic import BaseModel # 🏗️ 数据模型验证
-from Memory.file_manager import FileManager # 💾 文件管理器
+from Memory.file_manager import FileManager, CLIENT_DIR # 💾 文件管理器
 import platform # 🖥️ 系统信息
 import subprocess # 🐚 执行系统命令
+import os # 📂 文件操作
 
 router = APIRouter() # 🛣️ 创建 HTTP 路由
 DATA_FILE = "window_memory.json" # 💾 窗口记忆文件 (原 apps.json)
@@ -78,4 +79,37 @@ async def get_system_info():
         "cpu_model": cpu_name,
         "system": f"{platform.system()} {platform.release()}",
         "architecture": platform.machine()
+    }
+
+@router.get("/get_apps_list")
+async def get_apps_list():
+    # =================================
+    #  🎉 获取应用列表 (无参数)
+    #
+    #  🎨 代码用途：
+    #     扫描客户端目录下的 js/apps 和 js/apps_system 文件夹，返回所有可用的应用文件列表。
+    #
+    #  💡 易懂解释：
+    #     点名啦！👨‍🏫 看看班里（文件夹）都有哪些同学（应用）来上课了。
+    # =================================
+    """获取应用列表"""
+    apps_dir = CLIENT_DIR / "js" / "apps"
+    system_apps_dir = CLIENT_DIR / "js" / "apps_system"
+    
+    apps = []
+    system_apps = []
+
+    # 扫描普通应用
+    if apps_dir.exists():
+        for file in apps_dir.glob("*.js"):
+            apps.append(file.name)
+
+    # 扫描系统应用
+    if system_apps_dir.exists():
+        for file in system_apps_dir.glob("*.js"):
+            system_apps.append(file.name)
+
+    return {
+        "apps": apps,
+        "system_apps": system_apps
     }
