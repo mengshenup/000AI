@@ -77,6 +77,8 @@ class FileManager:
             default = [] # 🆕 默认初始化为空列表
         file_path = DATA_DIR / filename # 📍 拼接完整路径
         if not file_path.exists():
+            # 🆕 如果文件不存在，自动创建并写入默认值
+            FileManager.save(filename, default)
             return default # 🤷‍♀️ 文件不存在，返回默认值
         try:
             with open(file_path, 'r', encoding='utf-8') as f: # 📂 打开文件（读取模式）
