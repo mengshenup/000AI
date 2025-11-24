@@ -1,22 +1,23 @@
 import { bus } from '../apps_run/event_bus.js';
+import { store } from '../apps_run/store.js';
 
-export const config = {
+// 💖 详情窗口配置 (点击胶囊后打开的窗口)
+const detailConfig = {
     id: 'win-traffic',
     name: '脉动监测',
-    description: '感受数据的每一次跳动', // 💖 更长的描述
+    description: '感受数据的每一次跳动',
     icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z',
     color: '#00cec9',
-    system: true, // 💖 标记为系统应用
-    showDesktopIcon: false, // 💖 不显示桌面图标
-    showTaskbarIcon: false, // 💖 不显示任务栏图标
-    frameless: true, // 💖 无边框窗口
-    fixed: false, // 💖 取消固定，允许动态定位
-    width: 200, // 📏 详情窗宽度
-    height: 120, // 📏 详情窗高度
-    pos: { x: 0, y: 0 }, // 占位
-    // winPos: { right: 10, bottom: 50 }, // 📍 移除固定位置，由点击事件动态计算
-    isOpen: false, // 默认关闭，点击胶囊才显示
-    openMsg: "", // 不播放语音
+    system: true,
+    showDesktopIcon: false,
+    showTaskbarIcon: false,
+    frameless: true,
+    fixed: false,
+    width: 200,
+    height: 120,
+    pos: { x: 0, y: 0 },
+    isOpen: false,
+    openMsg: "",
     content: `
         <div style="padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%;">
             <div style="font-size: 12px; color: #00cec9; margin-bottom: 10px; font-weight: bold;">NETWORK MONITOR</div>
@@ -36,8 +37,25 @@ export const config = {
     contentStyle: 'background: transparent; padding: 0; box-shadow: none; border: none;'
 };
 
+// 💖 服务配置 (任务管理器中显示的条目，控制胶囊显示)
+export const config = {
+    id: 'svc-traffic',
+    name: '流量胶囊',
+    description: '任务栏流量监控服务',
+    icon: detailConfig.icon,
+    color: detailConfig.color,
+    system: true,
+    type: 'service', // 💖 标记为服务类型，不创建窗口
+    showDesktopIcon: false,
+    showTaskbarIcon: false,
+    isOpen: true // 默认开启服务
+};
+
 // 💖 导出初始化函数，由 loader.js 调用
 export function init() {
+    // 注册详情窗口配置
+    store.setAppMetadata(detailConfig.id, detailConfig);
+
     // 监听网络统计数据更新 (上传/下载速度)
     let lastStatsUpdate = 0;
     bus.on('net:stats', (stats) => {
@@ -58,5 +76,20 @@ export function init() {
         // 更新详情窗口数据
         update('tx-stat', stats.net.up);    // ⬆️ 更新上传速度
         update('rx-stat', stats.net.down);  // ⬇️ 更新下载速度
+    });
+
+    // 监听服务开启/关闭事件，控制胶囊显示
+    bus.on('app:opened', ({ id }) => {
+        if (id === config.id) {
+            const el = document.getElementById('bar-traffic');
+            if (el) el.style.display = 'flex';
+        }
+    });
+
+    bus.on('app:closed', ({ id }) => {
+        if (id === config.id) {
+            const el = document.getElementById('bar-traffic');
+            if (el) el.style.display = 'none';
+        }
     });
 }

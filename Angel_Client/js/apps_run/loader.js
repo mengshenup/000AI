@@ -261,6 +261,7 @@ window.onload = async () => {
     };
 
     // 绑定任务栏胶囊点击事件 -> 打开详情窗口
+    // 💖 注意：这里打开的是详情窗口 ID (win-traffic/win-billing)，而不是服务 ID (svc-traffic/svc-billing)
     document.getElementById('bar-traffic')?.addEventListener('click', () => {
         toggleCapsuleWindow('bar-traffic', 'win-traffic');
     });

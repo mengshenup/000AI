@@ -7,69 +7,24 @@
         "y": 100
       },
       "winPos": {
-        "x": 147,
-        "y": 324
+        "x": 594,
+        "y": 253
       },
-      "zIndex": 103
-    },
-    "win-performance": {
-      "pos": {
-        "x": 150,
-        "y": 150
-      },
-      "winPos": {
-        "x": 91,
-        "y": 118
-      },
-      "isOpen": true,
-      "zIndex": 129,
-      "isMinimized": true
-    },
-    "win-taskmgr": {
-      "pos": {
-        "x": 20,
-        "y": 380
-      },
-      "winPos": {
-        "x": 238,
-        "y": 76
-      },
-      "isOpen": true,
-      "zIndex": 126
+      "zIndex": 105
     },
     "win-billing": {
       "pos": {
         "x": 0,
         "y": 0
       },
-      "winPos": {
-        "x": 819.1015625,
-        "y": 533
-      },
-      "zIndex": 128
-    },
-    "win-manual": {
-      "pos": {
-        "x": 20,
-        "y": 20
-      },
-      "winPos": {
-        "x": 652,
-        "y": 79
-      },
-      "isOpen": true,
-      "zIndex": 102
+      "zIndex": 109
     },
     "win-traffic": {
       "pos": {
         "x": 0,
         "y": 0
       },
-      "winPos": {
-        "x": 904.09375,
-        "y": 533
-      },
-      "zIndex": 130
+      "zIndex": 108
     },
     "win-angel": {
       "pos": {
@@ -91,7 +46,27 @@
         "y": 150
       }
     },
-    "win-settings": {
+    "win-manual": {
+      "pos": {
+        "x": 20,
+        "y": 20
+      },
+      "winPos": {
+        "x": 100,
+        "y": 50
+      }
+    },
+    "win-performance": {
+      "pos": {
+        "x": 150,
+        "y": 150
+      },
+      "winPos": {
+        "x": 400,
+        "y": 200
+      }
+    },
+    "win-personalization": {
       "pos": {
         "x": 20,
         "y": 290
@@ -99,9 +74,17 @@
       "winPos": {
         "x": 200,
         "y": 200
+      }
+    },
+    "win-taskmgr": {
+      "pos": {
+        "x": 20,
+        "y": 380
       },
-      "isOpen": false,
-      "zIndex": 113
+      "winPos": {
+        "x": 300,
+        "y": 300
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import { store } from './store.js'; // 📦 导入状态存储
 import { bus } from './event_bus.js'; // 🚌 导入事件总线
-import { WALLPAPERS, DEFAULT_WALLPAPER } from './config.js'; // 🖼️ 导入壁纸配置
+import { DEFAULT_WALLPAPER } from './config.js'; // 🖼️ 导入壁纸配置
+import { WALLPAPERS } from '../apps/personalization.js'; // 🖼️ 导入壁纸列表
 import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器
 import { contextMenuApp } from '../apps_system/context_menu.js'; // 📖 导入右键菜单
 import { DesktopManager } from './desktop_manager.js';
@@ -99,6 +100,12 @@ export class WindowManager {
         //  ⚠️ 警告：
         //     如果窗口已存在，函数会直接返回，不会重复创建。
         // =================================
+
+        // 💖 如果是服务类型 (如胶囊)，不创建窗口
+        if (app.type === 'service') return;
+
+        // 💖 检查是否已存在
+        if (document.getElementById(id)) return;
 
         // 🛑 如果窗口已存在，不再重复创建
         if (document.getElementById(id)) return;

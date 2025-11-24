@@ -48,26 +48,6 @@ export const BROWSER_CHANNEL = null; // 🌐 浏览器通道配置
 export const ASSETS_PATH = "assets/"; // 📂 静态资源根目录
 
 // =================================
-//  🎉 壁纸列表 (无参数)
-//
-//  🎨 代码用途：
-//     定义了系统中可供选择的壁纸 URL 数组。
-//
-//  💡 易懂解释：
-//     装修公司的“壁纸图册”。这里列出了所有你可以选的桌面背景。
-//
-//  ⚠️ 警告：
-//     必须是有效的图片 URL。如果链接失效，壁纸显示为空白。
-// =================================
-export const WALLPAPERS = [
-    { url: `${ASSETS_PATH}wp-0.avif` }, // 🏔️ 群山壁纸
-    { url: `${ASSETS_PATH}wp-1.avif` }, // 🌊 湖泊壁纸
-    { url: `${ASSETS_PATH}wp-2.avif` }, // 🌲 森林壁纸
-    { url: `${ASSETS_PATH}wp-3.avif` }, // ☀️ 阳光壁纸
-    { url: `${ASSETS_PATH}wp-4.avif` }  // 🌾 草原壁纸
-];
-
-// =================================
 //  🎉 默认壁纸 (无参数)
 //
 //  🎨 代码用途：
@@ -79,7 +59,7 @@ export const WALLPAPERS = [
 //  ⚠️ 警告：
 //     默认取列表中的第一张。
 // =================================
-export const DEFAULT_WALLPAPER = WALLPAPERS[0].url; // 🖼️ 默认显示的壁纸
+export const DEFAULT_WALLPAPER = `${ASSETS_PATH}wp-0.avif`; // 🖼️ 默认显示的壁纸
 
 // =================================
 //  🎉 默认应用列表 (无参数)
