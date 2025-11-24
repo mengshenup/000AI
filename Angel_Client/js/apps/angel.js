@@ -238,7 +238,13 @@ export class AngelApp {
             const checkCanvas = document.createElement('canvas');
             const gl = checkCanvas.getContext('webgl');
             let isSoftware = false;
-            if (gl) {
+
+            // 🐢 检查是否强制开启了 CPU 兼容模式
+            const forceCpu = localStorage.getItem('angel_force_cpu') === 'true';
+            if (forceCpu) {
+                isSoftware = true;
+                console.warn("用户强制开启了 CPU 兼容模式");
+            } else if (gl) {
                 const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
                 if (debugInfo) {
                     const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);

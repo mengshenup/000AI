@@ -14,6 +14,7 @@ import './apps/context_menu.js'; // 🖱️ 右键菜单
 import './apps/angel.js'; // 👼 小天使应用
 import './apps/traffic.js'; // 📡 流量监控
 import './apps/billing.js'; // 💰 账单助手
+import './apps/performance.js'; // 🚀 性能调优
 
 function setupBusinessLogic() {
     // =================================
