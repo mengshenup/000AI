@@ -3,7 +3,7 @@ cd /d "%~dp0"
 :: 切换为 UTF-8 编码
 chcp 65001 >nul
 
-title Angel Client (前端界面 - 5500)
+title Angel Web Compute (前端界面 - 5500)
 color 0a
 
 :: 🔧 优化控制台体验 (防挂起/防乱码)
@@ -11,7 +11,7 @@ powershell -Command "&{$c=[Console];$m=$c::In.GetMode();$m=$m -band -not 0x0040;
 set PYTHONIOENCODING=utf-8
 
 echo ==========================================
-echo      [启动] Angel 前端启动器
+echo      [启动] Angel Web Compute 启动器
 echo ==========================================
 echo.
 

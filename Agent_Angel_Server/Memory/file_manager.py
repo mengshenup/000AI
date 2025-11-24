@@ -4,20 +4,25 @@ from pathlib import Path # 🛣️ 路径处理库
 from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-# 💖 修正：定位到 Web_Client 根目录
-# 策略：当前文件在 Web_Client/Client_Core/Memory/file_manager.py
-# 向上 3 层即为 Web_Client
-ROOT_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-CLIENT_DIR = ROOT_DIR # 直接指向 Web_Client 根目录
+# 💖 修正：定位到 Web_Compute (原 Web_Client) 根目录
+# 策略：当前文件在 Agent_Angel_Server/Memory/file_manager.py
+# 向上 2 层即为 Agent_Angel_Server 根目录，再找同级的 Web_Compute
+SERVER_ROOT = Path(os.path.dirname(os.path.dirname(__file__)))
+WORKSPACE_DIR = SERVER_ROOT.parent
+CLIENT_DIR = WORKSPACE_DIR / "Web_Compute"
 
 # 🕵️‍♂️ 动态查找 Client 目录 (防止用户重命名)
-# 如果找不到 index.html，尝试搜索同级目录
-if not (CLIENT_DIR / "index.html").exists():
+# 如果找不到 Web_Compute，尝试搜索同级目录中包含 index.html 的文件夹
+if not CLIENT_DIR.exists() or not (CLIENT_DIR / "index.html").exists():
     found = False
-    # 向上找一级 (C:\000AI)
-    WORKSPACE_DIR = ROOT_DIR.parent
     for item in WORKSPACE_DIR.iterdir():
         if item.is_dir() and (item / "index.html").exists():
+            CLIENT_DIR = item
+            found = True
+            break
+    if not found:
+        # 如果实在找不到，就用当前目录 (Agent_Angel_Server)
+        CLIENT_DIR = SERVER_ROOT
             CLIENT_DIR = item
             found = True
             break

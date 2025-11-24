@@ -18,15 +18,16 @@ import subprocess
 
 sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 文件
 
-# 🔄 加载环境变量 (从 Web_Client/Memorybank/.env)
-# 修正路径：Client_Core/Nerve/fastapi_app.py -> Client_Core/Nerve -> Client_Core -> Web_Client -> Memorybank
+# 🔄 加载环境变量 (从 Web_Compute/Memorybank/.env)
+# 修正路径：Agent_Angel_Server/Nerve/fastapi_app.py -> Agent_Angel_Server -> 000AI -> Web_Compute -> Memorybank
 current_dir = os.path.dirname(os.path.abspath(__file__))
-client_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir))) # 假设结构为 Web_Client/Client_Core/Nerve
-# 实际上: __file__ = .../Client_Core/Nerve/fastapi_app.py
-# dirname -> .../Client_Core/Nerve
-# dirname -> .../Client_Core
-# dirname -> .../Web_Client
-env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "Memorybank", ".env") 
+workspace_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir))) # 假设结构为 Agent_Angel_Server/Nerve
+# 实际上: __file__ = .../Agent_Angel_Server/Nerve/fastapi_app.py
+# dirname -> .../Agent_Angel_Server/Nerve
+# dirname -> .../Agent_Angel_Server
+# dirname -> .../000AI
+workspace_dir = os.path.dirname(os.path.dirname(current_dir))
+env_path = os.path.join(workspace_dir, "Web_Compute", "Memorybank", ".env") 
 load_dotenv(env_path) # 🔑 加载环境变量
 
 import asyncio # ⚡ 异步 I/O 库
