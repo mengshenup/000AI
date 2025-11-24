@@ -178,14 +178,16 @@ export class TaskManagerApp {
         const pendingAction = this.pendingStates.get(app.id);
         let btnColor, btnText, btnDisabled;
         
-        if (pendingAction === 'stopping') {
+        if (pendingAction) {
             btnColor = '#b2bec3';
-            btnText = '清理中...';
             btnDisabled = true;
-        } else if (pendingAction === 'starting') {
-            btnColor = '#b2bec3';
-            btnText = '启动中...';
-            btnDisabled = true;
+            if (pendingAction.type === 'stopping') {
+                // 模拟进度显示 (因为 pm.kill 是同步的，这里只是为了 UX)
+                const progress = Math.min(100, Math.floor((Date.now() - pendingAction.startTime) / 10)); 
+                btnText = `清理中 ${progress}%`;
+            } else {
+                btnText = '启动中...';
+            }
         } else {
             btnColor = app.isOpen ? '#ff7675' : '#0984e3';
             btnText = app.isOpen ? '结束' : '启动';
@@ -240,13 +242,30 @@ export class TaskManagerApp {
                 e.stopPropagation();
                 if (this.pendingStates.has(app.id)) return; // 防止重复点击
 
+                // 移除超时重置机制，改为进度显示
+                
                 if (app.isOpen) {
-                    this.pendingStates.set(app.id, 'stopping');
-                    this.render(); // 立即刷新显示“清理中...”
+                    this.pendingStates.set(app.id, { type: 'stopping', startTime: Date.now() });
+                    
+                    // 启动一个定时器来更新进度条文字
+                    const progressTimer = setInterval(() => {
+                        if (!this.pendingStates.has(app.id)) {
+                            clearInterval(progressTimer);
+                            return;
+                        }
+                        this.render(); // 触发重绘以更新百分比
+                    }, 100);
+
                     // 模拟一点延迟让用户看清状态，也给 UI 线程喘息机会
-                    setTimeout(() => wm.closeApp(app.id), 50);
+                    setTimeout(() => {
+                        wm.closeApp(app.id);
+                        // closeApp 是同步的，执行完就意味着清理完毕
+                        // 但为了让用户看到 100%，我们稍微延迟一点移除 pending 状态
+                        // 注意：wm.closeApp 会触发 app:closed 事件，我们在 bus.on 里处理了移除 pending
+                        // 所以这里不需要手动移除，只需要确保 bus 事件能触发
+                    }, 500); // 增加延迟以展示进度效果
                 } else {
-                    this.pendingStates.set(app.id, 'starting');
+                    this.pendingStates.set(app.id, { type: 'starting', startTime: Date.now() });
                     this.render(); // 立即刷新显示“启动中...”
                     setTimeout(() => wm.openApp(app.id), 50);
                 }

@@ -147,6 +147,28 @@ export class AngelApp {
 
         // 注册清理函数
         this.ctx.onCleanup(() => this.onDestroy());
+
+        // 💖 监听重置指令 (通过事件总线)
+        bus.on('angel:reset', () => this.resetState());
+    }
+
+    // =================================
+    //  🎉 重置状态
+    // =================================
+    resetState() {
+        console.log("执行小天使重置指令...");
+        // 1. 重置位置
+        if (this.group) {
+            this.group.position.set(0, 0, 0);
+            this.group.rotation.set(0, 0, 0);
+        }
+        // 2. 重置交互状态
+        this.state = { r: false, sx: 0, ir: 0 };
+        // 3. 清除本地存储的静音设置等 (可选)
+        localStorage.removeItem('angel_is_muted');
+        localStorage.removeItem('angel_performance_mode');
+        
+        this.showBubble("已重置所有状态！✨");
     }
 
     // =================================
@@ -212,23 +234,52 @@ export class AngelApp {
         // 创建渲染器
         // 💖 性能优化：根据配置决定是否开启抗锯齿
         try {
+            // 🕵️‍♂️ 预检：检测是否为软件渲染环境
+            const checkCanvas = document.createElement('canvas');
+            const gl = checkCanvas.getContext('webgl');
+            let isSoftware = false;
+            if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    if (renderer && (renderer.toLowerCase().includes('software') || renderer.toLowerCase().includes('swiftshader'))) {
+                        isSoftware = true;
+                        console.warn("检测到软件渲染环境 (CPU Mode)，将启用兼容性配置");
+                    }
+                }
+            }
+
             // 第一次尝试：标准模式 (检测性能陷阱)
-            this.renderer = new THREE.WebGLRenderer({ 
-                alpha: true, 
-                antialias: this.perfMode === 'high',
-                powerPreference: "default",
-                failIfMajorPerformanceCaveat: true 
-            }); 
+            // 如果检测到是软件渲染，直接跳过高配尝试，进入兼容模式
+            if (!isSoftware) {
+                this.renderer = new THREE.WebGLRenderer({ 
+                    alpha: true, 
+                    antialias: this.perfMode === 'high',
+                    powerPreference: "default",
+                    failIfMajorPerformanceCaveat: true 
+                }); 
+            } else {
+                throw new Error("Force CPU Mode");
+            }
         } catch (e1) {
-            console.warn("WebGL 标准模式启动失败，尝试兼容模式...", e1);
+            console.warn("WebGL 标准模式启动失败或检测到 CPU 模式，尝试兼容模式...", e1);
             try {
-                // 第二次尝试：兼容模式 (允许软件渲染，虽然可能会被浏览器拦截)
+                // 第二次尝试：兼容模式 (CPU 友好型)
+                // 1. 关闭抗锯齿
+                // 2. 使用低功耗优先
+                // 3. 允许性能陷阱 (软件渲染)
+                // 4. 降低分辨率 (在 setSize 中处理)
+                this.perfMode = 'low'; // 强制低配
                 this.renderer = new THREE.WebGLRenderer({ 
                     alpha: true, 
                     antialias: false,
                     powerPreference: "low-power",
-                    failIfMajorPerformanceCaveat: false
+                    failIfMajorPerformanceCaveat: false,
+                    precision: "lowp" // 使用低精度浮点数，减轻 CPU 负担
                 });
+                
+                // 提示用户
+                this.showBubble("正在使用 CPU 兼容模式运行，可能会有些卡顿哦~ 🐢");
             } catch (e2) {
                 console.error("WebGL 启动彻底失败", e2);
                 alert("启动失败：您的浏览器无法创建 WebGL 上下文。\n\n可能原因：\n1. 显卡驱动未安装或过旧。\n2. 浏览器硬件加速被禁用 (请检查 edge://settings/system)。\n3. 系统资源耗尽 (请尝试关闭服务端或其他大型软件)。");

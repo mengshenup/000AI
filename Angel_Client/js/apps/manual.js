@@ -83,15 +83,71 @@ class ManualApp {
         if (userAgent.includes("Safari") && !userAgent.includes("Chrome")) browser = "Safari";
         if (userAgent.includes("Edge")) browser = "Microsoft Edge";
 
-        infoBox.innerHTML = `
+        // 🎮 GPU 检测
+        let gpuRenderer = "未知 GPU";
+        let gpuVendor = "未知厂商";
+        let isSoftware = false;
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                if (debugInfo) {
+                    gpuVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                    gpuRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                }
+                // 检查是否为软件渲染
+                if (gpuRenderer.toLowerCase().includes('software') || gpuRenderer.toLowerCase().includes('swiftshader')) {
+                    isSoftware = true;
+                    gpuRenderer += " (CPU渲染)";
+                }
+            } else {
+                gpuRenderer = "不支持 WebGL";
+            }
+        } catch (e) {
+            gpuRenderer = "检测失败";
+        }
+
+        const gpuColor = isSoftware ? '#d63031' : '#00b894'; // 红色警告，绿色正常
+
+        // 🎨 构建基础信息 HTML
+        let htmlContent = `
             <ul style="list-style:none; padding:0; margin:0;">
                 <li>🧠 <b>CPU 核心数：</b> ${cores}</li>
                 <li>💾 <b>内存估算：</b> ${mem}</li>
                 <li>🖥️ <b>操作系统平台：</b> ${platform}</li>
                 <li>🌐 <b>浏览器：</b> ${browser}</li>
+                <li style="margin-top:5px; border-top:1px dashed #ddd; padding-top:5px;">
+                    🎮 <b>GPU 渲染器：</b> <span style="color:${gpuColor}; font-weight:bold;">${gpuRenderer}</span>
+                </li>
+                <li>🏭 <b>GPU 厂商：</b> ${gpuVendor}</li>
                 <li style="margin-top:5px; font-size:0.8em; opacity:0.7;">UA: ${userAgent.substring(0, 50)}...</li>
             </ul>
         `;
+
+        // 🚀 异步获取后端详细硬件信息
+        fetch('http://localhost:8000/system_info')
+            .then(res => res.json())
+            .then(data => {
+                if (data.cpu_model) {
+                    htmlContent += `
+                        <div style="margin-top:10px; padding-top:10px; border-top:1px dashed #ddd; color:#0984e3;">
+                            <b>🚀 物理 CPU 型号：</b><br>${data.cpu_model}
+                            <div style="font-size:0.8em; color:#999; margin-top:2px;">
+                                架构: ${data.architecture} | 系统: ${data.system}
+                            </div>
+                        </div>
+                    `;
+                    infoBox.innerHTML = htmlContent; // 更新 DOM
+                }
+            })
+            .catch(err => {
+                console.warn("无法连接后端获取硬件信息", err);
+                // 失败时不更新，保持基础信息
+            });
+
+        // 先显示基础信息
+        infoBox.innerHTML = htmlContent;
     }
 }
 
