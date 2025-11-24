@@ -5,7 +5,7 @@ import platform # 🖥️ 系统信息
 import subprocess # 🐚 执行系统命令
 
 router = APIRouter() # 🛣️ 创建 HTTP 路由
-DATA_FILE = "apps.json" # 💾 布局配置文件名
+DATA_FILE = "window_memory.json" # 💾 窗口记忆文件 (原 apps.json)
 
 class AppState(BaseModel):
     # =================================

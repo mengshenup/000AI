@@ -1,0 +1,80 @@
+{
+  "win-manual": {
+    "pos": {
+      "x": 357,
+      "y": 170
+    },
+    "winPos": {
+      "x": 100,
+      "y": 50
+    },
+    "isOpen": true,
+    "zIndex": 102
+  },
+  "win-angel": {
+    "pos": {
+      "x": 20,
+      "y": 110
+    },
+    "winPos": {
+      "x": 400,
+      "y": 100
+    }
+  },
+  "win-intel": {
+    "pos": {
+      "x": 20,
+      "y": 200
+    },
+    "winPos": {
+      "x": 150,
+      "y": 150
+    }
+  },
+  "win-settings": {
+    "pos": {
+      "x": 20,
+      "y": 290
+    },
+    "winPos": {
+      "x": 200,
+      "y": 200
+    }
+  },
+  "win-taskmgr": {
+    "pos": {
+      "x": 20,
+      "y": 380
+    },
+    "winPos": {
+      "x": 300,
+      "y": 300
+    }
+  },
+  "win-companion": {
+    "pos": {
+      "x": 870,
+      "y": 100
+    },
+    "winPos": {
+      "x": 870,
+      "y": 100
+    },
+    "isOpen": true,
+    "zIndex": 101
+  },
+  "win-traffic": {
+    "pos": {
+      "x": 0,
+      "y": 0
+    },
+    "isOpen": false
+  },
+  "win-billing": {
+    "pos": {
+      "x": 0,
+      "y": 0
+    },
+    "isOpen": false
+  }
+}

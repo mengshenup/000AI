@@ -4,8 +4,10 @@ from pathlib import Path # 🛣️ 路径处理库
 from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-# 💖 修正：尝试定位到 Angel_Client/Memorybank
+# 💖 修正：尝试定位到 客户端数据库 (Client Database)
 # 策略：先找 Angel_Server 的上级目录，再找 Angel_Client
+# ⚠️ 注意：目前假设 Server 和 Client 在同一台机器上。
+# 如果未来分离部署，Server 不应直接索引客户端文件，而应由客户端自行管理或通过 API 传输。
 ROOT_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 CLIENT_DIR = ROOT_DIR / "Angel_Client"
 
@@ -22,7 +24,7 @@ if not CLIENT_DIR.exists():
         # 如果实在找不到，回退到 Server 端的 Memorybank
         CLIENT_DIR = Path(os.path.dirname(os.path.dirname(__file__)))
 
-DATA_DIR = CLIENT_DIR / "Memorybank"
+DATA_DIR = CLIENT_DIR / "Memorybank" # 📍 客户端数据库目录
 DATA_DIR.mkdir(parents=True, exist_ok=True) # 📁 确保目录存在
 
 class FileManager:
