@@ -1,55 +1,50 @@
-import os
+import os # 📂 操作系统接口
 
 # =================================
-#  🎉 配置模块 (Config)
+#  🎉 系统配置 (无参数)
 #
 #  🎨 代码用途：
-#     集中管理服务器的所有全局配置项，如路径、分辨率、计费规则等。
+#     集中管理 Angel Server 的全局配置参数，包括文件路径、浏览器设置、目标 URL 和计费标准。
 #
 #  💡 易懂解释：
-#     这是服务器的“控制面板”！所有的开关、参数和价目表都在这里，改一个地方就能影响全局哦！🎛️
+#     Angel 的设置中心！⚙️ 就像手机的“设置”APP一样，想改什么参数（比如浏览器大小、存东西的地方）都在这里改。
 #
 #  ⚠️ 警告：
-#     修改这里的配置会直接影响服务器的运行行为，请确保你明白每一项的含义。
+#     BROWSER_CHANNEL 的选择会影响视频解码能力。内置 Chromium 可能无法播放 H.264 视频。
 # =================================
 
-# 📂 设置用户数据存储目录的相对路径，所有的照片和记录都存在这里
-USER_DATA_DIR = "./Memorybank/BrowserData"
+# 📂 用户数据存储目录 (相对路径)
+USER_DATA_DIR = "./Memorybank/BrowserData" # 💾 浏览器缓存和数据存放处
 
-# 🖥️ 定义浏览器窗口的宽度和高度，给机器人配的“显示器”大小 (800x600)
-VIEWPORT = {'width': 800, 'height': 600}
+# 🖥️ 浏览器视口大小
+VIEWPORT = {'width': 800, 'height': 600} # 🖼️ 虚拟显示器的分辨率
 
-# 🌐 浏览器启动配置
+# 🌐 浏览器通道选择
 # "chrome": Google Chrome (最佳兼容性，需手动安装)
 # "msedge": Microsoft Edge (Windows自带，支持 H.264，推荐)
 # None: Playwright 内置 Chromium (可能不支持 H.264 视频解码)
-BROWSER_CHANNEL = None
+BROWSER_CHANNEL = None # 🚀 默认使用内置 Chromium
 
-# 🔗 定义默认的目标搜索 URL，机器人的“主页”，一打开浏览器就去这里
-TARGET_SEARCH_URL = "https://www.douyin.com/search/三角洲行动_零号大坝_老六点位"
+# 🔗 默认目标 URL
+TARGET_SEARCH_URL = "https://www.douyin.com/search/三角洲行动_零号大坝_老六点位" # 🎯 Angel 起床后第一个要去的地方
 
-# 💰 定义计费规则字典，这是“价目表”，用一次 AI 要花多少钱都在这里
+# 💰 AI 模型定价表 (USD per 1M Tokens)
 PRICING_TABLE = {
     "gemini-1.5-flash": {
-        "input": 0.075,  # 📥 输入 Token 单价 (每百万 Token)
-        "output": 0.30   # 📤 输出 Token 单价 (每百万 Token)
+        "input": 0.075,  # 📥 输入价格
+        "output": 0.30   # 📤 输出价格
     },
     "network_egress": 0.1  # 📡 网络流出流量单价 ($0.10 per GB)
 }
 
 # =================================
-#  🎉 初始化目录 ()
+#  🎉 初始化环境 (无参数)
 #
 #  🎨 代码用途：
-#     在模块加载时检查并创建用户数据目录。
+#     在模块加载时自动检查并创建必要的数据目录结构。
 #
 #  💡 易懂解释：
-#     如果发现没有“档案室”，就赶紧建一个，不然东西没地方放啦！📁
-#
-#  ⚠️ 警告：
-#     如果没有文件系统的写权限，这里会报错。
+#     装修队进场！👷‍♂️ 看看房间（目录）建好了没有，没建好就赶紧盖起来！
 # =================================
-# 🔍 检查用户数据目录是否存在
-if not os.path.exists(USER_DATA_DIR):
-    # 🛠️ 如果不存在，则创建该目录
-    os.makedirs(USER_DATA_DIR)
+if not os.path.exists(USER_DATA_DIR): # 🔍 检查目录是否存在
+    os.makedirs(USER_DATA_DIR) # 🏗️ 创建数据目录

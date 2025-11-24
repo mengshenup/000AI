@@ -1,27 +1,44 @@
-import uvicorn
-import os
-import sys
+import uvicorn # 🦄 ASGI 服务器
+import os # 📂 操作系统接口
+import sys # 🖥️ 系统相关参数和函数
 
 # =================================
-#  🎉 主程序入口 (Brain/main.py)
+#  🎉 主程序入口 (无参数)
 #
 #  🎨 代码用途：
-#     负责启动和监控 FastAPI 应用进程。
-#     (原 Nerve/server_runner.py)
+#     作为 Angel Server 的启动脚本，配置并运行 Uvicorn 服务器，加载 FastAPI 应用。
+#
+#  💡 易懂解释：
+#     这是 Angel 的心脏起搏器！💓 它负责把整个服务器唤醒，让 Angel 开始呼吸（运行），准备好接待客人（处理请求）！
+#
+#  ⚠️ 警告：
+#     reload=True 模式下，文件变动会自动重启服务器，这在开发时很有用，但生产环境建议关闭以提高性能。
 # =================================
 
-sys.dont_write_bytecode = True
+sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 字节码文件
 
 if __name__ == "__main__":
-    print(f"\n🚀 Angel Server (v2.2.0) 正在启动...")
-    print(f"📂 正在监听目录: {os.getcwd()}")
+    # =================================
+    #  🎉 启动服务器 (无参数)
+    #
+    #  🎨 代码用途：
+    #     打印启动日志，配置 Uvicorn 运行参数（主机、端口、热重载规则），并启动服务。
+    #
+    #  💡 易懂解释：
+    #     3, 2, 1... 发射！🚀 Angel 正在升空！我们会一直盯着文件变化，如果有改动，Angel 会自动刷新自己哦！
+    #
+    #  ⚠️ 警告：
+    #     reload_dirs 设置为 "." 会监听当前目录下所有文件，如果排除规则不当，可能会导致无限重启循环。
+    # =================================
+    print(f"\n🚀 Angel Server (v2.2.0) 正在启动...") # 📢 打印启动信息
+    print(f"📂 正在监听目录: {os.getcwd()}") # 📂 打印工作目录
     
     uvicorn.run(
-        "Nerve.fastapi_app:app",
-        host="0.0.0.0", 
-        port=8000,      
-        reload=True,
-        reload_dirs=["."],  # 🔄 监听当前目录下所有文件的变动
+        "Nerve.fastapi_app:app", # 📦 指定 FastAPI 应用入口
+        host="0.0.0.0", # 🌐 监听所有网络接口
+        port=8000, # 🚪 服务端口号
+        reload=True, # 🔄 开启热重载（开发模式）
+        reload_dirs=["."],  # 📂 监听当前目录下所有文件的变动
         reload_excludes=["Memorybank", "Memorybank/*", "*.log", "*.tmp", ".git", "*.md", "*.bat", "*.txt"], # 🚫 排除频繁变动的目录和文档
-        workers=1       
+        workers=1 # 👷 工作进程数量
     )
