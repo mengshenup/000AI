@@ -71,9 +71,9 @@ export const config = {
     contentStyle: 'display:flex; flex-direction:column; padding:0;' // 💖 窗口内容的 CSS 样式
 };
 
-import { bus } from '../event_bus.js'; // 💖 导入事件总线，用于模块间通信
-import { network } from '../network.js'; // 💖 导入网络模块，用于与服务器通信
-import { wm } from '../window_manager.js'; // 💖 导入窗口管理器，用于控制窗口行为
+import { bus } from '../apps_run/event_bus.js'; // 💖 导入事件总线，用于模块间通信
+import { network } from '../apps_run/network.js'; // 💖 导入网络模块，用于与服务器通信
+import { wm } from '../apps_run/window_manager.js'; // 💖 导入窗口管理器，用于控制窗口行为
 
 class BrowserApp {
     // =================================

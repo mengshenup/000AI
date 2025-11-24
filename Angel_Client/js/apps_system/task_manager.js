@@ -27,10 +27,10 @@ export const config = {
     `
 };
 
-import { store } from '../store.js'; // 💖 导入全局状态存储
-import { bus } from '../event_bus.js'; // 💖 导入事件总线
-import { wm } from '../window_manager.js'; // 💖 导入窗口管理器
-import { pm } from '../process_manager.js'; // 💖 导入进程管理器
+import { store } from '../apps_run/store.js'; // 💖 导入全局状态存储
+import { bus } from '../apps_run/event_bus.js'; // 💖 导入事件总线
+import { wm } from '../apps_run/window_manager.js'; // 💖 导入窗口管理器
+import { pm } from '../apps_run/process_manager.js'; // 💖 导入进程管理器
 
 export const APP_NAME = 'Vitality Source'; // 💖 导出应用名称常量
 // export const APP_OPEN_MSG = "活力源泉已启动，系统能量充沛！💪"; // 💖 已移除

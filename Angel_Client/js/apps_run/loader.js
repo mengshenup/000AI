@@ -187,8 +187,9 @@ window.onload = async () => {
 
         // 3. 并行加载所有应用
         // 优先加载系统应用
-        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`./apps_system/${f}`, true)))).filter(Boolean);
-        const userModules = (await Promise.all(apps.map(f => loadApp(`./apps/${f}`, false)))).filter(Boolean);
+        // 💖 路径修正：因为 loader.js 在 apps_run/ 下，所以要往上跳一级
+        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`../apps_system/${f}`, true)))).filter(Boolean);
+        const userModules = (await Promise.all(apps.map(f => loadApp(`../apps/${f}`, false)))).filter(Boolean);
         
         const allModules = [...systemModules, ...userModules];
 

@@ -1,4 +1,4 @@
-import { bus } from '../event_bus.js'; // 💖 导入事件总线
+import { bus } from '../apps_run/event_bus.js'; // 💖 导入事件总线
 
 export const config = {
     // =================================

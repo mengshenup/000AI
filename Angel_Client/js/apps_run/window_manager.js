@@ -2,7 +2,9 @@ import { store } from './store.js'; // 📦 导入状态存储
 import { bus } from './event_bus.js'; // 🚌 导入事件总线
 import { WALLPAPERS, DEFAULT_WALLPAPER } from './config.js'; // 🖼️ 导入壁纸配置
 import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器
-import { contextMenuApp } from './apps_system/context_menu.js'; // 📖 导入右键菜单
+import { contextMenuApp } from '../apps_system/context_menu.js'; // 📖 导入右键菜单
+import { DesktopManager } from './desktop_manager.js';
+import { TaskbarManager } from './taskbar_manager.js';
 
 export class WindowManager {
     // =================================
@@ -41,6 +43,10 @@ export class WindowManager {
         this.activeWindowId = null;
         // ⏳ 点击节流记录 (防止双击导致窗口闪烁)
         this.lastClickTime = 0;
+        
+        // 🧩 初始化子管理器
+        this.desktopManager = new DesktopManager(this);
+        this.taskbarManager = new TaskbarManager(this);
     }
 
     init() {
@@ -246,60 +252,7 @@ export class WindowManager {
     }
 
     renderDesktopIcons() {
-        // =================================
-        //  🎉 渲染桌面图标 ()
-        //
-        //  🎨 代码用途：
-        //     根据 store 中的应用列表，在桌面上动态生成图标元素。
-        //
-        //  💡 易懂解释：
-        //     把软件图标一个个摆到桌面上，整整齐齐，看着就舒服！📱
-        //
-        //  ⚠️ 警告：
-        //     会先清除所有旧图标再重新生成，如果图标上有未保存的状态（如选中高亮），会丢失。
-        // =================================
-
-        const dt = document.getElementById('desktop'); // 🖥️ 获取桌面容器
-        // 🧹 清除旧的图标元素，防止重复渲染 (注意：不要删除 .window 类的元素)
-        dt.querySelectorAll('.desktop-icon').forEach(e => e.remove());
-
-        // 🔄 遍历 store.apps 中的每一个应用
-        Object.entries(store.apps).forEach(([id, app]) => {
-            // 🛡️ 防御性检查：如果没有图标数据，跳过渲染，防止 SVG 报错
-            const pathData = app.icon || app.iconPath;
-            if (!pathData) {
-                console.warn(`[WindowManager] 应用 ${id} 缺少图标数据，跳过渲染。`);
-                return;
-            }
-
-            // 💖 过滤掉系统应用 (System Apps)
-            // 用户要求：所有的系统应用都不显示在桌面图标
-            if (app.isSystem) return;
-
-            // 💖 过滤掉显式配置不显示的应用
-            if (app.showDesktopIcon === false) return;
-
-            // 📦 创建图标容器 div
-            const el = document.createElement('div');
-            el.className = 'desktop-icon'; // 🏷️ 设置类名
-            el.id = `icon-${id}`;          // 🆔 设置唯一 ID
-            el.style.left = `${app.pos.x}px`; // 📍 设置保存的 X 坐标
-            el.style.top = `${app.pos.y}px`;  // 📍 设置保存的 Y 坐标
-            el.dataset.id = id;    // 💾 存储应用 ID，方便点击时获取
-            el.dataset.type = 'icon'; // 🏷️ 标记类型为图标
-
-            // 🎨 填充图标内部 HTML (SVG 图标 + 文字)
-            // 兼容 icon 和 iconPath 字段
-            // const pathData = app.icon || app.iconPath; // ⬆️ 已在上方定义并检查
-            el.innerHTML = `
-                <svg class="icon-svg" viewBox="0 0 24 24" fill="${app.color}">
-                    <path d="${pathData}"/>
-                </svg>
-                <div class="icon-text">${app.name}</div>
-            `;
-            // 📌 将图标添加到桌面
-            dt.appendChild(el);
-        });
+        this.desktopManager.render();
     }
 
     initWallpaperApp() {
@@ -1015,50 +968,7 @@ export class WindowManager {
     }
 
     updateTaskbar() {
-        // =================================
-        //  🎉 更新任务栏 ()
-        //
-        //  🎨 代码用途：
-        //     重新渲染任务栏上的应用图标，反映当前的打开/活动状态。
-        //
-        //  💡 易懂解释：
-        //     刷新一下底下的长条，看看哪些灯该亮，哪些灯该灭，一目了然！💡
-        //
-        //  ⚠️ 警告：
-        //     每次调用都会清空并重绘整个任务栏，频繁调用可能会有性能损耗。
-        // =================================
-
-        const container = document.getElementById('taskbar-apps');
-        container.innerHTML = ''; // 🧹 清空任务栏
-
-        Object.entries(store.apps).forEach(([id, app]) => {
-            // 💖 过滤掉系统应用 (System Apps)
-            // 用户要求：所有的系统应用都不显示在任务栏图标
-            if (app.isSystem) return;
-
-            // 💖 过滤掉显式配置不显示的应用
-            if (app.showTaskbarIcon === false) return;
-
-            const win = document.getElementById(id);
-            // ⚓ 这里采用一直显示模式 (类似 macOS Dock)
-            const div = document.createElement('div');
-            div.className = 'task-app';
-            div.dataset.id = id;
-            div.title = app.name || id; // ♿ 添加无障碍标题
-            // 🎨 插入图标 SVG (优先使用 icon 字段，兼容 iconPath)
-            const iconPath = app.icon || app.iconPath;
-            div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`;
-
-            // 💡 如果窗口打开了，添加运行指示灯样式
-            if (win && win.classList.contains('open')) {
-                div.classList.add('running');
-                // ✨ 如果窗口处于激活状态 (是当前 activeWindowId 且未最小化)，添加高亮样式
-                if (!win.classList.contains('minimized') && this.activeWindowId === id) {
-                    div.classList.add('active');
-                }
-            }
-            container.appendChild(div);
-        });
+        this.taskbarManager.update();
     }
 
     renderTrayIcons() {

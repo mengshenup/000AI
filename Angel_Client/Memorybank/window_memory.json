@@ -7,32 +7,22 @@
         "y": 100
       },
       "winPos": {
-        "x": 615,
-        "y": -35
+        "x": 147,
+        "y": 324
       },
-      "zIndex": 102
+      "zIndex": 103
     },
     "win-performance": {
       "pos": {
-        "x": 102,
-        "y": 36
+        "x": 150,
+        "y": 150
       },
       "winPos": {
-        "x": -94,
-        "y": 239
+        "x": 17,
+        "y": 349
       },
-      "zIndex": 106
-    },
-    "win-settings": {
-      "pos": {
-        "x": 20,
-        "y": 290
-      },
-      "winPos": {
-        "x": 200,
-        "y": 200
-      },
-      "zIndex": 108
+      "zIndex": 105,
+      "isMinimized": true
     },
     "win-taskmgr": {
       "pos": {
@@ -40,37 +30,21 @@
         "y": 380
       },
       "winPos": {
-        "x": 297,
-        "y": 74
+        "x": 385,
+        "y": 191
       },
-      "zIndex": 107
+      "zIndex": 122
     },
     "win-billing": {
       "pos": {
         "x": 0,
         "y": 0
       },
-      "isOpen": false
-    },
-    "win-angel": {
-      "pos": {
-        "x": 20,
-        "y": 110
-      },
       "winPos": {
-        "x": 400,
-        "y": 100
-      }
-    },
-    "win-intel": {
-      "pos": {
-        "x": 20,
-        "y": 200
+        "x": 696.1015625,
+        "y": 533
       },
-      "winPos": {
-        "x": 150,
-        "y": 150
-      }
+      "zIndex": 124
     },
     "win-manual": {
       "pos": {
@@ -78,16 +52,22 @@
         "y": 20
       },
       "winPos": {
-        "x": 100,
-        "y": 50
-      }
+        "x": 652,
+        "y": 79
+      },
+      "isOpen": true,
+      "zIndex": 102
     },
     "win-traffic": {
       "pos": {
         "x": 0,
         "y": 0
       },
-      "isOpen": false
+      "winPos": {
+        "x": 980,
+        "y": 533
+      },
+      "zIndex": 123
     }
   }
 }

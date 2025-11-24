@@ -40,8 +40,8 @@ export const config = {
     `
 };
 
-import { bus } from '../event_bus.js'; // 💖 导入事件总线
-import { network } from '../network.js'; // 💖 导入网络模块
+import { bus } from '../apps_run/event_bus.js'; // 💖 导入事件总线
+import { network } from '../apps_run/network.js'; // 💖 导入网络模块
 
 export const APP_NAME = 'Wisdom Pouch'; // 💖 导出应用名称常量
 // export const APP_OPEN_MSG = "智慧锦囊已打开，这里藏着通往成功的秘密哦！💡"; // 💖 已移除

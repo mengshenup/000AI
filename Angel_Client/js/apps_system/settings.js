@@ -1,4 +1,4 @@
-import { WALLPAPERS } from '../config.js'; // 💖 导入壁纸配置列表
+import { WALLPAPERS } from '../apps_run/config.js'; // 💖 导入壁纸配置列表
 
 export const config = {
     // =================================
@@ -57,8 +57,8 @@ export const config = {
     `
 };
 
-import { wm } from '../window_manager.js'; // 💖 导入窗口管理器
-import { bus } from '../event_bus.js'; // 💖 导入事件总线
+import { wm } from '../apps_run/window_manager.js'; // 💖 导入窗口管理器
+import { bus } from '../apps_run/event_bus.js'; // 💖 导入事件总线
 
 export const APP_NAME = 'Workshop'; // 💖 导出应用名称常量
 

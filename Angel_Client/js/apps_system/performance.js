@@ -1,5 +1,5 @@
-import { bus } from '../event_bus.js';
-import { pm } from '../process_manager.js';
+import { bus } from '../apps_run/event_bus.js';
+import { pm } from '../apps_run/process_manager.js';
 
 export const config = {
     // =================================
