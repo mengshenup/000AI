@@ -120,7 +120,7 @@ class Store {
             const userId = localStorage.getItem('current_user_id') || 'admin'; // 🆔 获取当前用户 ID
             
             // 修正：使用 memory_window.json 并传递 user_id
-            const res = await fetch(`${WEB_API_URL}/load_memory?file=memory_window.json&user_id=${userId}`); // 📡 发起网络请求
+            const res = await fetch(`${WEB_API_URL}/load_memory?user_id=${userId}`); // 📡 发起网络请求
             const data = await res.json(); // 📦 解析 JSON 响应
             if (data) { // ✅ 如果有数据
                 this.apps = data.apps || {}; // 📂 加载应用状态
@@ -188,10 +188,14 @@ class Store {
         //     这是一个异步操作。
         // =================================
         try {
-            await fetch(`${WEB_API_URL}/save_layout`, { // 📡 发起 POST 请求
+            // 获取当前用户 ID
+            const userId = localStorage.getItem('current_user_id') || 'default';
+            
+            await fetch(`${WEB_API_URL}/save_memory`, { // 📡 发起 POST 请求
                 method: 'POST', // 📮 使用 POST 方法
                 headers: { 'Content-Type': 'application/json' }, // 🏷️ 设置内容类型为 JSON
                 body: JSON.stringify({ // 📦 打包数据
+                    user_id: userId, // 👤 用户 ID
                     data: { 
                         apps: this.apps, // 📂 应用状态
                         installedApps: this.installedApps // 💾 持久化安装列表
@@ -221,10 +225,11 @@ class Store {
         
         // 📡 调用后端 API 清空文件
         try {
-            await fetch(`${WEB_API_URL}/save_layout`, { // 📡 发起请求
+            const userId = localStorage.getItem('current_user_id') || 'default';
+            await fetch(`${WEB_API_URL}/save_memory`, { // 📡 发起请求
                 method: 'POST', // 📮 POST
                 headers: { 'Content-Type': 'application/json' }, // 🏷️ JSON
-                body: JSON.stringify({ data: {} }) // 📦 发送空对象
+                body: JSON.stringify({ user_id: userId, data: {} }) // 📦 发送空对象
             });
             console.log("已清空服务端布局存储 ✨"); // 📝 成功日志
         } catch (e) { // 🛡️ 捕获异常

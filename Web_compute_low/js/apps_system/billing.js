@@ -104,6 +104,9 @@ export const config = {
 //     依赖 capsule_manager.js 来创建 UI。
 // =================================
 export function init() {
+    // 注册详情窗口配置到 Store，确保 wm.openApp 能找到它
+    store.setAppMetadata(detailConfig.id, detailConfig); // 💖 注册应用配置
+
     createCapsule({
         serviceConfig: config,
         detailConfig: detailConfig,

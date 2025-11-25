@@ -213,6 +213,9 @@ window.onload = async () => {
             wm.openApp(id, false); // 🚀 打开系统应用
         });
 
+        // 8. 通知桌面刷新图标
+        bus.emit('system:apps_loaded'); // 💖 通知桌面应用列表已就绪
+
     } catch (err) {
         console.error("初始化失败:", err); // ❌ 打印错误日志
         // 即使失败也尝试启动核心服务

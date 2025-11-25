@@ -41,6 +41,9 @@ export function init() {
     
     // 监听应用重命名事件
     bus.on('app:renamed', () => render()); // 💖 当应用改名时，重新渲染图标
+    
+    // 监听应用加载完成事件
+    bus.on('system:apps_loaded', () => render()); // 💖 当所有应用加载完成后，重新渲染图标
 }
 
 // =================================
