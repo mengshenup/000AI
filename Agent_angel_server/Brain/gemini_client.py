@@ -1,12 +1,14 @@
-import os # 📂 操作系统接口
-import json # 🧩 JSON 处理库
-from Energy.cost_tracker import global_cost_tracker # 💰 导入成本追踪器
+import os # 📂 操作系统接口，用于读取环境变量
+import json # 🧩 JSON 处理库，用于解析 AI 返回的数据
+import PIL.Image # 🖼️ 图像处理库，用于处理截图
+import io # 📥 IO 流处理，用于处理二进制图像数据
+from Energy.cost_tracker import global_cost_tracker # 💰 导入成本追踪器，记录 Token 消耗
 
 # 📦 尝试导入 google.generativeai
 try:
     import google.generativeai as genai # 🧠 导入 Gemini SDK
 except ImportError:
-    genai = None # 🚫 导入失败，标记为 None
+    genai = None # 🚫 导入失败，标记为 None，防止程序崩溃
 
 class GeminiClient:
     # =================================
@@ -35,9 +37,9 @@ class GeminiClient:
         #     如果未安装 `google.generativeai` 库或未设置 `GEMINI_API_KEY`，模型将初始化为 None，导致后续调用失败。
         # =================================
         self.api_key = os.getenv("GEMINI_API_KEY", "") # 🔑 获取 API 密钥
-        if self.api_key and genai:
+        if self.api_key and genai: # ✅ 检查 Key 和库是否都存在
             genai.configure(api_key=self.api_key) # ⚙️ 配置 Gemini
-            self.model = genai.GenerativeModel('gemini-1.5-flash') # 🧠 加载 Flash 模型（速度快）
+            self.model = genai.GenerativeModel('gemini-1.5-flash') # 🧠 加载 Flash 模型（速度快，适合实时任务）
         else:
             self.model = None # 🚫 模型不可用
             print("⚠️ 未找到 Gemini API Key 或缺少库。大脑功能已禁用。") # ⚠️ 打印警告信息
@@ -58,11 +60,11 @@ class GeminiClient:
         print(f"🧠 Gemini 正在分析: {video_title} (时间点: {current_time}s)") # 📢 打印分析日志
         global_cost_tracker.track_ai(f"Analyze request: {video_title}", is_input=True) # 📊 记录 AI 输入成本
 
-        if not self.model:
+        if not self.model: # 🛑 检查模型是否可用
             return {"error": "缺少 Gemini API Key。大脑已离线。"} # ❌ 错误返回
 
         try:
-            prompt = f"""
+            prompt = f'''
             You are a tactical analyst for the game 'Delta Force'. 
             Analyze the following video context for 'Zero Dam' (零号大坝) map camper spots (老六点位).
             Video Title: {video_title}
@@ -70,7 +72,7 @@ class GeminiClient:
             
             If this sounds like a guide for camper spots, list them with estimated timestamps and descriptions.
             Format as JSON: {{ "spots": [ {{ "timestamp": int, "description": string }} ] }}
-            """ # 📝 构造 Prompt 提示词
+            ''' # 📝 构造 Prompt 提示词
             
             response = await self.model.generate_content_async(prompt) # ☁️ 发送请求给 Gemini
             text = response.text # 📝 获取文本回复
@@ -82,19 +84,19 @@ class GeminiClient:
                 data = json.loads(clean_text) # 🧩 解析 JSON
                 spots = data.get("spots", []) # 📍 获取点位列表
                 
-                if spots:
+                if spots: # ✅ 如果找到了点位
                     return {
                         "found": True, 
                         "summary": f"Found {len(spots)} spots", 
                         "spots": spots
-                    } # ✅ 成功找到点位
+                    } # ✅ 成功返回
                 else:
                     return {"found": False, "summary": "No spots identified"} # 🤷‍♀️ 未找到点位
-            except json.JSONDecodeError:
-                return {"found": False, "summary": "Failed to parse AI response", "raw": text} # 😵 解析失败
+            except json.JSONDecodeError: # 😵 JSON 解析失败
+                return {"found": False, "summary": "Failed to parse AI response", "raw": text} # ❌ 返回原始文本
                 
-        except Exception as e:
-            return {"error": str(e)} # 💥 发生异常
+        except Exception as e: # 💥 其他异常
+            return {"error": str(e)} # ❌ 返回错误信息
 
     async def plan_next_action(self, screenshot_bytes, goal, page_url=""):
         # =================================
@@ -107,17 +109,18 @@ class GeminiClient:
         #  💡 易懂解释：
         #     Angel 把看到的画面发给大脑，问：“我要做这个任务，下一步该点哪里？”
         #     大脑看了一眼，说：“点那个红色的按钮！” 👈
+        #
+        #  ⚠️ 警告：
+        #     图像处理需要消耗较多 Token。必须确保返回的是 JSON 格式，否则无法解析。
         # =================================
-        if not self.model: return None
+        if not self.model: return None # 🛑 模型不可用则返回 None
 
         try:
             # 1. 准备图像数据
-            import PIL.Image
-            import io
-            image = PIL.Image.open(io.BytesIO(screenshot_bytes))
+            image = PIL.Image.open(io.BytesIO(screenshot_bytes)) # 🖼️ 将二进制数据转换为 PIL 图像对象
 
             # 2. 构造 Prompt
-            prompt = f"""
+            prompt = f'''
             You are an intelligent web browsing agent.
             User Goal: "{goal}"
             Current URL: "{page_url}"
@@ -139,19 +142,20 @@ class GeminiClient:
             
             If the goal is achieved, return action "done".
             If the page is loading or you need to wait, return action "wait".
-            """
+            ''' # 📝 构造多模态 Prompt
             
             # 3. 调用多模态模型
-            response = await self.model.generate_content_async([prompt, image])
-            text = response.text
+            response = await self.model.generate_content_async([prompt, image]) # ☁️ 发送图片和文本给 Gemini
+            text = response.text # 📝 获取回复文本
+            global_cost_tracker.track_ai(text, is_input=False) # 📊 记录成本
             
             # 4. 解析结果
-            clean_text = text.replace("```json", "").replace("```", "").strip()
-            return json.loads(clean_text)
+            clean_text = text.replace("```json", "").replace("```", "").strip() # 🧹 清理 Markdown 标记
+            return json.loads(clean_text) # 🧩 解析并返回 JSON 对象
             
-        except Exception as e:
-            print(f"🧠 [大脑] 思考失败: {e}")
-            return None
+        except Exception as e: # 💥 异常处理
+            print(f"🧠 [大脑] 思考失败: {e}") # 📢 打印错误日志
+            return None # ❌ 返回 None
 
 # 🌍 全局大脑实例
-global_gemini = GeminiClient()
+global_gemini = GeminiClient() # 🧠 创建全局单例

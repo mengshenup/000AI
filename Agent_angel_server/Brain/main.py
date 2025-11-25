@@ -1,6 +1,6 @@
-import uvicorn # 🦄 ASGI 服务器
-import os # 📂 操作系统接口
-import sys # 🖥️ 系统相关参数和函数
+import uvicorn # 🦄 ASGI 服务器，用于运行 FastAPI 应用
+import os # 📂 操作系统接口，用于获取路径等
+import sys # 🖥️ 系统相关参数和函数，用于设置系统变量
 
 # =================================
 #  🎉 主程序入口 (无参数)
@@ -15,9 +15,9 @@ import sys # 🖥️ 系统相关参数和函数
 #     reload=True 模式下，文件变动会自动重启服务器，这在开发时很有用，但生产环境建议关闭以提高性能。
 # =================================
 
-sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 字节码文件
+sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 字节码文件，保持目录整洁
 
-if __name__ == "__main__":
+if __name__ == "__main__": # 🏁 判断是否为主程序运行
     # =================================
     #  🎉 启动服务器 (无参数)
     #
@@ -30,15 +30,15 @@ if __name__ == "__main__":
     #  ⚠️ 警告：
     #     reload_dirs 设置为 "." 会监听当前目录下所有文件，如果排除规则不当，可能会导致无限重启循环。
     # =================================
-    print(f"\n🚀 Angel Server (v2.2.0) 正在启动...") # 📢 打印启动信息
-    print(f"📂 正在监听目录: {os.getcwd()}") # 📂 打印工作目录
+    print(f"\n🚀 Angel Server (v2.2.0) 正在启动...") # 📢 打印启动信息到控制台
+    print(f"📂 正在监听目录: {os.getcwd()}") # 📂 打印当前工作目录，方便确认路径
     
-    uvicorn.run(
-        "Nerve.fastapi_app:app", # 📦 指定 FastAPI 应用入口
-        host="0.0.0.0", # 🌐 监听所有网络接口
-        port=8000, # 🚪 服务端口号
-        reload=True, # 🔄 开启热重载（开发模式）
+    uvicorn.run( # 🏃‍♂️ 运行 Uvicorn 服务器
+        "Nerve.fastapi_app:app", # 📦 指定 FastAPI 应用入口，格式为 "模块名:实例名"
+        host="0.0.0.0", # 🌐 监听所有网络接口，允许局域网访问
+        port=8000, # 🚪 服务端口号，默认为 8000
+        reload=True, # 🔄 开启热重载（开发模式），代码修改后自动重启
         reload_dirs=["."],  # 📂 监听当前目录下所有文件的变动
-        reload_excludes=["Memorybank", "Memorybank/*", "*.log", "*.tmp", ".git", "*.md", "*.bat", "*.txt"], # 🚫 排除频繁变动的目录和文档
-        workers=1 # 👷 工作进程数量
-    )
+        reload_excludes=["Memorybank", "Memorybank/*", "*.log", "*.tmp", ".git", "*.md", "*.bat", "*.txt"], # 🚫 排除频繁变动的目录和文档，防止死循环重启
+        workers=1 # 👷 工作进程数量，开发模式下通常为 1
+    ) # 🔚 Uvicorn 运行结束

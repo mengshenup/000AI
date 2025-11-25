@@ -1,10 +1,10 @@
-import asyncio
-import base64
-import json
-from fastapi import WebSocket, WebSocketDisconnect
-from Eye.screenshot_tool import ScreenshotTool
-from Body.browser_manager import global_browser_manager
-from Energy.cost_tracker import global_cost_tracker
+import asyncio # ⚡ 异步 I/O
+import base64 # 🧬 Base64 编码
+import json # 📄 JSON 处理
+from fastapi import WebSocket # 🔌 WebSocket 组件
+from Eye.screenshot_tool import ScreenshotTool # 👁️ 截图工具
+from Body.browser_manager import global_browser_manager # 🌐 全局浏览器管理器
+from Energy.cost_tracker import global_cost_tracker # 💰 成本追踪器
 
 class StreamManager:
     # =================================
@@ -61,21 +61,22 @@ class StreamManager:
         # =================================
         try:
             while True:
-                # 1. 获取用户的浏览器上下文
-                context = global_browser_manager.get_context(user_id)
-                if not context:
-                    await asyncio.sleep(1) # 😴 如果没有浏览器，等待
+                # 1. 获取用户的会话 (Session)
+                # 修正：直接访问 sessions 字典，因为 BrowserManager 没有 get_context 方法
+                session = global_browser_manager.sessions.get(user_id)
+                if not session:
+                    await asyncio.sleep(1) # 😴 如果没有会话，等待
                     continue
 
                 # 2. 获取当前页面
-                page = context.pages[0] if context.pages else None
+                page = session.get('page')
                 if not page:
                     await asyncio.sleep(0.5)
                     continue
 
                 # 3. 截图 (使用 Eye 模块)
-                # 注意：这里临时实例化 ScreenshotTool，也可以考虑复用
-                eye = ScreenshotTool(page)
+                # 优先使用 session 中已初始化的 eye 实例，如果没有则新建
+                eye = session.get('eye') or ScreenshotTool(page)
                 screenshot_b64 = await eye.capture(quality_mode='medium')
 
                 if screenshot_b64:
@@ -99,5 +100,5 @@ class StreamManager:
             print(f"⚠️ 直播流出错 ({user_id}): {e}")
             self.stop_stream(user_id)
 
-# 🌍 全局单例
+# 🌍 全局流管理器实例
 global_stream_manager = StreamManager()

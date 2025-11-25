@@ -1,31 +1,44 @@
-import os
-from dotenv import load_dotenv
+import os # 📂 操作系统接口
+from dotenv import load_dotenv # 🔑 环境变量加载库
+
+# =================================
+#  🕵️‍♂️ 环境变量加载检查器 (无参数)
+#
+#  🎨 代码用途：
+#     模拟主程序的逻辑，尝试加载 .env 文件并检查 GEMINI_API_KEY 是否正确读取。
+#     用于诊断“Key 找不到”或“Key 格式错误”的问题。
+#
+#  💡 易懂解释：
+#     这是 Angel 的体检医生！🩺 专门检查 Angel 的身份证（API Key）有没有带在身上，
+#     或者身份证是不是脏了（有空格/换行符）。
+# =================================
 
 # 模拟 fastapi_app.py 中的加载逻辑
-env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Memorybank", ".env")
-print(f"正在尝试加载 .env 文件: {env_path}")
+# 📍 构造 .env 路径 (Agent_angel_server/Memorybank/.env)
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "Memorybank", ".env") 
+print(f"正在尝试加载 .env 文件: {env_path}") # 📢 打印路径
 
-if os.path.exists(env_path):
-    print("✅ .env 文件存在")
-    with open(env_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-        print(f"📄 文件内容预览 (前50字符): {content[:50]!r}")
-        if '\n' in content:
-            print("ℹ️ 文件包含换行符 (正常)")
+if os.path.exists(env_path): # 🔍 检查文件是否存在
+    print("✅ .env 文件存在") # ✅ 存在提示
+    with open(env_path, 'r', encoding='utf-8') as f: # 📂 读取文件
+        content = f.read() # 📖 读取内容
+        print(f"📄 文件内容预览 (前50字符): {content[:50]!r}") # 👁️ 预览内容
+        if '\n' in content: # 🔍 检查换行
+            print("ℹ️ 文件包含换行符 (正常)") # ℹ️ 正常提示
         else:
-            print("ℹ️ 文件不包含换行符")
+            print("ℹ️ 文件不包含换行符") # ℹ️ 异常提示
             
-    load_dotenv(env_path)
-    key = os.getenv("GEMINI_API_KEY")
-    if key:
-        print(f"✅ GEMINI_API_KEY 已加载: {key[:5]}...{key[-5:]} (长度: {len(key)})")
-        if '\n' in key:
-            print("⚠️ 警告: Key 中包含换行符！")
-        if '\r' in key:
-            print("⚠️ 警告: Key 中包含回车符！")
-        if key.strip() != key:
-            print("⚠️ 警告: Key 前后有空白字符！")
+    load_dotenv(env_path) # 🔑 加载环境变量
+    key = os.getenv("GEMINI_API_KEY") # 🔑 获取 Key
+    if key: # ✅ 检查 Key 是否存在
+        print(f"✅ GEMINI_API_KEY 已加载: {key[:5]}...{key[-5:]} (长度: {len(key)})") # 📢 打印 Key 信息
+        if '\n' in key: # 🔍 检查换行符
+            print("⚠️ 警告: Key 中包含换行符！") # ⚠️ 警告
+        if '\r' in key: # 🔍 检查回车符
+            print("⚠️ 警告: Key 中包含回车符！") # ⚠️ 警告
+        if key.strip() != key: # 🔍 检查空白字符
+            print("⚠️ 警告: Key 前后有空白字符！") # ⚠️ 警告
     else:
-        print("❌ GEMINI_API_KEY 未找到")
+        print("❌ GEMINI_API_KEY 未找到") # ❌ 未找到提示
 else:
-    print("❌ .env 文件不存在")
+    print("❌ .env 文件不存在") # ❌ 文件不存在提示
