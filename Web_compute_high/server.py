@@ -8,7 +8,7 @@ import hashlib # 🔐 哈希算法
 import base64 # 🧬 Base64 编码
 import time # ⏱️ 时间模块
 from pathlib import Path # 🛣️ 面向对象的路径库
-from fastapi import FastAPI, HTTPException # 🚀 FastAPI 框架
+from fastapi import FastAPI, HTTPException, Header # 🚀 FastAPI 框架
 from fastapi.middleware.cors import CORSMiddleware # 🛡️ CORS 中间件
 from pydantic import BaseModel # 🏗️ 数据验证模型
 import uvicorn # 🦄 ASGI 服务器
@@ -46,50 +46,12 @@ KEY_FILE = MEMORY_DIR / "memory_key.json" # 🔑 用户密钥数据
 SECRET_KEY = "angel_secret_2025" # 🔐 用于签名的私钥
 
 # =================================
-#  🎉 初始化认证系统 (无参数)
+#  🎉 初始化系统 (已移除)
 #
-#  🎨 代码用途：
-#     确保 memory_key.json 存在，并包含默认的 admin 账号。
-#     尝试从 .env 文件读取 GEMINI_API_KEY 并注入到 admin 账号中。
-#
-#  💡 易懂解释：
-#     管家上岗前先检查钥匙柜！🔑
-#     如果没有管理员账号，就赶紧造一个，顺便把保险箱（.env）里的备用钥匙挂上去。
+#  🎨 说明：
+#     系统初始化逻辑已迁移至 init_memory.bat 脚本。
+#     请在部署前或维护时手动运行该脚本来更新应用列表和密钥。
 # =================================
-def init_auth_system():
-    # 1. 加载环境变量
-    env_path = MEMORY_DIR / ".env"
-    load_dotenv(env_path)
-    api_key = os.getenv("GEMINI_API_KEY", "") # 🔑 获取 API Key，默认为空
-
-    # 2. 读取或创建用户库
-    users = load_json(KEY_FILE, {})
-    
-    # 3. 确保 admin 存在
-    if "admin" not in users:
-        print("🆕 初始化默认管理员账号: admin")
-        users["admin"] = {
-            "password": "", # 🔑 默认无密码
-            "keys": []
-        }
-    
-    # 4. 注入/更新 Key (如果 admin 是新格式)
-    if isinstance(users["admin"], dict):
-        # 检查是否已有该 Key，避免重复
-        has_key = any(k.get("value") == api_key for k in users["admin"].get("keys", []))
-        if api_key and not has_key:
-            users["admin"]["keys"] = users["admin"].get("keys", [])
-            users["admin"]["keys"].append({
-                "name": "System Key (.env)",
-                "value": api_key
-            })
-            print("🔑 已将 .env 中的 Key 注入 admin 账号")
-    
-    # 5. 保存更改
-    save_json(KEY_FILE, users)
-
-# 初始化认证
-init_auth_system()
 
 app = FastAPI(title="Angel Web Compute High", version="1.0.0") # 📱 创建 FastAPI 应用
 
@@ -123,7 +85,97 @@ class LoginRequest(BaseModel):
     account: str # 👤 账号
     password: str # 🔑 密码
 
-# 🛠️ 工具函数：文件读写
+class SyncBatchRequest(BaseModel):
+    # =================================
+    #  🎉 批量同步请求
+    # =================================
+    apps: list # 📦 应用列表片段
+
+@app.post("/admin/sync_batch")
+async def sync_batch(req: SyncBatchRequest, x_angel_key: str = Header(None)):
+    # =================================
+    #  🎉 接收同步批次 (只更新内存)
+    #
+    #  🎨 代码用途：
+    #     接收前端分批发送的应用数据，更新到内存中，不立即写盘。
+    #     解决 1万+ 应用导致 IO 阻塞的问题。
+    # =================================
+    
+    # 1. 验证权限
+    users = load_json(KEY_FILE, {})
+    admin_keys = [k.get("value") for k in users.get("admin", {}).get("keys", [])]
+    if x_angel_key != SECRET_KEY and x_angel_key not in admin_keys:
+        raise HTTPException(status_code=403, detail="🚫 权限不足")
+
+    # 2. 读取数据 (注意：高并发下需加锁，此处简化)
+    # 为了性能，这里我们假设 server 是单进程运行，或者依赖 OS 的文件锁
+    # 更好的做法是使用全局变量缓存 data，但为了无状态设计，我们还是读文件
+    # 优化：由于是分批发送，我们暂时只读一次，最后 commit 时再写
+    # 但由于 HTTP 是无状态的，我们无法在请求间共享“未保存的 data”
+    # 除非使用全局变量。
+    
+    # 修正策略：使用全局变量缓存待写入的数据？不，这会导致多进程问题。
+    # 妥协方案：每次都读写文件确实慢。
+    # 改进方案：使用一个临时文件 memory_window.tmp.json 或者 内存缓存。
+    # 鉴于这是单机 Python 服务，我们使用全局变量 `_temp_sync_cache`
+    
+    global _temp_sync_cache
+    if _temp_sync_cache is None:
+        _temp_sync_cache = load_json(DATA_FILE, {})
+        # 确保 default 存在
+        if "default" not in _temp_sync_cache:
+            _temp_sync_cache["default"] = {"apps": {}, "installedApps": {}}
+
+    # 更新内存缓存
+    data = _temp_sync_cache
+    updated_count = 0
+    
+    for user, user_data in data.items():
+        if not isinstance(user_data, dict): continue
+        if "installedApps" not in user_data: user_data["installedApps"] = {}
+        current_installed = user_data["installedApps"]
+        
+        for app in req.apps:
+            app_id = app["id"]
+            new_entry = {
+                "id": app_id,
+                "name": app["name"],
+                "version": app["version"],
+                "path": app["path"],
+                "isSystem": app["isSystem"]
+            }
+            current_installed[app_id] = new_entry
+            updated_count += 1
+            
+    return {"status": "received", "count": len(req.apps)}
+
+@app.post("/admin/sync_commit")
+async def sync_commit(x_angel_key: str = Header(None)):
+    # =================================
+    #  🎉 提交同步 (写入磁盘)
+    # =================================
+    
+    # 验证权限...
+    users = load_json(KEY_FILE, {})
+    admin_keys = [k.get("value") for k in users.get("admin", {}).get("keys", [])]
+    if x_angel_key != SECRET_KEY and x_angel_key not in admin_keys:
+        raise HTTPException(status_code=403, detail="🚫 权限不足")
+
+    global _temp_sync_cache
+    if _temp_sync_cache is None:
+        return {"status": "no_changes", "msg": "没有待提交的更改"}
+
+    # 写入磁盘
+    if save_json(DATA_FILE, _temp_sync_cache):
+        _temp_sync_cache = None # 清空缓存
+        return {"status": "success", "msg": "同步完成，已写入磁盘"}
+    else:
+        raise HTTPException(status_code=500, detail="保存失败")
+
+# 全局缓存变量
+_temp_sync_cache = None
+
+if __name__ == "__main__":
 def load_json(path: Path, default=None):
     # =================================
     #  🎉 加载 JSON 文件 (文件路径, 默认值)
@@ -288,58 +340,42 @@ async def get_apps_list():
     #  🎉 获取应用列表 (无参数)
     #
     #  🎨 代码用途：
-    #     扫描 Web_compute_low 目录下的 JS 文件，自动发现并注册应用。
-    #     返回应用列表、系统应用列表和核心组件列表。
+    #     从 memory_window.json 中读取已注册的应用列表。
+    #     不再直接扫描文件系统，支持分布式部署。
     #
     #  💡 易懂解释：
-    #     管家，看看家里都有哪些玩具（APP）可以玩？🧸
-    #     把它们整理成清单给我看看！
+    #     管家，把账本上的玩具清单念给我听听！📖
     # =================================
-    apps = [] # 📦 普通应用
-    system_apps = [] # 🛠️ 系统应用
-    system_core = [] # ⚙️ 核心组件
+    
+    # 读取默认用户的配置作为基准
+    data = load_json(DATA_FILE, {})
+    default_apps = data.get("default", {}).get("installedApps", {})
+    
+    apps = []
+    system_apps = []
+    system_core = [] # 核心组件暂不通过此接口动态下发，通常硬编码在 loader.js
 
-    # 扫描路径配置
-    paths = {
-        "apps": WEB_LOW_DIR / "js" / "apps",
-        "system_apps": WEB_LOW_DIR / "js" / "apps_system",
-        "system_core": WEB_LOW_DIR / "js" / "system"
-    }
-
-    for category, path in paths.items():
-        if not path.exists(): continue # 🚫 目录不存在跳过
+    for app_id, info in default_apps.items():
+        item = {
+            "filename": f"{app_id}.js",
+            "name": info.get("name", app_id),
+            "version": info.get("version", "1.0.0"),
+            "line_count": 0 # 无法统计远程文件行数
+        }
         
-        for file in path.glob("*.js"): # 🔍 遍历 JS 文件
-            try:
-                # 简单的元数据提取 (实际应解析文件头注释)
-                app_name = file.stem # 🏷️ 文件名作为应用名
-                app_version = "1.0.0" # 🏷️ 默认版本
-                
-                # 读取文件统计行数
-                with open(file, "r", encoding="utf-8") as f:
-                    line_count = len(f.readlines()) # 📏 统计行数
-
-                item = {
-                    "filename": file.name,
-                    "name": app_name,
-                    "version": app_version,
-                    "line_count": line_count
-                }
-
-                if category == "apps":
-                    apps.append(item)
-                elif category == "system_apps":
-                    system_apps.append(item)
-                elif category == "system_core":
-                    system_core.append(item)
-            except Exception as e:
-                print(f"⚠️ 解析应用失败 {file}: {e}")
+        if info.get("isSystem"):
+            system_apps.append(item)
+        else:
+            apps.append(item)
 
     return {
         "apps": apps,
         "system_apps": system_apps,
         "system_core": system_core
-    } # 🔙 返回分类列表
+    }
+
+# 🗑️ 已移除旧的 sync_apps 接口，请使用 sync_batch + sync_commit
+# @app.post("/admin/sync_apps") ...
 
 if __name__ == "__main__":
     # =================================

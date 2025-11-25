@@ -2,5 +2,7 @@
 # 🚫 告诉 AI：禁止读取后端的缓存数据，防止上传无关文件
 Agent_angel_server/Memorybank/BrowserData/
 Web_compute_high/Memorybank/
+Web_compute_low/target/
 .venv/
 .git/
+Agent_angel_server/target/

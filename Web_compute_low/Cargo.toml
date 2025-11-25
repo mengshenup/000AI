@@ -1,0 +1,17 @@
+[package]
+name = "web_compute_low"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.11", features = ["json", "blocking"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+walkdir = "2.3"
+anyhow = "1.0"
+tokio = { version = "1", features = ["full"] }
+axum = "0.7" # 💖 用户指定的 Axum 库 (虽然主要用于服务端，但已包含在依赖中以备扩展)
+
+[[bin]]
+name = "apps_list"
+path = "Ops/apps_list.rs"
