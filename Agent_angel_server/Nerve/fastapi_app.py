@@ -18,15 +18,16 @@ import subprocess
 
 sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 文件
 
-# 🔄 加载环境变量 (从 Web_compute_low/Memorybank/.env)
-# 修正路径：Agent_angel_client/Nerve/fastapi_app.py -> Agent_angel_client -> 000AI -> Web_compute_low -> Memorybank
+# 🔄 加载环境变量 (从 Web_Compute/Memorybank/.env)
+# 修正路径：Agent_Angel_Server/Nerve/fastapi_app.py -> Agent_Angel_Server -> 000AI -> Web_Compute -> Memorybank
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# 实际上: __file__ = .../Agent_angel_client/Nerve/fastapi_app.py
-# dirname -> .../Agent_angel_client/Nerve
-# dirname -> .../Agent_angel_client
+workspace_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir))) # 假设结构为 Agent_Angel_Server/Nerve
+# 实际上: __file__ = .../Agent_Angel_Server/Nerve/fastapi_app.py
+# dirname -> .../Agent_Angel_Server/Nerve
+# dirname -> .../Agent_Angel_Server
 # dirname -> .../000AI
 workspace_dir = os.path.dirname(os.path.dirname(current_dir))
-env_path = os.path.join(workspace_dir, "Web_compute_low", "Memorybank", ".env") 
+env_path = os.path.join(workspace_dir, "Web_Compute", "Memorybank", ".env") 
 load_dotenv(env_path) # 🔑 加载环境变量
 
 import asyncio # ⚡ 异步 I/O 库
@@ -36,6 +37,7 @@ from fastapi import FastAPI # 🚀 FastAPI 框架
 from fastapi.middleware.cors import CORSMiddleware # 🛡️ CORS 中间件
 from Nerve.websocket_server import router as ws_router # 🔌 WebSocket 路由
 from Nerve.http_server import router as api_router # 🔌 HTTP API 路由
+from Brain.cognitive_system import global_cognitive_system # 🧠 导入认知系统
 
 warnings.filterwarnings("ignore", category=DeprecationWarning) # 🔇 忽略弃用警告
 
@@ -46,14 +48,19 @@ async def startup_event():
     #
     #  🎨 代码用途：
     #     在服务器启动时执行的钩子函数，打印欢迎信息和版本号。
+    #     同时启动认知系统 (Cognitive System)。
     #
     #  💡 易懂解释：
     #     Angel 醒来啦！🌅 伸个懒腰，大声喊出自己的名字和版本号！
+    #     然后叫醒大脑，开始思考今天要做什么。
     # =================================
     print("\n" + "="*40) # 📢 打印分隔线
     print("✨ Angel Server 应用核心已加载 (v2.2.0)") # 📢 打印版本信息
     print("✨ 模块化架构: Brain, Eye, Hand, Body, Nerve, Memory, Energy") # 📢 打印架构信息
     print("="*40 + "\n") # 📢 打印分隔线
+    
+    # 🧠 启动认知循环
+    await global_cognitive_system.start()
 
 # 🔍 Windows 事件循环策略
 if sys.platform.startswith("win"):
