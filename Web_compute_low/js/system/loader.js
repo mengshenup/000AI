@@ -203,7 +203,7 @@ window.onload = async () => {
         // 6. 启动窗口管理器
         wm.init(); // 🚀 初始化窗口管理器
         setupBusinessLogic(); // 🚀 设置业务逻辑
-        net.connect(); // 🚀 连接网络
+        // net.connect(); // 🚀 连接网络 (已移至 login.js，登录成功后连接)
 
         // 7. 启动系统级应用 (强制启动，不依赖记忆)
         // 用户要求：系统apps应该是最优先加载的... 无需手动打开
@@ -218,7 +218,7 @@ window.onload = async () => {
         // 即使失败也尝试启动核心服务
         wm.init(); // 🚀 尝试初始化窗口管理器
         setupBusinessLogic(); // 🚀 尝试设置业务逻辑
-        net.connect(); // 🚀 尝试连接网络
+        // net.connect(); // 🚀 尝试连接网络 (已移至 login.js)
     }
 
     // 启动时钟逻辑 (每秒更新一次)

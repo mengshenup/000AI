@@ -65,8 +65,9 @@ export const loginApp = {
         // 1. 尝试从浏览器缓存读取 Key
         const cachedKey = localStorage.getItem('angel_api_key'); // 💖 获取缓存的 API Key
         const cachedUser = localStorage.getItem('current_user_id'); // 💖 获取缓存的用户 ID
+        const cachedToken = localStorage.getItem('angel_auth_token'); // 💖 获取缓存的 Token
         
-        if (cachedKey && cachedUser) { // 💖 如果两者都存在
+        if (cachedKey && cachedUser && cachedToken) { // 💖 如果三者都存在
             this.currentUser = { 
                 id: cachedUser, 
                 name: cachedUser, 
@@ -74,6 +75,7 @@ export const loginApp = {
                 keys: [{ name: 'Cached Key', value: cachedKey }] 
             }; // 💖 构造当前用户对象
             this.updateSystemUser(); // 💖 更新系统用户状态
+            network.connect(); // 🚀 连接网络
             return; // 💖 结束函数
         }
 
@@ -235,6 +237,7 @@ export const loginApp = {
                     };
                     this.close(); // 💖 关闭登录界面
                     this.updateSystemUser(); // 💖 更新系统用户状态
+                    network.connect(); // 🚀 连接网络
                     bus.emit('system:speak', `欢迎回来，${account}`); // 💖 语音欢迎
                 } else {
                     const err = await res.json(); // 💖 解析错误信息

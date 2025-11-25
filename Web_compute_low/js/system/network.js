@@ -35,21 +35,22 @@ export class Network {
         // =================================
 
         try {
-            // 1. 获取或生成 User ID
-            let userId = localStorage.getItem('angel_user_id'); // 🆔 尝试从本地存储获取用户 ID
-            if (!userId) { // 🤷‍♂️ 如果没有找到 ID
-                userId = 'user_' + Math.random().toString(36).substr(2, 9); // 🎲 生成一个新的随机 ID
-                localStorage.setItem('angel_user_id', userId); // 💾 保存到本地存储
+            // 1. 获取 User ID 和 Token
+            // 优先使用登录用户的 ID (current_user_id)，如果没有则不连接
+            let userId = localStorage.getItem('current_user_id'); // 🆔 获取当前登录用户 ID
+            const token = localStorage.getItem('angel_auth_token'); // 🔑 获取认证令牌
+
+            if (!userId || !token) {
+                console.warn("🚫 未登录或无 Token，跳过 WebSocket 连接");
+                return;
             }
+
             console.log(`🆔 Current User ID: ${userId}`); // 📝 打印当前用户 ID
 
             // 2. 创建 WebSocket 连接对象 (带上 User ID 和 Token)
             // 注意：WS_URL 默认为 ws://localhost:8000/ws，我们需要拼接 ID
             // 如果 WS_URL 结尾没有 /，补一个
             const baseUrl = WS_URL.endsWith('/') ? WS_URL : WS_URL + '/'; // 🔗 确保 URL 格式正确
-            
-            // 获取 Token
-            const token = localStorage.getItem('angel_auth_token') || ''; // 🔑 获取认证令牌
             
             // 拼接 URL: ws://host:port/ws/{user_id}?token=...
             const finalUrl = `${baseUrl}${userId}?token=${encodeURIComponent(token)}`; // 🔗 构造完整的连接 URL
