@@ -4,15 +4,15 @@ from pathlib import Path # 🛣️ 路径处理库
 from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-# 💖 修正：定位到 Web_Compute (原 Web_Client) 根目录
-# 策略：当前文件在 Agent_Angel_Server/Memory/file_manager.py
-# 向上 2 层即为 Agent_Angel_Server 根目录，再找同级的 Web_Compute
+# 💖 修正：定位到 Web_compute_low (原 Web_Compute) 根目录
+# 策略：当前文件在 Agent_angel_client/Memory/file_manager.py
+# 向上 2 层即为 Agent_angel_client 根目录，再找同级的 Web_compute_low
 SERVER_ROOT = Path(os.path.dirname(os.path.dirname(__file__)))
 WORKSPACE_DIR = SERVER_ROOT.parent
-CLIENT_DIR = WORKSPACE_DIR / "Web_Compute"
+CLIENT_DIR = WORKSPACE_DIR / "Web_compute_low"
 
 # 🕵️‍♂️ 动态查找 Client 目录 (防止用户重命名)
-# 如果找不到 Web_Compute，尝试搜索同级目录中包含 index.html 的文件夹
+# 如果找不到 Web_compute_low，尝试搜索同级目录中包含 index.html 的文件夹
 if not CLIENT_DIR.exists() or not (CLIENT_DIR / "index.html").exists():
     found = False
     for item in WORKSPACE_DIR.iterdir():
@@ -21,7 +21,7 @@ if not CLIENT_DIR.exists() or not (CLIENT_DIR / "index.html").exists():
             found = True
             break
     if not found:
-        # 如果实在找不到，就用当前目录 (Agent_Angel_Server)
+        # 如果实在找不到，就用当前目录 (Agent_angel_client)
         CLIENT_DIR = SERVER_ROOT
             CLIENT_DIR = item
             found = True

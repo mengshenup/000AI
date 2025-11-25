@@ -58,6 +58,15 @@ export const config = {
         <div style="flex:1; position:relative; background:black;">
             <!-- 💖 实时画面显示组件 (默认隐藏，有数据时显示) -->
             <img id="live-image" style="width:100%; height:100%; object-fit:contain; display:none;" />
+            
+            <!-- 💖 状态提示遮罩 (Status Overlay) -->
+            <div id="browser-status-overlay" 
+                style="position:absolute; bottom:20px; left:50%; transform:translateX(-50%); 
+                       background:rgba(0,0,0,0.6); color:white; padding:4px 12px; border-radius:12px; 
+                       font-size:12px; pointer-events:none; transition: opacity 0.3s;">
+                💤 Agent Waiting...
+            </div>
+
             <!-- 💖 远程控制交互层 (覆盖在画面之上，用于捕获点击) -->
             <div id="remote-screen"
                 style="position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;"></div>
@@ -97,6 +106,18 @@ class BrowserApp {
         bus.on('cmd:remote_click', (pos) => {
             if (this.isDestroyed) return; // 💖 如果已销毁，不处理
             network.send('click', pos); // 💖 将点击坐标通过网络发送给服务器
+        });
+        
+        // 监听状态更新
+        bus.on('net:status', (msg) => {
+            const el = document.getElementById('browser-status-overlay');
+            if (el) {
+                el.innerText = msg;
+                el.style.opacity = '1';
+                // 如果是活跃状态，显示绿色点缀 (可选)
+                if (msg.includes('Active')) el.style.background = 'rgba(46, 204, 113, 0.8)';
+                else el.style.background = 'rgba(0,0,0,0.6)';
+            }
         });
 
         // 💖 注册清理函数

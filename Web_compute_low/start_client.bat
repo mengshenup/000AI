@@ -3,7 +3,7 @@ cd /d "%~dp0"
 :: 切换为 UTF-8 编码
 chcp 65001 >nul
 
-title Angel Web Compute (前端界面 - 5500)
+title Angel Web Compute Low (前端界面 - 5500)
 color 0a
 
 :: 🔧 优化控制台体验 (防挂起/防乱码)
@@ -11,7 +11,7 @@ powershell -Command "&{$c=[Console];$m=$c::In.GetMode();$m=$m -band -not 0x0040;
 set PYTHONIOENCODING=utf-8
 
 echo ==========================================
-echo      [启动] Angel Web Compute 启动器
+echo      [启动] Angel Web Compute Low 启动器
 echo ==========================================
 echo.
 
@@ -20,9 +20,9 @@ echo [原理] 正在启动临时 HTTP 服务 (端口 5500)
 echo        这是为了让浏览器能加载模块化 JS 文件。
 echo.
 
-:: === 2. 启动本地智能体 (Local Agent) ===
+:: === 2. 启动本地智能体 (Agent Angel Client) ===
 echo [1/3] 正在启动本地智能体 (Port 8000)...
-start "Angel Local Agent" cmd /k "python start_agent.py"
+start "Angel Agent Client" cmd /k "python start_agent.py"
 
 :: === 3. 自动打开浏览器 ===
 echo [2/3] 正在自动打开浏览器...

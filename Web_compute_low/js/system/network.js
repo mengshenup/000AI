@@ -25,6 +25,7 @@ export class Network {
         //
         //  🎨 代码用途：
         //     建立 WebSocket 连接，并绑定 open, message, close 等事件处理函数。
+        //     自动生成或读取 user_id，实现多用户隔离。
         //
         //  💡 易懂解释：
         //     拨打电话。如果通了就喊一声“信号满格”，如果断了就过一会再拨。
@@ -34,8 +35,25 @@ export class Network {
         // =================================
 
         try {
-            // 创建 WebSocket 连接对象
-            this.ws = new WebSocket(WS_URL); // 📞 拨号
+            // 1. 获取或生成 User ID
+            let userId = localStorage.getItem('angel_user_id');
+            if (!userId) {
+                userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('angel_user_id', userId);
+            }
+            console.log(`🆔 Current User ID: ${userId}`);
+
+            // 2. 创建 WebSocket 连接对象 (带上 User ID)
+            // 注意：WS_URL 默认为 ws://localhost:8000/ws，我们需要拼接 ID
+            // 如果 WS_URL 结尾没有 /，补一个
+            const baseUrl = WS_URL.endsWith('/') ? WS_URL : WS_URL + '/';
+            // 这里的 WS_URL 是 http://.../ws 还是 /ws ? 假设是 ws://localhost:8000/ws
+            // 后端路由是 /ws/{user_id}
+            // 所以我们需要把 /ws 替换掉或者拼接
+            // 简单处理：假设 WS_URL 是 ws://host:port/ws
+            const finalUrl = `${baseUrl}${userId}`;
+            
+            this.ws = new WebSocket(finalUrl); // 📞 拨号
 
             // 当连接成功建立时触发
             this.ws.onopen = () => {
@@ -52,9 +70,11 @@ export class Network {
                 // 分发事件，不再直接操作 DOM，而是通过事件总线通知其他模块
                 if (d._stats) bus.emit('net:stats', d._stats); // 📊 更新网络统计
                 if (d.type === 'log') bus.emit('system:speak', d.msg); // 🗣️ 系统日志消息 -> 小天使说话
-                if (d.type === 'frame_update') bus.emit('net:frame', d.image); // 🖼️ 视频帧更新
+                if (d.type === 'vision') bus.emit('net:frame', d.frame); // 🖼️ 视频帧更新 (后端改为 vision + frame)
+                if (d.type === 'frame_update') bus.emit('net:frame', d.image); // 🖼️ 兼容旧协议
                 if (d.type === 'new_intel') bus.emit('net:intel', d.data); // 🧠 发现新情报
                 if (d.type === 'url_update') bus.emit('net:url_update', d.url); // 🔗 URL 更新
+                if (d.type === 'status') bus.emit('net:status', d.msg); // ⚡ 状态更新
             };
 
             // 当连接关闭时触发
