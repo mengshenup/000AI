@@ -32,12 +32,19 @@ export const config = {
                     style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
                 <!-- 💖 前往按钮 -->
                 <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
-                <!-- 💖 智能分析按钮 -->
-                <button id="btn-browser-analyze"
-                    style="padding:4px 12px; cursor:pointer; background:var(--primary-color); color:white; border:none; border-radius:4px;">分析画面</button>
             </div>
+            
+            <!-- 💖 智能任务栏 (AI Task Bar) -->
+            <div style="display:flex; gap:8px; align-items:center;">
+                <span style="font-size:14px;">🤖</span>
+                <input type="text" id="browser-task-input" placeholder="告诉 Angel 你想做什么... (例如: 去淘宝买个手机)"
+                    style="flex:1; padding:4px 8px; border:1px solid #a29bfe; border-radius:4px; background:#f8f9fa;">
+                <button id="btn-browser-task"
+                    style="padding:4px 12px; cursor:pointer; background:var(--primary-color); color:white; border:none; border-radius:4px;">执行任务</button>
+            </div>
+
             <!-- 💖 性能控制栏 -->
-            <div style="display:flex; gap:8px; align-items:center; font-size:12px;">
+            <div style="display:flex; gap:8px; align-items:center; font-size:12px; color:#666;">
                 <span>画质:</span>
                 <select id="sel-quality" style="padding:2px;">
                     <option value="high" selected>高清 (High)</option>
@@ -264,7 +271,28 @@ class BrowserApp {
             };
         }
 
-        // === 分析按钮 ===
+        // === 智能任务逻辑 (AI Task) ===
+        const btnTask = document.getElementById('btn-browser-task');
+        const inputTask = document.getElementById('browser-task-input');
+        
+        if (btnTask && inputTask) {
+            btnTask.onclick = () => {
+                const goal = inputTask.value;
+                if (goal) {
+                    network.send({ type: 'task', goal: goal }); // 💖 发送任务指令
+                    bus.emit('system:speak', `收到任务：${goal}，正在思考中...`);
+                    inputTask.value = ''; // 清空输入框
+                }
+            };
+            
+            // 支持回车键提交
+            inputTask.onkeypress = (e) => {
+                if (e.key === 'Enter') btnTask.click();
+            };
+        }
+
+        // === 分析按钮 (已移除，功能合并入任务栏) ===
+        /*
         const btnAnalyze = document.getElementById('btn-browser-analyze'); // 💖 获取“分析画面”按钮 DOM 元素
         if (btnAnalyze) { // 💖 确保元素存在
             // 点击“分析”按钮时触发
@@ -273,6 +301,8 @@ class BrowserApp {
                 bus.emit('system:speak', "正在分析当前视频..."); // 💖 让小天使语音播报操作状态
             };
         }
+        */
+    }
     }
 
     // =================================

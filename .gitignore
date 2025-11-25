@@ -1,5 +1,6 @@
 # 📅 2025年11月20日更新
 # 🚫 告诉 AI：禁止读取后端的缓存数据，防止上传无关文件
-Angel_Server/Memorybank/BrowserData/
+Agent_angel_server/Memorybank/BrowserData/
+Web_compute_high/Memorybank/
 .venv/
 .git/

@@ -80,27 +80,66 @@ class CognitiveSystem:
                     # 2. 获取感知 (截图)
                     session = global_browser_manager.sessions[user_id]
                     page = session['page']
+                    hand = session['hand']
+                    
+                    print(f"🤔 [认知] 正在为 {user_id} 思考: {goal['description']} (Step {goal['step']})...")
                     
                     # 📸 截图 (用于分析)
-                    # 注意：这里不应该频繁截图，应该有节流
-                    # 简化版：每 5 秒思考一次
-                    
-                    print(f"🤔 [认知] 正在为 {user_id} 思考: {goal['description']}...")
-                    
+                    try:
+                        screenshot_bytes = await page.screenshot(format="jpeg", quality=50)
+                        current_url = page.url
+                    except Exception as e:
+                        print(f"❌ [认知] 截图失败: {e}")
+                        continue
+
                     # 3. 调用大脑 (Gemini)
-                    # TODO: 这里应该调用 global_gemini.analyze_and_act(...)
-                    # 暂时模拟思考过程
-                    await asyncio.sleep(0.5) 
+                    plan = await global_gemini.plan_next_action(
+                        screenshot_bytes, 
+                        goal['description'], 
+                        current_url
+                    )
                     
+                    if not plan:
+                        print("⚠️ [认知] 大脑一片空白 (API调用失败或无响应)")
+                        await asyncio.sleep(2)
+                        continue
+
+                    print(f"💡 [认知] 决策: {plan.get('action')} - {plan.get('reason')}")
+
                     # 4. 执行行动 (Action)
-                    # 模拟：随机滚动一下，表示在看
-                    await session['hand'].scroll(100)
+                    action = plan.get('action')
+                    params = plan.get('params', {})
+
+                    if action == 'click':
+                        await hand.click(params.get('x', 0.5), params.get('y', 0.5))
+                    elif action == 'type':
+                        # 模拟打字
+                        text = params.get('text', '')
+                        if text:
+                            await page.keyboard.type(text, delay=100)
+                            await page.keyboard.press('Enter')
+                    elif action == 'scroll':
+                        await hand.scroll(params.get('delta_y', 500))
+                    elif action == 'navigate':
+                        await page.goto(params.get('url'))
+                    elif action == 'wait':
+                        await asyncio.sleep(2)
+                    elif action == 'done':
+                        print(f"✅ [认知] 用户 {user_id} 任务完成！")
+                        goal['status'] = 'completed'
+                        # TODO: 通知前端任务完成
                     
                     # 5. 更新状态
                     goal['step'] += 1
-                    if goal['step'] > 10:
-                        print(f"✅ [认知] 用户 {user_id} 任务完成！")
-                        goal['status'] = 'completed'
+                    if goal['step'] > 20: # 防止死循环
+                        print(f"🛑 [认知] 任务步数超限，强制停止。")
+                        goal['status'] = 'failed'
+
+            except Exception as e:
+                print(f"❌ [认知] 思考循环出错: {e}")
+            
+            # 💤 思考间隔 (避免 CPU 爆炸)
+            await asyncio.sleep(3)
 
             except Exception as e:
                 print(f"❌ [认知] 思考循环出错: {e}")

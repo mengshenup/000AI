@@ -143,6 +143,13 @@ async def neural_pathway(websocket: WebSocket, user_id: str):
                 elif type_str == 'navigate':
                     asyncio.create_task(page.goto(cmd['url']))
                 
+                # 🧠 认知指令
+                elif type_str == 'task':
+                    # 设定用户目标
+                    from Brain.cognitive_system import global_cognitive_system
+                    await global_cognitive_system.set_goal(user_id, cmd['goal'])
+                    await send_impulse(websocket, "log", {"msg": f"🎯 收到任务: {cmd['goal']}"})
+
                 # ⚙️ 配置指令
                 elif type_str == 'config':
                     if 'fps' in cmd: config['fps'] = min(30, max(1, int(cmd['fps'])))
@@ -204,80 +211,3 @@ async def neural_pathway(websocket: WebSocket, user_id: str):
         # ⚠️ 注意：这里不关闭 session，因为 Agent 可能还在后台运行
         # 只有当明确收到 "logout" 指令或超时才清理 session (需另外实现 SessionManager 清理策略)
         # await global_browser_manager.close_session(user_id) 
-
-                    await queue.put(json.loads(data)) # 📥 入队
-            except (WebSocketDisconnect, Exception):
-                await queue.put({"type": "disconnect"}) # 🔌 断开连接信号
-
-        receiver_task = asyncio.create_task(sensory_input_loop()) # 🚀 启动接收协程
-
-        while True:
-            # 1. 处理指令 (运动神经)
-            try:
-                frame_interval = 1.0 / current_fps # ⏱️ 计算帧间隔
-                # 计算剩余等待时间，保证帧率稳定
-                wait_time = max(0.001, (last_frame_time + frame_interval) - time.time())
-                command = await asyncio.wait_for(queue.get(), timeout=wait_time) # ⏳ 等待指令或超时
-            except asyncio.TimeoutError:
-                command = None # ⏰ 超时，无新指令
-
-            if command:
-                cmd_type = command.get("type") # 🏷️ 获取指令类型
-
-                if cmd_type == "disconnect":
-                    break # 💔 断开连接
-                
-                elif cmd_type == "config_update":
-                    current_quality = command.get("quality", current_quality) # 🎨 更新画质
-                    current_fps = int(command.get("fps", current_fps)) # 🎞️ 更新帧率
-
-                elif cmd_type == "browser_navigate":
-                    url = command.get("url") # 🔗 获取目标 URL
-                    if url and (url.startswith("http") or url.startswith("https")):
-                        await browser_mgr.page.goto(url) # 🌏 浏览器跳转
-                        await send_impulse(websocket, "log", {"msg": f"🌍 Navigating to: {url}"})
-
-                elif cmd_type == "mouse_click":
-                    x = command.get("x", 0) # 📍 获取 X 坐标
-                    y = command.get("y", 0) # 📍 获取 Y 坐标
-                    await browser_mgr.hand.click(x, y) # 🖱️ 模拟点击
-
-                elif cmd_type == "agent_analyze":
-                    # 调用大脑
-                    current_url = browser_mgr.page.url
-                    title = await browser_mgr.page.title()
-                    await send_impulse(websocket, "log", {"msg": "🧠 Gemini is thinking..."}) # 💭 思考中
-                    
-                    result = await global_gemini.analyze_video(title, current_url) # 🧠 AI 分析
-                    
-                    if result.get("error"):
-                        await send_impulse(websocket, "log", {"msg": f"❌ Brain Error: {result.get('error')}"}) # ❌ 报错
-                    else:
-                        await send_impulse(websocket, "log", {"msg": f"✅ Analysis: {result.get('summary')}"}) # ✅ 成功
-                        await send_impulse(websocket, "analysis_result", {"result": result}) # 📤 发送结果
-
-            # 2. 发送视觉信号 (感觉神经)
-            current_time = time.time() # ⏱️ 获取当前时间
-            if current_time - last_frame_time >= (1.0 / current_fps): # ⏳ 检查是否达到帧间隔
-                try:
-                    screenshot = await browser_mgr.eye.capture(quality_mode=current_quality) # 📸 截图
-                    if screenshot:
-                        await send_impulse(websocket, "frame_update", {"image": screenshot}) # 🖼️ 发送画面
-                        last_frame_time = current_time # ⏱️ 更新时间戳
-                except Exception:
-                    pass
-
-    except WebSocketDisconnect:
-        # 🔌 处理连接断开
-        print("👋 Neural link severed.") # 👋 神经连接已切断 (客户端关闭)
-    except Exception as e:
-        # 🚨 处理未捕获的异常
-        print(f"❌ System Failure: {e}") # ❌ 系统严重故障
-        import traceback # 📜 导入堆栈跟踪
-        traceback.print_exc() # 🖨️ 打印详细错误堆栈
-    finally:
-        # 🧹 清理资源 (无论正常结束还是出错都会执行)
-        if receiver_task: 
-            receiver_task.cancel() # 🛑 停止接收指令的协程
-        await browser_mgr.sleep() # 🛌 让浏览器休眠以释放内存
-        print("🛑 Browser sleeping.") # 📢 打印休眠状态

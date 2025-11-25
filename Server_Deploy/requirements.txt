@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-playwright
-google-genai
-python-dotenv
-watchfiles
-Pillow
-playwright-stealth

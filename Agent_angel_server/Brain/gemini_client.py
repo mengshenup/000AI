@@ -96,5 +96,62 @@ class GeminiClient:
         except Exception as e:
             return {"error": str(e)} # 💥 发生异常
 
+    async def plan_next_action(self, screenshot_bytes, goal, page_url=""):
+        # =================================
+        #  🎉 规划下一步行动 (截图数据, 目标描述, 当前URL)
+        #
+        #  🎨 代码用途：
+        #     将当前屏幕截图和用户目标发送给 Gemini Pro Vision，请求下一步的操作指令。
+        #     返回格式必须是严格的 JSON。
+        #
+        #  💡 易懂解释：
+        #     Angel 把看到的画面发给大脑，问：“我要做这个任务，下一步该点哪里？”
+        #     大脑看了一眼，说：“点那个红色的按钮！” 👈
+        # =================================
+        if not self.model: return None
+
+        try:
+            # 1. 准备图像数据
+            import PIL.Image
+            import io
+            image = PIL.Image.open(io.BytesIO(screenshot_bytes))
+
+            # 2. 构造 Prompt
+            prompt = f"""
+            You are an intelligent web browsing agent.
+            User Goal: "{goal}"
+            Current URL: "{page_url}"
+            
+            Analyze the screenshot and determine the NEXT single action to achieve the goal.
+            Return ONLY a JSON object with the following format (no markdown, no explanation):
+            
+            {{
+                "action": "click" | "type" | "scroll" | "navigate" | "done" | "wait",
+                "reason": "Short explanation of why",
+                "params": {{
+                    "x": 0.0-1.0 (for click, relative width),
+                    "y": 0.0-1.0 (for click, relative height),
+                    "text": "string" (for type),
+                    "url": "string" (for navigate),
+                    "delta_y": int (for scroll)
+                }}
+            }}
+            
+            If the goal is achieved, return action "done".
+            If the page is loading or you need to wait, return action "wait".
+            """
+            
+            # 3. 调用多模态模型
+            response = await self.model.generate_content_async([prompt, image])
+            text = response.text
+            
+            # 4. 解析结果
+            clean_text = text.replace("```json", "").replace("```", "").strip()
+            return json.loads(clean_text)
+            
+        except Exception as e:
+            print(f"🧠 [大脑] 思考失败: {e}")
+            return None
+
 # 🌍 全局大脑实例
 global_gemini = GeminiClient()
