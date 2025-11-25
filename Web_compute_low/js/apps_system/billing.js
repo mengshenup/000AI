@@ -1,4 +1,6 @@
 import { createCapsule } from '../system/capsule_manager.js?v=1';
+import { bus } from '../system/event_bus.js';
+import { store } from '../system/store.js';
 
 export const VERSION = '1.0.0'; // 💖 版本号
 
@@ -134,7 +136,6 @@ export function init() {
             }, 0);
         }
     });
-}
 
     // 监听网络统计数据更新 (费用)
     let lastStatsUpdate = 0;

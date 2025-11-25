@@ -923,27 +923,6 @@ export class AngelApp {
         document.addEventListener('mousemove', rotate); // 💖 监听鼠标移动
         document.addEventListener('mouseup', stop); // 💖 监听鼠标松开
     }
-        e.preventDefault(); // 💖 阻止默认行为
-        e.stopPropagation(); // 💖 防止冒泡到窗口管理器
-        this.state.r = true; // 💖 标记为正在旋转
-        this.state.sx = e.clientX; // 💖 记录起始 X 坐标
-        if (this.group) this.state.ir = this.group.rotation.y; // 💖 记录初始旋转角度
-
-        const rotate = (ev) => {
-            if (this.state.r && this.group) {
-                this.group.rotation.y = this.state.ir + (ev.clientX - this.state.sx) * 0.01; // 💖 根据鼠标移动距离计算旋转角度
-            }
-        };
-
-        const stop = () => {
-            this.state.r = false; // 💖 停止旋转
-            document.removeEventListener('mousemove', rotate); // 💖 移除监听器
-            document.removeEventListener('mouseup', stop); // 💖 移除监听器
-        };
-
-        document.addEventListener('mousemove', rotate); // 💖 监听鼠标移动
-        document.addEventListener('mouseup', stop); // 💖 监听鼠标松开
-    }
 }
 
 export const app = new AngelApp();
