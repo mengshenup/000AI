@@ -12,21 +12,20 @@ import { WEB_API_URL } from './config.js'; // 🌐 导入 Web API 地址
 
 export const VERSION = '1.0.0'; // 💖 系统核心模块版本号
 
+// =================================
+//  🎉 设置业务逻辑 (无参数)
+//
+//  🎨 代码用途：
+//     定义各个模块之间如何协作。主要通过事件总线 (EventBus) 来解耦。
+//     这里集中处理网络消息对 UI 的更新，以及 UI 操作对网络的请求。
+//
+//  💡 易懂解释：
+//     这是制定“作战计划”。比如“收到敌人情报(网络消息)后，大屏幕(UI)要显示出来，小天使要报警”。
+//
+//  ⚠️ 警告：
+//     随着业务变复杂，这个函数可能会变得很长。建议将来按功能拆分。
+// =================================
 function setupBusinessLogic() {
-    // =================================
-    //  🎉 设置业务逻辑 (无参数)
-    //
-    //  🎨 代码用途：
-    //     定义各个模块之间如何协作。主要通过事件总线 (EventBus) 来解耦。
-    //     这里集中处理网络消息对 UI 的更新，以及 UI 操作对网络的请求。
-    //
-    //  💡 易懂解释：
-    //     这是制定“作战计划”。比如“收到敌人情报(网络消息)后，大屏幕(UI)要显示出来，小天使要报警”。
-    //
-    //  ⚠️ 警告：
-    //     随着业务变复杂，这个函数可能会变得很长。建议将来按功能拆分。
-    // =================================
-
     // === 监听网络事件 -> 更新 UI ===
 
     // 监听网络统计数据更新 (上传/下载速度, 费用)
@@ -37,27 +36,27 @@ function setupBusinessLogic() {
 
     // 监听实时画面帧更新
     // 优化：使用 requestAnimationFrame 节流渲染，避免高频 DOM 操作导致卡顿
-    let pendingFrame = null;
-    let isRendering = false;
+    let pendingFrame = null; // 💖 待渲染的帧数据
+    let isRendering = false; // 💖 渲染锁，防止重复调用
 
     const renderLoop = () => {
-        if (pendingFrame) {
+        if (pendingFrame) { // 💖 如果有待渲染的帧
             const el = document.getElementById('live-image'); // 📺 实时画面元素
             if (el) {
                 el.src = pendingFrame; // 🖼️ 更新图片源
                 el.style.display = 'block'; // 👁️ 确保图片显示
             }
-            pendingFrame = null;
+            pendingFrame = null; // 💖 清空待渲染帧
         }
-        isRendering = false;
+        isRendering = false; // 💖 释放渲染锁
     };
 
-    bus.on('net:frame', (imgSrc) => {
+    bus.on('net:frame', (imgSrc) => { // 💖 监听帧数据事件
         // 🛠️ 修复：后端返回的是纯 Base64 字符串，需要添加 Data URI 前缀才能被 img 标签识别
-        pendingFrame = `data:image/jpeg;base64,${imgSrc}`;
-        if (!isRendering) {
-            isRendering = true;
-            requestAnimationFrame(renderLoop);
+        pendingFrame = `data:image/jpeg;base64,${imgSrc}`; // 💖 构造 Data URI
+        if (!isRendering) { // 💖 如果当前没有在渲染
+            isRendering = true; // 💖 加锁
+            requestAnimationFrame(renderLoop); // 💖 请求下一帧渲染
         }
     });
 
@@ -92,29 +91,29 @@ window.onload = async () => {
     // =================================
 
     // 0. 等待 Store 初始化完成 (修复刷新重置 bug)
-    await store.ready();
+    await store.ready(); // 💖 确保 Store 已从 IndexedDB 加载数据
 
     try {
         // 1. 获取应用列表 (动态加载)
-        const res = await fetch(`${WEB_API_URL}/get_apps_list`);
-        const { apps, system_apps, system_core } = await res.json();
+        const res = await fetch(`${WEB_API_URL}/get_apps_list`); // 💖 从服务器获取应用列表
+        const { apps, system_apps, system_core } = await res.json(); // 💖 解析 JSON 数据
 
         // 辅助函数：检查是否需要更新 (优先对比行数)
         const checkUpdate = (serverApp, cachedApp) => {
-            if (!cachedApp) return true;
+            if (!cachedApp) return true; // 💖 如果没有缓存，肯定要更新
             // 🛡️ 安全检查：优先对比代码行数 (防篡改/漏改版本号)
             // 注意：system_core 文件可能没有 id，这里主要针对 apps 和 system_apps
             if (serverApp.line_count !== undefined && cachedApp.line_count !== undefined) {
-                if (serverApp.line_count !== cachedApp.line_count) {
-                    console.warn(`[Security] 文件行数变更 detected: ${serverApp.filename || serverApp.id} (${cachedApp.line_count} -> ${serverApp.line_count})`);
-                    return true;
+                if (serverApp.line_count !== cachedApp.line_count) { // 💖 如果行数不一致
+                    console.warn(`[Security] 文件行数变更 detected: ${serverApp.filename || serverApp.id} (${cachedApp.line_count} -> ${serverApp.line_count})`); // ⚠️ 打印警告
+                    return true; // 💖 需要更新
                 }
             }
             // 检查版本号
-            if (serverApp.version !== cachedApp.version) {
-                return true;
+            if (serverApp.version !== cachedApp.version) { // 💖 如果版本号不一致
+                return true; // 💖 需要更新
             }
-            return false;
+            return false; // 💖 不需要更新
         };
 
         // 2. 动态导入应用辅助函数
@@ -122,22 +121,22 @@ window.onload = async () => {
             try {
                 // 添加版本号参数以破坏浏览器缓存 (如果需要)
                 // const url = `${path}?v=${Date.now()}`; 
-                const m = await import(path);
+                const m = await import(path); // 💖 动态导入模块
                 // 只有导出了 config 的才被视为可注册的应用窗口
                 if (m.config) {
                     // 💖 返回完整模块，以便后续调用 init
-                    return { id: m.config.id, config: m.config, isSystem, init: m.init };
+                    return { id: m.config.id, config: m.config, isSystem, init: m.init }; // 💖 返回应用对象
                 }
             } catch (e) {
-                console.error(`无法加载应用 ${path}:`, e);
+                console.error(`无法加载应用 ${path}:`, e); // ❌ 打印错误日志
             }
-            return null;
+            return null; // 💖 加载失败返回 null
         };
 
         // 3. 并行加载所有应用
         // 优先加载系统应用
         // 💖 路径修正：因为 loader.js 在 system/ 下，所以要往上跳一级
-        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`../apps_system/${f.filename}`, true)))).filter(Boolean);
+        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`../apps_system/${f.filename}`, true)))).filter(Boolean); // 💖 加载系统应用
         
         // 💖 懒加载优化：不再一次性加载所有用户应用
         // const userModules = (await Promise.all(apps.map(f => loadApp(`../apps/${f}`, false)))).filter(Boolean);
@@ -146,13 +145,13 @@ window.onload = async () => {
         apps.forEach(app => {
             if (app.id && app.filename) {
                 // 💖 检查版本号，决定是否更新元数据
-                const cached = store.installedApps[app.id];
-                if (checkUpdate(app, cached)) {
-                    console.log(`[Loader] 更新应用元数据: ${app.id} (v${app.version}, lines:${app.line_count})`);
-                    store.registerLazyApp(app.id, `../apps/${app.filename}`, app);
+                const cached = store.installedApps[app.id]; // 💖 获取缓存的应用信息
+                if (checkUpdate(app, cached)) { // 💖 检查是否需要更新
+                    console.log(`[Loader] 更新应用元数据: ${app.id} (v${app.version}, lines:${app.line_count})`); // 📝 打印日志
+                    store.registerLazyApp(app.id, `../apps/${app.filename}`, app); // 💖 注册并更新元数据
                 } else {
                     // 版本一致，仅注册路径，不更新元数据 (使用缓存)
-                    store.registerLazyApp(app.id, `../apps/${app.filename}`, cached);
+                    store.registerLazyApp(app.id, `../apps/${app.filename}`, cached); // 💖 仅注册路径
                 }
             } else if (typeof app === 'string') {
                 // 兼容旧格式 (虽然 server 已经改了，但为了健壮性)
@@ -162,64 +161,64 @@ window.onload = async () => {
         });
         
         // 💾 保存最新的元数据到本地数据库 (如果发生了更新)
-        store.save();
+        store.save(); // 💖 保存 Store 状态
 
         // 💖 只加载那些在 store 中标记为 isOpen 的应用，或者系统核心需要的应用
         // 我们需要遍历 store.apps，找到 isOpen: true 的，然后去 lazyRegistry 里找路径加载
-        const userModules = [];
-        const pendingLoads = [];
+        const userModules = []; // 💖 存储已加载的用户模块
+        const pendingLoads = []; // 💖 存储待加载的 Promise
 
-        Object.entries(store.apps).forEach(([id, appState]) => {
-            if (appState.isOpen && !appState.isSystem) {
-                const path = store.getLazyAppPath(id);
-                if (path) {
-                    pendingLoads.push(loadApp(path, false));
+        Object.entries(store.apps).forEach(([id, appState]) => { // 💖 遍历所有应用状态
+            if (appState.isOpen && !appState.isSystem) { // 💖 如果应用是打开状态且不是系统应用
+                const path = store.getLazyAppPath(id); // 💖 获取懒加载路径
+                if (path) { // 💖 如果路径存在
+                    pendingLoads.push(loadApp(path, false)); // 💖 添加到加载队列
                 }
             }
         });
 
-        const loadedUserModules = (await Promise.all(pendingLoads)).filter(Boolean);
+        const loadedUserModules = (await Promise.all(pendingLoads)).filter(Boolean); // 💖 等待所有用户应用加载完成
         
-        const allModules = [...systemModules, ...loadedUserModules];
+        const allModules = [...systemModules, ...loadedUserModules]; // 💖 合并所有模块
 
-        console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${loadedUserModules.length} 个 (懒加载模式)`);
+        console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${loadedUserModules.length} 个 (懒加载模式)`); // 📝 打印加载统计
 
         // 4. 注入元数据并初始化
-        allModules.forEach((module) => {
-            const { id, config, isSystem } = module;
+        allModules.forEach((module) => { // 💖 遍历所有模块
+            const { id, config, isSystem } = module; // 💖 解构模块信息
             // 标记系统应用，以便 store.js 识别
-            config.isSystem = isSystem;
-            store.setAppMetadata(id, config);
+            config.isSystem = isSystem; // 💖 设置系统应用标记
+            store.setAppMetadata(id, config); // 💖 更新 Store 中的元数据
 
             // 💖 如果应用导出了 init 函数，则执行初始化 (用于后台逻辑，如 traffic/billing)
-            if (typeof module.init === 'function') {
-                console.log(`初始化应用逻辑: ${id}`);
-                module.init();
+            if (typeof module.init === 'function') { // 💖 如果有 init 函数
+                console.log(`初始化应用逻辑: ${id}`); // 📝 打印日志
+                module.init(); // 🚀 执行初始化
             }
         });
 
         // 5. 清理僵尸数据
-        store.prune(allModules.map(m => m.id));
+        store.prune(allModules.map(m => m.id)); // 💖 移除 Store 中多余的应用数据
 
         // 6. 启动窗口管理器
-        wm.init();
-        setupBusinessLogic();
-        net.connect();
+        wm.init(); // 🚀 初始化窗口管理器
+        setupBusinessLogic(); // 🚀 设置业务逻辑
+        net.connect(); // 🚀 连接网络
 
         // 7. 启动系统级应用 (强制启动，不依赖记忆)
         // 用户要求：系统apps应该是最优先加载的... 无需手动打开
-        systemModules.forEach(({id}) => {
+        systemModules.forEach(({id}) => { // 💖 遍历系统应用
             // 强制打开，不播放语音
             // 注意：openApp 内部会检查是否已打开
-            wm.openApp(id, false);
+            wm.openApp(id, false); // 🚀 打开系统应用
         });
 
     } catch (err) {
-        console.error("初始化失败:", err);
+        console.error("初始化失败:", err); // ❌ 打印错误日志
         // 即使失败也尝试启动核心服务
-        wm.init();
-        setupBusinessLogic();
-        net.connect();
+        wm.init(); // 🚀 尝试初始化窗口管理器
+        setupBusinessLogic(); // 🚀 尝试设置业务逻辑
+        net.connect(); // 🚀 尝试连接网络
     }
 
     // 启动时钟逻辑 (每秒更新一次)
@@ -227,7 +226,7 @@ window.onload = async () => {
         const clock = document.getElementById('clock-time'); // ⏰ 时钟元素
         // 获取当前时间并格式化为 HH:MM
         if (clock) clock.innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // 🕒 更新时间显示
-    }, 1000);
+    }, 1000); // 💖 每秒执行一次
 
     // === 特定 UI 绑定 (非通用部分) ===
 

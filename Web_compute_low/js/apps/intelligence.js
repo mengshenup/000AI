@@ -1,9 +1,9 @@
 export const config = {
     // =================================
-    //  🎉 情报站配置 (ID, 名称, 图标...)
+    //  🎉 情报站配置 (Intelligence Config)
     //
     //  🎨 代码用途：
-    //     定义“神谕节点”情报站的基础元数据和界面结构
+    //     定义“神谕节点”情报站的基础元数据和界面结构。
     //
     //  💡 易懂解释：
     //     这是游戏里的“任务日志”或者“攻略本”！它记录了所有发现的“老六点位”，你可以点击它们直接跳转到视频对应的进度~ 📓
@@ -49,10 +49,10 @@ export const APP_NAME = 'Wisdom Pouch'; // 💖 导出应用名称常量
 
 class IntelligenceApp {
     // =================================
-    //  🎉 情报站应用类 (无参数)
+    //  🎉 情报站应用类 (Intelligence App) (无参数)
     //
     //  🎨 代码用途：
-    //     管理“情报站”APP的业务逻辑，包括点位列表的展示、添加、保存以及跳转功能
+    //     管理“情报站”APP的业务逻辑，包括点位列表的展示、添加、保存以及跳转功能。
     //
     //  💡 易懂解释：
     //     这是你的“情报中心”！收集、整理、展示所有重要的视频节点，让你不错过任何精彩瞬间~ 🕵️‍♀️
@@ -67,10 +67,10 @@ class IntelligenceApp {
     }
 
     // =================================
-    //  🎉 初始化函数 (无参数)
+    //  🎉 初始化函数 (Initialize) (无参数)
     //
     //  🎨 代码用途：
-    //     渲染列表，绑定按钮事件，并监听网络发来的新情报
+    //     渲染列表，绑定按钮事件，并监听网络发来的新情报。
     //
     //  💡 易懂解释：
     //     情报站开张啦！把按钮接好，然后向总部（服务器）请求最新的情报数据~ 📥
@@ -88,7 +88,7 @@ class IntelligenceApp {
         }, 1000);
 
         // 监听来自服务器的点位数据更新
-        bus.on('net:update_spots', (data) => {
+        bus.on('net:update_spots', (data) => { // 👂 监听点位更新
             if (data.data) { // 💖 检查数据有效性
                 this.spots = data.data; // 💖 更新本地点位数据
                 this.renderList(); // 💖 重新渲染列表
@@ -97,16 +97,16 @@ class IntelligenceApp {
         });
 
         // 监听来自服务器的新情报 (扫描发现的)
-        bus.on('net:new_intel', (data) => {
+        bus.on('net:new_intel', (data) => { // 👂 监听新情报
             this.addSpot(data.data); // 💖 将新发现的点位添加到列表
             bus.emit('system:speak', `发现新点位：${data.data.name}`); // 💖 语音播报新发现
         });
 
         // 监听来自 Gemini 的分析结果
-        bus.on('net:analysis_result', (data) => {
+        bus.on('net:analysis_result', (data) => { // 👂 监听分析结果
             if (data.result && data.result.spots) { // 💖 检查分析结果是否包含点位
                 // 遍历分析出的所有点位
-                data.result.spots.forEach(spot => {
+                data.result.spots.forEach(spot => { // 🔄 遍历点位
                     this.addSpot({ // 💖 添加每一个分析出的点位
                         name: spot.description.substring(0, 15) + "...", // 💖 截取简短名称作为标题
                         full_text: spot.description, // 💖 保存完整描述
@@ -122,10 +122,10 @@ class IntelligenceApp {
     }
 
     // =================================
-    //  🎉 绑定事件 (无参数)
+    //  🎉 绑定事件 (Bind Events) (无参数)
     //
     //  🎨 代码用途：
-    //     给界面上的“扫描”和“手动添加”按钮绑定点击处理函数
+    //     给界面上的“扫描”和“手动添加”按钮绑定点击处理函数。
     //
     //  💡 易懂解释：
     //     让按钮活起来！点“扫描”就开始干活，点“+”就能自己写情报~ 🖱️
@@ -136,8 +136,8 @@ class IntelligenceApp {
     bindEvents() {
         // 获取扫描按钮
         const btnScan = document.getElementById('btn-scan'); // 💖 获取扫描按钮 DOM
-        if (btnScan) {
-            btnScan.onclick = () => {
+        if (btnScan) { // ✅ 如果按钮存在
+            btnScan.onclick = () => { // 🖱️ 绑定点击事件
                 network.send({ type: 'start_scan' }); // 💖 发送扫描指令给服务器
                 bus.emit('system:speak', "正在扫描老六点位..."); // 💖 语音提示正在扫描
             };
@@ -145,14 +145,14 @@ class IntelligenceApp {
 
         // 获取手动添加按钮
         const btnAdd = document.getElementById('btn-add-custom'); // 💖 获取添加按钮 DOM
-        if (btnAdd) {
-            btnAdd.onclick = () => {
+        if (btnAdd) { // ✅ 如果按钮存在
+            btnAdd.onclick = () => { // 🖱️ 绑定点击事件
                 // 弹出输入框询问名称
                 const name = prompt("请输入点位名称/描述:"); // 💖 提示用户输入名称
-                if (name) {
+                if (name) { // ✅ 如果输入了名称
                     // 弹出输入框询问时间
                     const timeStr = prompt("请输入时间戳 (例如 1:30):", "0:00"); // 💖 提示用户输入时间
-                    let seconds = 0;
+                    let seconds = 0; // ⏱️ 初始化秒数
                     try {
                         // 解析 MM:SS 格式为秒数
                         const parts = timeStr.split(':'); // 💖 分割分和秒
@@ -173,10 +173,10 @@ class IntelligenceApp {
     }
 
     // =================================
-    //  🎉 添加点位 (点位数据对象)
+    //  🎉 添加点位 (Add Spot) (spotData: 点位数据对象)
     //
     //  🎨 代码用途：
-    //     将新点位加入列表（去重），保存并刷新界面
+    //     将新点位加入列表（去重），保存并刷新界面。
     //
     //  💡 易懂解释：
     //     在小本本上记下一条新线索！如果这条线索已经记过了，就不重复记了哦~ 📝
@@ -186,7 +186,7 @@ class IntelligenceApp {
     // =================================
     addSpot(spotData) {
         // 查重：如果名称和时间都一样，就不重复添加
-        if (this.spots.some(s => s.name === spotData.name && s.raw_time === spotData.raw_time)) {
+        if (this.spots.some(s => s.name === spotData.name && s.raw_time === spotData.raw_time)) { // 🔍 检查重复
             return; // 💖 发现重复，直接返回
         }
 
@@ -200,10 +200,10 @@ class IntelligenceApp {
     }
 
     // =================================
-    //  🎉 保存数据 (无参数)
+    //  🎉 保存数据 (Save Data) (无参数)
     //
     //  🎨 代码用途：
-    //     将当前的点位列表数据发送给服务器进行持久化存储
+    //     将当前的点位列表数据发送给服务器进行持久化存储。
     //
     //  💡 易懂解释：
     //     把小本本交给管家（服务器）保管，防止丢失！💾
@@ -219,10 +219,10 @@ class IntelligenceApp {
     }
 
     // =================================
-    //  🎉 渲染列表 (无参数)
+    //  🎉 渲染列表 (Render List) (无参数)
     //
     //  🎨 代码用途：
-    //     将点位数组转换为 HTML 元素显示在界面上
+    //     将点位数组转换为 HTML 元素显示在界面上。
     //
     //  💡 易懂解释：
     //     把小本本上的字写到屏幕上，让你可以看到每一条情报~ 📜
@@ -235,15 +235,15 @@ class IntelligenceApp {
         if (!container) return; // 💖 容器不存在则返回
 
         // 如果没有数据，显示空状态提示
-        if (this.spots.length === 0) {
+        if (this.spots.length === 0) { // ✅ 如果列表为空
             container.innerHTML = '<div style="text-align:center; color:#aaa; margin-top:60px;">(｡•́︿•̀｡) 暂无数据</div>'; // 💖 显示颜文字卖萌
-            return;
+            return; // 🛑 结束
         }
 
         container.innerHTML = ''; // 💖 清空容器现有内容
 
         // 遍历数据生成列表项
-        this.spots.forEach(spot => {
+        this.spots.forEach(spot => { // 🔄 遍历点位
             const el = document.createElement('div'); // 💖 创建列表项容器
             el.className = 'file-item'; // 💖 添加样式类
             // 设置内联样式 (也可以写在 CSS 里)
@@ -264,7 +264,7 @@ class IntelligenceApp {
                 `;
 
             // 点击整个条目触发跳转
-            el.onclick = () => {
+            el.onclick = () => { // 🖱️ 绑定点击事件
                 this.jumpTo(spot); // 💖 执行跳转逻辑
             };
 
@@ -273,10 +273,10 @@ class IntelligenceApp {
     }
 
     // =================================
-    //  🎉 跳转到点位 (点位对象)
+    //  🎉 跳转到点位 (Jump To) (spot: 点位对象)
     //
     //  🎨 代码用途：
-    //     发送跳转指令给服务器，控制浏览器播放视频到指定时间
+    //     发送跳转指令给服务器，控制浏览器播放视频到指定时间。
     //
     //  💡 易懂解释：
     //     时光穿梭！瞬间回到那个精彩的时刻~ 🚀

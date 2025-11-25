@@ -104,17 +104,20 @@ export class TaskManagerApp {
     }
 
     // =================================
-    //  🎉 渲染列表 (高性能版)
+    //  🎉 渲染列表 (无参数)
     //
     //  🎨 代码用途：
-    //     使用增量更新策略渲染任务列表
+    //     使用增量更新策略渲染任务列表，分离系统应用和用户应用。
     //
     //  💡 易懂解释：
     //     不再每次把花名册撕了重写，而是只改动有变化的数据！
     //     这样就算有 1000 个员工，也能瞬间更新状态。⚡
+    //
+    //  ⚠️ 警告：
+    //     如果容器为空或包含详情页，会强制重置 DOM。
     // =================================
     render() {
-        if (!this.listContainer) this.listContainer = document.getElementById('task-list');
+        if (!this.listContainer) this.listContainer = document.getElementById('task-list'); // 📋 获取容器
         if (!this.listContainer) return;
 
         // 💖 如果有选中的应用，渲染详情页 (详情页结构简单，全量刷新无妨)
@@ -125,8 +128,8 @@ export class TaskManagerApp {
 
         // 🛡️ 视图状态检查：如果容器为空（刚打开）或包含详情页元素（刚返回），强制重置
         if (this.listContainer.children.length === 0 || this.listContainer.querySelector('#btn-back')) {
-            this.listContainer.innerHTML = ''; // 清理可能存在的详情页
-            this.domCache.clear(); // 清空缓存，强制重建列表
+            this.listContainer.innerHTML = ''; // 🧹 清理可能存在的详情页
+            this.domCache.clear(); // 🧹 清空缓存，强制重建列表
             
             // 🏗️ 创建分组容器结构
             this.listContainer.innerHTML = `
@@ -146,8 +149,8 @@ export class TaskManagerApp {
             // 绑定折叠点击事件
             const header = this.listContainer.querySelector('#system-apps-header');
             header.onclick = () => {
-                this.isSystemAppsCollapsed = !this.isSystemAppsCollapsed;
-                this.render(); // 重新渲染以更新显示状态
+                this.isSystemAppsCollapsed = !this.isSystemAppsCollapsed; // 🔄 切换折叠状态
+                this.render(); // 🔄 重新渲染以更新显示状态
             };
         }
 
@@ -162,8 +165,8 @@ export class TaskManagerApp {
             toggleIcon.innerText = this.isSystemAppsCollapsed ? '▶' : '▼';
         }
 
-        const apps = store.apps;
-        const activeIds = new Set(); // 记录本次渲染存在的 ID
+        const apps = store.apps; // 📦 获取所有应用数据
+        const activeIds = new Set(); // 📝 记录本次渲染存在的 ID
 
         // 1. 准备数据列表 (分离系统和用户应用)
         const userApps = [];
@@ -203,27 +206,37 @@ export class TaskManagerApp {
         // 3. 清理已移除的应用 DOM
         for (const [id, cache] of this.domCache) {
             if (!activeIds.has(id)) {
-                cache.el.remove();
-                this.domCache.delete(id);
+                cache.el.remove(); // 🗑️ 移除 DOM 元素
+                this.domCache.delete(id); // 🗑️ 移除缓存
             }
         }
     }
 
-    /**
-     * 🔄 更新单行数据 (核心优化)
-     */
+    // =================================
+    //  🎉 更新单行数据 (app, targetContainer)
+    //
+    //  🎨 代码用途：
+    //     创建或更新单个应用在列表中的 DOM 元素。
+    //
+    //  💡 易懂解释：
+    //     给每个员工发一张“状态卡”，上面写着他现在忙不忙（CPU），
+    //     手里拿了多少东西（资源）。如果卡片已经有了，就只改上面的数字。📇
+    //
+    //  ⚠️ 警告：
+    //     高度依赖 domCache 来避免重复创建 DOM，提升性能。
+    // =================================
     updateRow(app, targetContainer) {
         // 📊 计算数据
         let stats = { cpuTime: 0, startTime: Date.now(), longTasks: 0 };
         let resCount = { total: 0 };
         if (pm) {
-            if (typeof pm.getAppStats === 'function') stats = pm.getAppStats(app.id);
-            if (typeof pm.getAppResourceCount === 'function') resCount = pm.getAppResourceCount(app.id);
+            if (typeof pm.getAppStats === 'function') stats = pm.getAppStats(app.id); // 📊 获取性能统计
+            if (typeof pm.getAppResourceCount === 'function') resCount = pm.getAppResourceCount(app.id); // 📊 获取资源统计
         }
         
-        const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(1) : '0.0';
-        const resUsage = app.isOpen ? resCount.total : 0;
-        const statusColor = app.isOpen ? '#2ecc71' : '#b2bec3';
+        const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(1) : '0.0'; // 🧮 计算 CPU 使用率
+        const resUsage = app.isOpen ? resCount.total : 0; // 🧮 计算资源总数
+        const statusColor = app.isOpen ? '#2ecc71' : '#b2bec3'; // 🎨 状态指示灯颜色
         
         // 💖 处理 Pending 状态
         const pendingAction = this.pendingStates.get(app.id);
@@ -252,7 +265,7 @@ export class TaskManagerApp {
 
         // 🅰️ 情况 A: DOM 不存在 -> 创建
         if (!this.domCache.has(app.id)) {
-            const item = document.createElement('div');
+            const item = document.createElement('div'); // 🏗️ 创建行容器
             item.style.cssText = `
                 display: flex; align-items: center; padding: 10px;
                 border-bottom: 1px solid #eee; background: white;
@@ -263,8 +276,8 @@ export class TaskManagerApp {
             item.onmouseout = () => item.style.background = 'white';
             item.onclick = (e) => {
                 if (e.target.tagName === 'BUTTON') return;
-                this.selectedAppId = app.id;
-                this.render();
+                this.selectedAppId = app.id; // 🎯 选中应用
+                this.render(); // 🔄 刷新以显示详情
             };
 
             // 使用 innerHTML 填充结构，并保存关键节点的引用
@@ -291,12 +304,12 @@ export class TaskManagerApp {
             const btn = item.querySelector('[data-ref="btn"]');
             btn.onclick = (e) => {
                 e.stopPropagation();
-                if (this.pendingStates.has(app.id)) return; // 防止重复点击
+                if (this.pendingStates.has(app.id)) return; // 🚫 防止重复点击
 
                 // 移除超时重置机制，改为进度显示
                 
                 if (app.isOpen) {
-                    this.pendingStates.set(app.id, { type: 'stopping', startTime: Date.now() });
+                    this.pendingStates.set(app.id, { type: 'stopping', startTime: Date.now() }); // ⏳ 标记为停止中
                     
                     // 启动一个定时器来更新进度条文字
                     const progressTimer = setInterval(() => {
@@ -304,21 +317,21 @@ export class TaskManagerApp {
                             clearInterval(progressTimer);
                             return;
                         }
-                        this.render(); // 触发重绘以更新百分比
+                        this.render(); // 🔄 触发重绘以更新百分比
                     }, 100);
 
                     // 模拟一点延迟让用户看清状态，也给 UI 线程喘息机会
                     setTimeout(() => {
-                        wm.closeApp(app.id);
+                        wm.closeApp(app.id); // 🚪 关闭应用
                         // closeApp 是同步的，执行完就意味着清理完毕
                         // 但为了让用户看到 100%，我们稍微延迟一点移除 pending 状态
                         // 注意：wm.closeApp 会触发 app:closed 事件，我们在 bus.on 里处理了移除 pending
                         // 所以这里不需要手动移除，只需要确保 bus 事件能触发
                     }, 500); // 增加延迟以展示进度效果
                 } else {
-                    this.pendingStates.set(app.id, { type: 'starting', startTime: Date.now() });
+                    this.pendingStates.set(app.id, { type: 'starting', startTime: Date.now() }); // ⏳ 标记为启动中
                     this.render(); // 立即刷新显示“启动中...”
-                    setTimeout(() => wm.openApp(app.id), 50);
+                    setTimeout(() => wm.openApp(app.id), 50); // 🚪 打开应用
                 }
             };
             if (btnDisabled) btn.disabled = true;
@@ -341,7 +354,7 @@ export class TaskManagerApp {
                     lag: item.querySelector('[data-ref="lag"]'),
                     btn: btn
                 },
-                lastState: { cpuUsage, resUsage, lagHtml, isOpen: app.isOpen, pendingAction } // 用于对比
+                lastState: { cpuUsage, resUsage, lagHtml, isOpen: app.isOpen, pendingAction } // 📝 用于对比
             });
         } 
         // 🅱️ 情况 B: DOM 已存在 -> 更新
@@ -381,13 +394,23 @@ export class TaskManagerApp {
     }
 
     // =================================
-    //  🎉 渲染详情页
+    //  🎉 渲染详情页 (appId)
+    //
+    //  🎨 代码用途：
+    //     显示选中应用的详细性能数据和资源占用情况。
+    //
+    //  💡 易懂解释：
+    //     把这个员工叫到办公室，仔细查查他的工作日志，
+    //     看看他到底用了多少纸笔（资源），有没有偷懒（卡顿）。🕵️‍♀️
+    //
+    //  ⚠️ 警告：
+    //     会覆盖整个列表容器的内容。
     // =================================
     renderDetails(appId) {
-        const app = store.getApp(appId);
+        const app = store.getApp(appId); // 📦 获取应用数据
         if (!app) {
-            this.selectedAppId = null;
-            this.render();
+            this.selectedAppId = null; // ❌ 应用不存在，取消选中
+            this.render(); // 🔄 返回列表
             return;
         }
 
@@ -400,12 +423,12 @@ export class TaskManagerApp {
         let resCount = { timers: 0, events: 0, animations: 0, total: 0 };
         
         if (pm) {
-            if (typeof pm.getAppStats === 'function') stats = pm.getAppStats(appId);
-            if (typeof pm.getAppResourceCount === 'function') resCount = pm.getAppResourceCount(appId);
+            if (typeof pm.getAppStats === 'function') stats = pm.getAppStats(appId); // 📊 获取性能统计
+            if (typeof pm.getAppResourceCount === 'function') resCount = pm.getAppResourceCount(appId); // 📊 获取资源统计
         }
 
-        const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(2) : '0.00';
-        const runTime = app.isOpen ? Math.floor((Date.now() - stats.startTime) / 1000) : 0;
+        const cpuUsage = stats.cpuTime > 0 ? (stats.cpuTime / (performance.now() - stats.startTime) * 100).toFixed(2) : '0.00'; // 🧮 计算 CPU 使用率
+        const runTime = app.isOpen ? Math.floor((Date.now() - stats.startTime) / 1000) : 0; // ⏱️ 计算运行时间
 
         this.listContainer.innerHTML = `
             <div style="padding:5px;">
@@ -451,7 +474,7 @@ export class TaskManagerApp {
         if (newLogContainer) newLogContainer.scrollTop = logScroll;
 
         document.getElementById('btn-back').onclick = () => {
-            this.selectedAppId = null;
+            this.selectedAppId = null; // 🔙 返回列表
             this.render();
         };
     }
@@ -460,7 +483,7 @@ export class TaskManagerApp {
     //  🎉 开启自动刷新 (无参数)
     //
     //  🎨 代码用途：
-    //     启动定时器，定期刷新任务列表状态
+    //     启动定时器，定期刷新任务列表状态。
     //
     //  💡 易懂解释：
     //     管家婆每隔一秒钟就看一眼花名册，确保信息是最新的！⏱️
@@ -471,17 +494,26 @@ export class TaskManagerApp {
     onOpen() {
         this.render(); // 💖 立即渲染一次
         // 使用 ctx.setInterval 自动管理
-        this.updateInterval = this.ctx.setInterval(() => this.render(), 1000); // 每秒刷新一次
+        this.updateInterval = this.ctx.setInterval(() => this.render(), 1000); // ⏱️ 每秒刷新一次
     }
 
     // =================================
-    //  🎉 关闭时触发
+    //  🎉 关闭时触发 (无参数)
+    //
+    //  🎨 代码用途：
+    //     清理定时器和重置状态。
+    //
+    //  💡 易懂解释：
+    //     管家婆下班啦！合上花名册，回家休息去咯~ 😴
+    //
+    //  ⚠️ 警告：
+    //     无。
     // =================================
     onClose() {
         // 这里的清理工作由 pm 自动完成 (clearInterval)
         // 但为了逻辑清晰，我们也可以手动置空
-        this.updateInterval = null;
-        this.selectedAppId = null; // 重置选中状态
+        this.updateInterval = null; // 🧹 清理定时器引用
+        this.selectedAppId = null; // 🧹 重置选中状态
     }
 }
 

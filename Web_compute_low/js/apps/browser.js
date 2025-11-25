@@ -1,9 +1,9 @@
 export const config = {
     // =================================
-    //  🎉 浏览器配置 (ID, 名称, 图标...)
+    //  🎉 浏览器配置 (Browser Config)
     //
     //  🎨 代码用途：
-    //     定义“全视之眼”浏览器的基础元数据和界面结构
+    //     定义“全视之眼”浏览器的基础元数据和界面结构。
     //
     //  💡 易懂解释：
     //     这是小天使的“望远镜”！通过它，你可以看到服务器那边的网页，还能远程操控哦~ 🔭
@@ -94,10 +94,10 @@ import { wm } from '../system/window_manager.js'; // 💖 导入窗口管理器�
 
 class BrowserApp {
     // =================================
-    //  🎉 浏览器应用类 (无参数)
+    //  🎉 浏览器应用类 (Browser App) (无参数)
     //
     //  🎨 代码用途：
-    //     管理“观察眼”APP的业务逻辑，包括地址栏导航、视频分析、进度条控制和远程点击
+    //     管理“观察眼”APP的业务逻辑，包括地址栏导航、视频分析、进度条控制和远程点击。
     //
     //  💡 易懂解释：
     //     这是你的“网络电视”遥控器！你可以换台（输网址）、让小天使帮你看看电视里演了啥（分析画面）、快进（拖进度条）~ 📺
@@ -110,20 +110,20 @@ class BrowserApp {
         bus.on(`app:ready:${config.id}`, () => this.init());
 
         // 监听“远程点击”命令 (从 main.js 移过来的逻辑，这里直接处理)
-        bus.on('cmd:remote_click', (pos) => {
+        bus.on('cmd:remote_click', (pos) => { // 👂 监听远程点击指令
             if (this.isDestroyed) return; // 💖 如果已销毁，不处理
             network.send('click', pos); // 💖 将点击坐标通过网络发送给服务器
         });
         
         // 监听状态更新
-        bus.on('net:status', (msg) => {
-            const el = document.getElementById('browser-status-overlay');
-            if (el) {
-                el.innerText = msg;
-                el.style.opacity = '1';
+        bus.on('net:status', (msg) => { // 👂 监听网络状态
+            const el = document.getElementById('browser-status-overlay'); // 🔍 获取状态遮罩层
+            if (el) { // ✅ 如果元素存在
+                el.innerText = msg; // 📝 更新文本
+                el.style.opacity = '1'; // 👁️ 显示
                 // 如果是活跃状态，显示绿色点缀 (可选)
-                if (msg.includes('Active')) el.style.background = 'rgba(46, 204, 113, 0.8)';
-                else el.style.background = 'rgba(0,0,0,0.6)';
+                if (msg.includes('Active')) el.style.background = 'rgba(46, 204, 113, 0.8)'; // 🟢 活跃状态绿色
+                else el.style.background = 'rgba(0,0,0,0.6)'; // ⚫ 其他状态黑色半透明
             }
         });
 
@@ -132,28 +132,38 @@ class BrowserApp {
     }
 
     // =================================
-    //  🎉 销毁函数
+    //  🎉 销毁函数 (On Destroy) (无参数)
+    //
+    //  🎨 代码用途：
+    //     清理浏览器应用占用的资源，停止视频流更新。
+    //
+    //  💡 易懂解释：
+    //     关电视啦！拔掉电源，把遥控器收起来。🔌
+    //
+    //  ⚠️ 警告：
+    //     如果不清理，视频流可能会继续占用带宽。
     // =================================
     onDestroy() {
-        this.isDestroyed = true;
+        this.isDestroyed = true; // 🚩 标记为已销毁
         // 💖 停止视频流更新 (如果 img 标签还在，将其 src 置空以断开连接)
-        const img = document.getElementById('live-image');
-        if (img) {
-            img.src = '';
-            img.style.display = 'none';
+        const img = document.getElementById('live-image'); // 🔍 获取图片元素
+        if (img) { // ✅ 如果存在
+            img.src = ''; // 🚫 清空源，断开连接
+            img.style.display = 'none'; // 🙈 隐藏
         }
         
         // 💖 移除全局事件监听 (如果有的话)
         // 注意：bus.on 目前没有返回 unsubscribe 函数，所以这里主要依靠 isDestroyed 标志位来阻断逻辑
         
-        console.log("探索之窗已关闭，资源已释放。");
+        console.log("探索之窗已关闭，资源已释放。"); // 📢 控制台输出
     }
 
     // =================================
-    //  🎉 初始化函数 (无参数)
+    //  🎉 初始化函数 (Initialize) (无参数)
     //
     //  🎨 代码用途：
-    //     启动浏览器的所有功能模块，包括事件绑定和远程控制设置
+    //     启动浏览器的所有功能模块，包括事件绑定和远程控制设置。
+    //     同时启动窗口大小监听，以同步后端分辨率。
     //
     //  💡 易懂解释：
     //     给遥控器装上电池，确认每个按钮都能用！🔋
@@ -168,30 +178,30 @@ class BrowserApp {
         
         // 📏 监听窗口大小变化，同步调整后端分辨率
         // 使用 ResizeObserver 监听窗口 DOM 元素
-        const win = document.getElementById(config.id);
-        if (win) {
-            let resizeTimeout;
-            const observer = new ResizeObserver(entries => {
-                for (let entry of entries) {
+        const win = document.getElementById(config.id); // 🔍 获取窗口 DOM
+        if (win) { // ✅ 如果窗口存在
+            let resizeTimeout; // ⏱️ 防抖定时器
+            const observer = new ResizeObserver(entries => { // 👀 创建观察者
+                for (let entry of entries) { // 🔄 遍历变化条目
                     // 🛡️ 防抖：避免频繁发送请求 (300ms)
-                    clearTimeout(resizeTimeout);
-                    resizeTimeout = setTimeout(() => {
-                        if (this.isDestroyed) return;
+                    clearTimeout(resizeTimeout); // 🛑 清除旧定时器
+                    resizeTimeout = setTimeout(() => { // ⏱️ 设置新定时器
+                        if (this.isDestroyed) return; // 🛑 如果已销毁，不执行
                         
-                        const rect = entry.contentRect;
+                        const rect = entry.contentRect; // 📏 获取新尺寸
                         // 计算内容区域大小 (减去地址栏高度约80px)
                         // 注意：contentRect 是内容区域，不包含边框
                         // 但我们的 browser.js 里的 content 包含了地址栏，所以要减去地址栏高度
                         // 地址栏高度固定约 80px (padding 8*2 + input 30 + gap 8 + controls 20)
                         // 简单估算为 80px，或者动态获取
-                        const addressBar = win.querySelector('.content > div:first-child');
-                        const addressBarHeight = addressBar ? addressBar.offsetHeight : 80;
+                        const addressBar = win.querySelector('.content > div:first-child'); // 🔍 获取地址栏
+                        const addressBarHeight = addressBar ? addressBar.offsetHeight : 80; // 📏 获取高度
                         
-                        const newWidth = Math.round(rect.width);
-                        const newHeight = Math.round(rect.height - addressBarHeight);
+                        const newWidth = Math.round(rect.width); // 🔢 取整宽度
+                        const newHeight = Math.round(rect.height - addressBarHeight); // 🔢 计算高度
                         
-                        if (newWidth > 0 && newHeight > 0) {
-                            network.send({
+                        if (newWidth > 0 && newHeight > 0) { // ✅ 如果尺寸有效
+                            network.send({ // 📡 发送调整指令
                                 type: 'browser_resize',
                                 width: newWidth,
                                 height: newHeight
@@ -201,21 +211,21 @@ class BrowserApp {
                     }, 300);
                 }
             });
-            observer.observe(win.querySelector('.content')); // 监听 content 区域变化
+            observer.observe(win.querySelector('.content')); // 👀 监听 content 区域变化
             
             // 注册清理逻辑
-            bus.on(`app:closed:${config.id}`, () => {
-                observer.disconnect();
-                clearTimeout(resizeTimeout);
+            bus.on(`app:closed:${config.id}`, () => { // 👂 监听关闭事件
+                observer.disconnect(); // 🛑 停止观察
+                clearTimeout(resizeTimeout); // 🛑 清除定时器
             });
         }
     }
 
     // =================================
-    //  🎉 绑定事件 (无参数)
+    //  🎉 绑定事件 (Bind Events) (无参数)
     //
     //  🎨 代码用途：
-    //     绑定界面按钮事件（如前往、分析）和网络命令监听（如扫描）
+    //     绑定界面按钮事件（如前往、执行任务）和网络命令监听（如扫描）。
     //
     //  💡 易懂解释：
     //     告诉遥控器，按这个键是换台，按那个键是分析！🔘
@@ -225,18 +235,18 @@ class BrowserApp {
     // =================================
     bindEvents() {
         // === 监听“开始扫描”命令 ===
-        bus.on('cmd:scan', () => {
+        bus.on('cmd:scan', () => { // 👂 监听扫描指令
             network.send('start_scan'); // 💖 发送网络请求，通知服务器开始扫描
             wm.openApp('win-angel'); // 💖 自动打开“观察眼”窗口，显示扫描界面
         });
 
         // === 性能控制逻辑 (画质/帧率) ===
-        const selQuality = document.getElementById('sel-quality');
-        const selFps = document.getElementById('sel-fps');
+        const selQuality = document.getElementById('sel-quality'); // 🔍 获取画质选择框
+        const selFps = document.getElementById('sel-fps'); // 🔍 获取帧率选择框
         
-        const updateConfig = () => {
-            if (selQuality && selFps) {
-                network.send({
+        const updateConfig = () => { // ⚙️ 更新配置函数
+            if (selQuality && selFps) { // ✅ 如果元素存在
+                network.send({ // 📡 发送配置更新
                     type: 'config_update',
                     quality: selQuality.value,
                     fps: parseInt(selFps.value)
@@ -244,24 +254,24 @@ class BrowserApp {
             }
         };
 
-        if (selQuality) selQuality.onchange = updateConfig;
-        if (selFps) selFps.onchange = updateConfig;
+        if (selQuality) selQuality.onchange = updateConfig; // 👂 绑定变更事件
+        if (selFps) selFps.onchange = updateConfig; // 👂 绑定变更事件
 
         // === 浏览器控制逻辑 ===
         const btnGo = document.getElementById('btn-browser-go'); // 💖 获取“前往”按钮 DOM 元素
         const inputUrl = document.getElementById('browser-url'); // 💖 获取地址输入框 DOM 元素
         
         // 监听来自服务器的 URL 更新消息
-        bus.on('net:url_update', (newUrl) => {
-            if (inputUrl && newUrl) {
-                inputUrl.value = newUrl;
-                window.current_browser_url = newUrl;
+        bus.on('net:url_update', (newUrl) => { // 👂 监听 URL 更新
+            if (inputUrl && newUrl) { // ✅ 如果有效
+                inputUrl.value = newUrl; // 📝 更新输入框
+                window.current_browser_url = newUrl; // 🌍 更新全局变量
             }
         });
 
         if (btnGo && inputUrl) { // 💖 确保元素存在，防止报错
             // 点击“前往”按钮时触发
-            btnGo.onclick = () => {
+            btnGo.onclick = () => { // 🖱️ 绑定点击事件
                 const url = inputUrl.value || "https://www.douyin.com/"; // 💖 获取用户输入的网址，如果为空则使用默认值
                 if (url) { // 💖 如果网址不为空
                     window.current_browser_url = url; // 💖 记录当前 URL 到全局变量，供其他模块使用
@@ -272,22 +282,22 @@ class BrowserApp {
         }
 
         // === 智能任务逻辑 (AI Task) ===
-        const btnTask = document.getElementById('btn-browser-task');
-        const inputTask = document.getElementById('browser-task-input');
+        const btnTask = document.getElementById('btn-browser-task'); // 🔍 获取任务按钮
+        const inputTask = document.getElementById('browser-task-input'); // 🔍 获取任务输入框
         
-        if (btnTask && inputTask) {
-            btnTask.onclick = () => {
-                const goal = inputTask.value;
-                if (goal) {
+        if (btnTask && inputTask) { // ✅ 如果元素存在
+            btnTask.onclick = () => { // 🖱️ 绑定点击事件
+                const goal = inputTask.value; // 📝 获取任务目标
+                if (goal) { // ✅ 如果目标不为空
                     network.send({ type: 'task', goal: goal }); // 💖 发送任务指令
-                    bus.emit('system:speak', `收到任务：${goal}，正在思考中...`);
+                    bus.emit('system:speak', `收到任务：${goal}，正在思考中...`); // 🗣️ 语音反馈
                     inputTask.value = ''; // 清空输入框
                 }
             };
             
             // 支持回车键提交
-            inputTask.onkeypress = (e) => {
-                if (e.key === 'Enter') btnTask.click();
+            inputTask.onkeypress = (e) => { // ⌨️ 绑定键盘事件
+                if (e.key === 'Enter') btnTask.click(); // ↵ 回车触发点击
             };
         }
 
@@ -305,10 +315,10 @@ class BrowserApp {
     }
 
     // =================================
-    //  🎉 设置远程控制 (无参数)
+    //  🎉 设置远程控制 (Setup Remote Control) (无参数)
     //
     //  🎨 代码用途：
-    //     处理视频进度条拖动和画面远程点击逻辑
+    //     处理视频进度条拖动和画面远程点击逻辑。
     //
     //  💡 易懂解释：
     //     让你能用鼠标点屏幕里的东西，或者拖动进度条快进！🖱️
@@ -327,7 +337,7 @@ class BrowserApp {
             remoteScreen.addEventListener('mouseleave', () => progressBar.style.display = 'none'); // 💖 隐藏进度条
 
             // 点击进度条跳转
-            progressBar.addEventListener('click', (e) => {
+            progressBar.addEventListener('click', (e) => { // 🖱️ 绑定点击事件
                 e.stopPropagation(); // 💖 阻止事件冒泡，防止触发 remoteScreen 的点击事件
                 const rect = progressBar.getBoundingClientRect(); // 💖 获取进度条的尺寸和位置信息
                 // 计算点击位置在进度条上的百分比 (0-100)
@@ -339,10 +349,10 @@ class BrowserApp {
 
         // === 远程点击逻辑 ===
         if (remoteScreen) { // 💖 确保遮罩层存在
-            remoteScreen.addEventListener('click', (e) => {
+            remoteScreen.addEventListener('click', (e) => { // 🖱️ 绑定点击事件
                 // 🛠️ 优化：只有当窗口处于激活状态（最前端）时，才发送点击事件
                 // 防止用户在操作其他窗口时误触后台的浏览器画面，同时也节省带宽
-                if (wm.activeWindowId !== config.id) return;
+                if (wm.activeWindowId !== config.id) return; // 🛑 如果不是激活窗口，忽略
 
                 // 如果点击的是进度条，不触发远程点击（双重保险）
                 if (e.target.closest('#video-progress-bar')) return; // 💖 如果点击目标是进度条内部，直接返回

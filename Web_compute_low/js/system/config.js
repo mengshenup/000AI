@@ -28,11 +28,11 @@
 export const SERVER_HOST = "localhost"; // 🏠 服务器主机地址
 
 // 🔗 Web端高算力节点 (处理登录、存储) - Port 9000
-export const WEB_API_URL = `http://${SERVER_HOST}:9000`; 
+export const WEB_API_URL = `http://${SERVER_HOST}:9000`; // 💖 Web API 基础地址
 
 // 🔗 Agent端智能体节点 (处理AI、WebSocket) - Port 8000
-export const AGENT_API_URL = `http://${SERVER_HOST}:8000`;
-export const WS_URL = `ws://${SERVER_HOST}:8000/ws`;
+export const AGENT_API_URL = `http://${SERVER_HOST}:8000`; // 💖 Agent API 基础地址
+export const WS_URL = `ws://${SERVER_HOST}:8000/ws`; // 💖 WebSocket 连接地址
 
 // =================================
 //  🎉 浏览器配置 (无参数)

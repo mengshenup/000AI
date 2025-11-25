@@ -129,14 +129,21 @@ export const config = {
 
 export class PerformanceApp {
     // =================================
-    //  🎉 性能调优应用类
+    //  🎉 性能调优应用类 (无参数)
     //
     //  🎨 代码用途：
-    //     处理性能设置的读取、保存和事件分发
+    //     处理性能设置的读取、保存和事件分发，管理小天使的运行参数。
+    //
+    //  💡 易懂解释：
+    //     这是健身房的“总教练”！它负责记录你对小天使的要求（比如是要跑得快还是要省力气），
+    //     并且把这些要求传达给小天使，让她调整自己的状态。🏃‍♀️💨
+    //
+    //  ⚠️ 警告：
+    //     修改某些设置（如强制 CPU 模式）可能需要刷新页面才能完全生效。
     // =================================
     constructor() {
-        this.id = config.id;
-        this.ctx = pm.getContext(this.id);
+        this.id = config.id; // 🆔 应用ID
+        this.ctx = pm.getContext(this.id); // 📦 获取应用上下文
         
         // 监听窗口就绪
         bus.on(`app:ready:${this.id}`, () => {
@@ -146,7 +153,18 @@ export class PerformanceApp {
     }
 
     // =================================
-    //  🎉 更新系统信息 (迁移自 Manual App)
+    //  🎉 更新系统信息 (无参数)
+    //
+    //  🎨 代码用途：
+    //     获取并显示客户端的硬件信息（CPU、内存、GPU、浏览器等）。
+    //
+    //  💡 易懂解释：
+    //     这是给小天使做“体检”！看看你的电脑身体棒不棒，
+    //     能不能跑得动高画质的小天使。还会偷偷把体检报告写在纸上给你看哦！📝
+    //
+    //  ⚠️ 警告：
+    //     GPU 信息依赖 WebGL，某些隐私插件可能会屏蔽这些信息。
+    //     后端硬件信息获取是异步的，可能会比基础信息晚一点显示。
     // =================================
     updateSystemInfo() {
         const infoBox = document.getElementById('perf-sys-info');
@@ -231,65 +249,117 @@ export class PerformanceApp {
         infoBox.innerHTML = htmlContent;
     }
 
+    // =================================
+    //  🎉 初始化 (无参数)
+    //
+    //  🎨 代码用途：
+    //     应用启动时的入口函数，负责加载设置和绑定事件。
+    //
+    //  💡 易懂解释：
+    //     健身房开门啦！先把之前的训练计划（设置）拿出来，
+    //     然后准备好接收你的新指令（绑定按钮点击事件）。🔑
+    //
+    //  ⚠️ 警告：
+    //     必须在 DOM 元素加载完成后调用，否则找不到按钮。
+    // =================================
     init() {
         this.loadSettings();
         this.bindEvents();
     }
 
+    // =================================
+    //  🎉 加载设置 (无参数)
+    //
+    //  🎨 代码用途：
+    //     从 localStorage 读取用户之前的配置并应用到界面上。
+    //
+    //  💡 易懂解释：
+    //     翻看“训练日记”，看看你上次是选了“魔鬼训练”（高性能）
+    //     还是“养生模式”（节能），然后把开关拨到正确的位置。📖
+    //
+    //  ⚠️ 警告：
+    //     如果 localStorage 里没有数据，会使用默认值（高性能）。
+    // =================================
     loadSettings() {
         // 1. 性能模式
-        const perfMode = localStorage.getItem('angel_performance_mode') || 'high';
+        const perfMode = localStorage.getItem('angel_performance_mode') || 'high'; // ⚙️ 读取性能模式
         this.updatePerfBtns(perfMode);
 
         // 2. 强制 CPU 模式
-        const forceCpu = localStorage.getItem('angel_force_cpu') === 'true';
-        const chkCpu = document.getElementById('chk-force-cpu');
+        const forceCpu = localStorage.getItem('angel_force_cpu') === 'true'; // ⚙️ 读取兼容模式
+        const chkCpu = document.getElementById('chk-force-cpu'); // 🔘 获取复选框
         if (chkCpu) chkCpu.checked = forceCpu;
     }
 
+    // =================================
+    //  🎉 绑定事件 (无参数)
+    //
+    //  🎨 代码用途：
+    //     为界面上的按钮和开关添加点击/变更事件监听器。
+    //
+    //  💡 易懂解释：
+    //     告诉按钮们：“如果有人按你，你就大声喊出来！”
+    //     这样教练（代码）就知道该换训练计划了。📣
+    //
+    //  ⚠️ 警告：
+    //     切换兼容模式（强制 CPU）会提示用户刷新页面，因为 WebGL 上下文一旦创建很难动态切换。
+    // =================================
     bindEvents() {
         // 1. 性能模式切换
-        const btnHigh = document.getElementById('btn-perf-high');
-        const btnLow = document.getElementById('btn-perf-low');
+        const btnHigh = document.getElementById('btn-perf-high'); // 🔘 高性能按钮
+        const btnLow = document.getElementById('btn-perf-low'); // 🔘 节能按钮
 
         const setMode = (mode) => {
-            localStorage.setItem('angel_performance_mode', mode);
+            localStorage.setItem('angel_performance_mode', mode); // 💾 保存设置
             this.updatePerfBtns(mode);
             // 通知 Angel App 变更
-            bus.emit('config:changed', { key: 'perfMode', value: mode });
+            bus.emit('config:changed', { key: 'perfMode', value: mode }); // 📡 发送变更通知
         };
 
         if (btnHigh) btnHigh.onclick = () => setMode('high');
         if (btnLow) btnLow.onclick = () => setMode('low');
 
         // 2. 强制 CPU 模式切换
-        const chkCpu = document.getElementById('chk-force-cpu');
+        const chkCpu = document.getElementById('chk-force-cpu'); // 🔘 兼容模式开关
         if (chkCpu) {
             chkCpu.onchange = (e) => {
-                const isChecked = e.target.checked;
-                localStorage.setItem('angel_force_cpu', isChecked);
+                const isChecked = e.target.checked; // ✅ 获取选中状态
+                localStorage.setItem('angel_force_cpu', isChecked); // 💾 保存设置
                 // 这个设置需要重启 Angel 才能生效，我们可以尝试重置 Angel
                 if (confirm("切换兼容模式需要重启小天使才能生效。是否立即重启小天使？")) {
                     // 先关闭
-                    bus.emit('angel:reset'); // 重置状态
+                    bus.emit('angel:reset'); // 🔄 重置状态
                     // 触发重新加载 (简单粗暴的方法是刷新页面，或者让 Angel 重新 init)
                     // 由于 Angel 的 init 逻辑里有检测，我们这里提示用户刷新页面可能更稳妥
                     // 但为了体验，我们可以尝试重新触发 app:ready:win-companion
                     // 不过最稳妥的是刷新页面
-                    location.reload();
+                    location.reload(); // 🔄 刷新页面
                 }
             };
         }
 
         // 3. 重置小天使
-        const btnReset = document.getElementById('btn-reset-angel');
+        const btnReset = document.getElementById('btn-reset-angel'); // 🔘 重置按钮
         if (btnReset) {
             btnReset.onclick = () => {
-                bus.emit('angel:reset');
+                bus.emit('angel:reset'); // 📡 发送重置信号
             };
         }
     }
 
+    // =================================
+    //  🎉 更新按钮状态 (mode)
+    //
+    //  🎨 代码用途：
+    //     根据当前模式高亮显示对应的按钮。
+    //
+    //  💡 易懂解释：
+    //     把选中的那个按钮点亮，让它看起来像是被按下去了一样，
+    //     这样你就知道现在是哪个模式在运行啦！💡
+    //
+    //  ⚠️ 警告：
+    //     无。
+    // =================================
     updatePerfBtns(mode) {
         const btnHigh = document.getElementById('btn-perf-high');
         const btnLow = document.getElementById('btn-perf-low');

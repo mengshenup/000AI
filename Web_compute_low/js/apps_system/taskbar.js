@@ -1,8 +1,20 @@
-import { store } from '../system/store.js';
-import { bus } from '../system/event_bus.js';
+import { store } from '../system/store.js'; // 💖 引入全局状态管理
+import { bus } from '../system/event_bus.js'; // 💖 引入事件总线
 
 export const VERSION = '1.0.0'; // 💖 版本号
 
+// =================================
+//  🎉 任务栏配置对象
+//
+//  🎨 代码用途：
+//     定义任务栏服务的元数据。
+//
+//  💡 易懂解释：
+//     这是屏幕底部的那个长条条，它知道你开了哪些窗口，还藏着开始按钮哦！📏
+//
+//  ⚠️ 警告：
+//     isSystem: true 标记这是系统级服务。
+// =================================
 export const config = {
     id: 'sys-taskbar',
     name: '任务栏',
@@ -12,53 +24,89 @@ export const config = {
     description: '系统任务栏管理器'
 };
 
+// =================================
+//  🎉 初始化函数 (无参数)
+//
+//  🎨 代码用途：
+//     启动任务栏渲染，绑定开始按钮，并监听应用状态变化以更新任务栏。
+//
+//  💡 易懂解释：
+//     任务栏准备就绪！先把图标摆好，然后盯着每一个窗口：“你打开了吗？你最小化了吗？” 👀
+//
+//  ⚠️ 警告：
+//     依赖 DOM 中 id="taskbar-apps" 和 id="tray-icons" 的元素。
+// =================================
 export function init() {
     // 初始渲染
-    update();
-    renderTrayIcons();
-    bindStartButton(); // 🆕 绑定开始按钮
+    update(); // 💖 渲染任务栏应用图标
+    renderTrayIcons(); // 💖 渲染托盘图标
+    bindStartButton(); // 🆕 绑定开始按钮 // 💖 绑定开始按钮点击事件
 
     // 监听事件
-    bus.on('app:opened', () => update());
-    bus.on('app:closed', () => update());
-    bus.on('window:focus', () => update());
+    bus.on('app:opened', () => update()); // 💖 应用打开时更新任务栏
+    bus.on('app:closed', () => update()); // 💖 应用关闭时更新任务栏
+    bus.on('window:focus', () => update()); // 💖 窗口聚焦时更新任务栏状态
 }
 
-// 🆕 绑定开始按钮事件
+// =================================
+//  🎉 绑定开始按钮 (无参数)
+//
+//  🎨 代码用途：
+//     为开始按钮添加点击事件监听器，点击时触发系统登录界面。
+//
+//  💡 易懂解释：
+//     给那个最左边的按钮装上弹簧，一按下去，“砰”的一下，登录界面就弹出来啦！🔘
+//
+//  ⚠️ 警告：
+//     依赖 DOM 中 id="btn-start" 的元素。
+// =================================
 function bindStartButton() {
-    const btnStart = document.getElementById('btn-start');
-    if (btnStart) {
+    const btnStart = document.getElementById('btn-start'); // 💖 获取开始按钮元素
+    if (btnStart) { // 💖 如果按钮存在
         btnStart.onclick = () => {
             // 触发打开登录界面事件
-            bus.emit('system:open_login');
+            bus.emit('system:open_login'); // 💖 发送打开登录界面的指令
         };
     }
 }
 
+// =================================
+//  🎉 更新任务栏应用图标 (无参数)
+//
+//  🎨 代码用途：
+//     遍历所有应用，根据其状态（打开、活动、最小化）在任务栏渲染对应的图标。
+//
+//  💡 易懂解释：
+//     点名啦！正在运行的应用请举手！🙋‍♂️
+//     我会把你们的小图标整整齐齐地排在任务栏上，亮着的表示正在用哦。
+//
+//  ⚠️ 警告：
+//     会清空 #taskbar-apps 下的所有内容并重新生成。
+// =================================
 function update() {
-    const container = document.getElementById('taskbar-apps');
-    if (!container) return;
-    container.innerHTML = '';
+    const container = document.getElementById('taskbar-apps'); // 💖 获取任务栏应用容器
+    if (!container) return; // 💖 如果容器不存在，直接返回
+    container.innerHTML = ''; // 💖 清空容器内容
 
     // 获取全局 WM 实例以检查活动窗口
-    const wm = window.wm;
+    const wm = window.wm; // 💖 获取窗口管理器实例
 
-    Object.entries(store.apps).forEach(([id, app]) => {
-        if (app.isSystem) return;
-        if (app.showTaskbarIcon === false) return;
+    Object.entries(store.apps).forEach(([id, app]) => { // 💖 遍历所有应用
+        if (app.isSystem) return; // 💖 跳过系统应用
+        if (app.showTaskbarIcon === false) return; // 💖 跳过配置为不显示的应用
 
-        const win = document.getElementById(id);
-        const div = document.createElement('div');
-        div.className = 'task-app';
-        div.dataset.id = id;
-        div.title = app.name || id;
-        const iconPath = app.icon || app.iconPath;
-        div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`;
+        const win = document.getElementById(id); // 💖 尝试获取应用对应的窗口 DOM
+        const div = document.createElement('div'); // 💖 创建任务栏图标容器
+        div.className = 'task-app'; // 💖 添加 CSS 类名
+        div.dataset.id = id; // 💖 存储应用 ID
+        div.title = app.name || id; // 💖 设置鼠标悬停提示
+        const iconPath = app.icon || app.iconPath; // 💖 获取图标路径
+        div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`; // 💖 渲染 SVG 图标
 
-        if (win && win.classList.contains('open')) {
-            div.classList.add('running');
-            if (wm && !win.classList.contains('minimized') && wm.activeWindowId === id) {
-                div.classList.add('active');
+        if (win && win.classList.contains('open')) { // 💖 如果窗口存在且已打开
+            div.classList.add('running'); // 💖 标记为运行中（显示下划线或高亮）
+            if (wm && !win.classList.contains('minimized') && wm.activeWindowId === id) { // 💖 如果窗口未最小化且是当前活动窗口
+                div.classList.add('active'); // 💖 标记为活动状态（背景高亮）
             }
         }
         
@@ -66,45 +114,57 @@ function update() {
         div.onclick = () => {
             if (wm) {
                 // 使用 toggleApp 统一处理
-                wm.toggleApp(id);
+                wm.toggleApp(id); // 💖 切换应用的显示/隐藏状态
             }
         };
 
-        container.appendChild(div);
+        container.appendChild(div); // 💖 将图标添加到任务栏
     });
 }
 
+// =================================
+//  🎉 渲染托盘图标 (无参数)
+//
+//  🎨 代码用途：
+//     渲染系统托盘区域的图标（如网络、音量等系统服务）。
+//
+//  💡 易懂解释：
+//     这里是任务栏的小角落，藏着那些默默工作的小帮手，比如音量调节和网络连接。🔇📶
+//
+//  ⚠️ 警告：
+//     只渲染 system: true 的应用。
+// =================================
 function renderTrayIcons() {
-    const container = document.getElementById('tray-icons');
-    if (!container) return;
-    container.innerHTML = '';
+    const container = document.getElementById('tray-icons'); // 💖 获取托盘容器元素
+    if (!container) return; // 💖 如果容器不存在，直接返回
+    container.innerHTML = ''; // 💖 清空容器内容
 
-    const wm = window.wm;
+    const wm = window.wm; // 💖 获取窗口管理器实例
 
-    Object.entries(store.apps).forEach(([id, app]) => {
+    Object.entries(store.apps).forEach(([id, app]) => { // 💖 遍历所有应用
         // 💖 只渲染标记为系统应用且未明确禁止显示的应用
         if (app.system === true) {
-            const div = document.createElement('div');
-            div.className = 'tray-icon';
-            div.dataset.id = id;
-            div.title = app.name;
-            div.style.cursor = 'pointer';
-            div.style.width = '20px';
-            div.style.height = '20px';
-            div.style.display = 'flex';
-            div.style.alignItems = 'center';
-            div.style.justifyContent = 'center';
+            const div = document.createElement('div'); // 💖 创建托盘图标容器
+            div.className = 'tray-icon'; // 💖 添加 CSS 类名
+            div.dataset.id = id; // 💖 存储应用 ID
+            div.title = app.name; // 💖 设置鼠标悬停提示
+            div.style.cursor = 'pointer'; // 💖 设置鼠标样式
+            div.style.width = '20px'; // 💖 设置宽度
+            div.style.height = '20px'; // 💖 设置高度
+            div.style.display = 'flex'; // 💖 使用 Flex 布局
+            div.style.alignItems = 'center'; // 💖 垂直居中
+            div.style.justifyContent = 'center'; // 💖 水平居中
             
             // 🎨 插入图标 SVG
-            const iconPath = app.icon || app.iconPath;
-            div.innerHTML = `<svg style="width:16px; height:16px; fill:${app.color || '#ccc'}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`;
+            const iconPath = app.icon || app.iconPath; // 💖 获取图标路径
+            div.innerHTML = `<svg style="width:16px; height:16px; fill:${app.color || '#ccc'}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`; // 💖 渲染 SVG 图标
             
             // 🖱️ 绑定点击事件
             div.onclick = () => {
-                if (wm) wm.toggleApp(id);
+                if (wm) wm.toggleApp(id); // 💖 点击切换应用显示状态
             };
             
-            container.appendChild(div);
+            container.appendChild(div); // 💖 将图标添加到托盘
         }
     });
 }

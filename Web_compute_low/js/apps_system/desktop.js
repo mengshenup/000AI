@@ -1,8 +1,20 @@
-import { store } from '../system/store.js';
-import { bus } from '../system/event_bus.js';
+import { store } from '../system/store.js'; // 💖 引入全局状态管理
+import { bus } from '../system/event_bus.js'; // 💖 引入事件总线
 
 export const VERSION = '1.0.0'; // 💖 版本号
 
+// =================================
+//  🎉 桌面配置对象
+//
+//  🎨 代码用途：
+//     定义桌面服务的元数据，如 ID、名称、类型等。
+//
+//  💡 易懂解释：
+//     这是桌面的“身份证”，告诉系统它是谁，负责管理那些漂亮的图标！📇
+//
+//  ⚠️ 警告：
+//     isSystem: true 标记这是系统级服务，不可被普通用户卸载。
+// =================================
 export const config = {
     id: 'sys-desktop',
     name: '桌面',
@@ -12,53 +24,78 @@ export const config = {
     description: '系统桌面图标管理器'
 };
 
+// =================================
+//  🎉 初始化函数 (无参数)
+//
+//  🎨 代码用途：
+//     启动桌面渲染，并监听应用重命名事件以更新图标。
+//
+//  💡 易懂解释：
+//     桌面启动啦！先把图标画出来，然后竖起耳朵听：“有没有应用改名字啦？” 👂
+//
+//  ⚠️ 警告：
+//     依赖 DOM 中 id="desktop" 的元素。
+// =================================
 export function init() {
-    render();
+    render(); // 💖 初始渲染桌面图标
     
     // 监听应用重命名事件
-    bus.on('app:renamed', () => render());
+    bus.on('app:renamed', () => render()); // 💖 当应用改名时，重新渲染图标
 }
 
+// =================================
+//  🎉 渲染桌面图标 (无参数)
+//
+//  🎨 代码用途：
+//     根据已安装的应用列表，在桌面上动态生成图标元素。
+//
+//  💡 易懂解释：
+//     把你的应用一个个摆在桌面上，就像整理书桌一样！📚
+//     系统应用和不想显示的应用会被藏起来哦~
+//
+//  ⚠️ 警告：
+//     会清空 #desktop 下所有 .desktop-icon 元素，但保留 drag-overlay。
+// =================================
 function render() {
-    const dt = document.getElementById('desktop');
-    if (!dt) return;
+    const dt = document.getElementById('desktop'); // 💖 获取桌面容器元素
+    if (!dt) return; // 💖 如果找不到桌面容器，直接返回
     
     // 🧹 清除旧的图标元素 (保留 drag-overlay)
-    dt.querySelectorAll('.desktop-icon').forEach(e => e.remove());
+    dt.querySelectorAll('.desktop-icon').forEach(e => e.remove()); // 💖 移除所有旧的图标
 
     // 💖 渲染逻辑升级：优先使用 installedApps (包含所有已安装应用)，如果没有则回退到 store.apps
     // 这样即使应用从未打开过 (store.apps 里没有)，只要安装了 (installedApps 里有)，也能显示图标
     const source = Object.keys(store.installedApps).length > 0 ? store.installedApps : store.apps;
 
-    Object.entries(source).forEach(([id, app]) => {
-        const pathData = app.icon || app.iconPath;
-        if (!pathData) return;
+    Object.entries(source).forEach(([id, app]) => { // 💖 遍历所有应用
+        const pathData = app.icon || app.iconPath; // 💖 获取图标路径数据
+        if (!pathData) return; // 💖 如果没有图标数据，跳过
         
         // 💖 过滤掉系统应用
-        if (app.isSystem) return;
+        if (app.isSystem) return; // 💖 系统应用通常不显示在桌面
 
         // 💖 过滤掉显式配置不显示的应用
-        if (app.showDesktopIcon === false) return;
+        if (app.showDesktopIcon === false) return; // 💖 如果配置了不显示桌面图标，跳过
         
         // 💖 获取位置信息 (优先从 store.apps 获取用户自定义位置，否则用默认位置)
-        const userState = store.apps[id] || {};
-        const pos = userState.pos || app.pos || { x: 20, y: 20 };
+        const userState = store.apps[id] || {}; // 💖 获取应用的用户状态
+        const pos = userState.pos || app.pos || { x: 20, y: 20 }; // 💖 确定图标坐标
 
-        const el = document.createElement('div');
-        el.className = 'desktop-icon';
-        el.id = `icon-${id}`;
-        el.style.left = `${pos.x}px`;
-        el.style.top = `${pos.y}px`;
-        el.dataset.id = id;
-        el.dataset.type = 'icon';
+        const el = document.createElement('div'); // 💖 创建图标容器
+        el.className = 'desktop-icon'; // 💖 添加 CSS 类名
+        el.id = `icon-${id}`; // 💖 设置唯一 ID
+        el.style.left = `${pos.x}px`; // 💖 设置水平位置
+        el.style.top = `${pos.y}px`; // 💖 设置垂直位置
+        el.dataset.id = id; // 💖 存储应用 ID
+        el.dataset.type = 'icon'; // 💖 标记类型为图标
 
         el.innerHTML = `
             <svg class="icon-svg" viewBox="0 0 24 24" fill="${app.color || '#ccc'}">
-                <path d="${pathData}"/>
+                <path d="${pathData}"/> <!-- 💖 绘制 SVG 图标路径 -->
             </svg>
-            <div class="icon-text">${app.name}</div>
+            <div class="icon-text">${app.name}</div> <!-- 💖 显示应用名称 -->
         `;
         
-        dt.appendChild(el);
+        dt.appendChild(el); // 💖 将图标添加到桌面
     });
 }
