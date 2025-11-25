@@ -1,6 +1,6 @@
 @echo off
 cd /d "%~dp0"
-echo [INFO] Agent_angel_server: Installing dependencies...
+echo [INFO] Web_compute_high: Installing dependencies...
 
 if exist "..\.venv\Scripts\activate.bat" call "..\.venv\Scripts\activate.bat"
 

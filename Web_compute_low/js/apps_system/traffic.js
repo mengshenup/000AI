@@ -1,5 +1,7 @@
 import { createCapsule } from '../system/capsule_manager.js?v=1';
 
+export const VERSION = '1.0.0'; // 💖 版本号
+
 // 💖 详情窗口配置 (点击胶囊后打开的窗口)
 const detailConfig = {
     id: 'win-traffic',

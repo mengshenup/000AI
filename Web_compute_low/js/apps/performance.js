@@ -1,5 +1,6 @@
 import { bus } from '../system/event_bus.js';
 import { pm } from '../system/process_manager.js';
+import { WEB_API_URL } from '../system/config.js'; // 🌐 导入 Web API 地址
 
 export const config = {
     // =================================
@@ -206,7 +207,7 @@ export class PerformanceApp {
         `;
 
         // 🚀 异步获取后端详细硬件信息
-        fetch('http://localhost:8000/system_info')
+        fetch(`${WEB_API_URL}/system_info`)
             .then(res => res.json())
             .then(data => {
                 if (data.cpu_model) {

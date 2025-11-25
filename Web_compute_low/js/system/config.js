@@ -12,19 +12,27 @@
 // =================================
 
 // =================================
-//  🎉 WebSocket 服务器地址 (无参数)
+//  🎉 服务器地址配置 (无参数)
 //
 //  🎨 代码用途：
-//     定义前端连接后端的 WebSocket 接口地址。
+//     定义后端服务器的 HTTP 和 WebSocket 地址。
+//     支持 Web端 (Web_compute_high) 和 Agent端 (Agent_angel_server) 的分离。
 //
 //  💡 易懂解释：
-//     这是通往“大脑”的电话号码。如果是本地开发，通常是 localhost:8000/ws。
-//     注意：现在连接的是由 start_agent.py 启动的 Agent_Angel_Server 实例。
+//     这里填服务器的身份证！🏠
+//     SERVER_HOST: 填你的真实服务器IP或域名 (例如 "192.168.1.100" 或 "www.angel-ai.com")
 //
 //  ⚠️ 警告：
-//     必须以 ws:// 或 wss:// 开头。
+//     不要带 http:// 前缀，只填 IP 或 域名。
 // =================================
-export const WS_URL = "ws://localhost:8000/ws"; // 🌐 服务器连接地址
+export const SERVER_HOST = "localhost"; // 🏠 服务器主机地址
+
+// 🔗 Web端高算力节点 (处理登录、存储) - Port 9000
+export const WEB_API_URL = `http://${SERVER_HOST}:9000`; 
+
+// 🔗 Agent端智能体节点 (处理AI、WebSocket) - Port 8000
+export const AGENT_API_URL = `http://${SERVER_HOST}:8000`;
+export const WS_URL = `ws://${SERVER_HOST}:8000/ws`;
 
 // =================================
 //  🎉 浏览器配置 (无参数)

@@ -1,5 +1,7 @@
 import { bus } from '../system/event_bus.js'; // 💖 导入事件总线，虽然当前文件暂未使用，但保留以备扩展
 
+export const VERSION = '1.0.0'; // 💖 版本号
+
 export class ContextMenuApp {
     // =================================
     //  🎉 仪式菜单类 (无参数)

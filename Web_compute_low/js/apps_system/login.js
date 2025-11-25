@@ -1,5 +1,8 @@
 import { bus } from '../system/event_bus.js';
 import { network } from '../system/network.js';
+import { WEB_API_URL } from '../system/config.js'; // 🌐 导入 Web API 地址
+
+export const VERSION = '1.0.0'; // 💖 版本号
 
 // =================================
 //  🎉 登录界面 (Login Interface)
@@ -31,10 +34,24 @@ export const loginApp = {
         this.autoLogin();
     },
 
-    autoLogin() {
-        // 简单模拟：默认登录第一个用户
-        this.currentUser = this.users[0];
-        this.updateSystemUser();
+    async autoLogin() {
+        // 1. 尝试从浏览器缓存读取 Key
+        const cachedKey = localStorage.getItem('angel_api_key');
+        const cachedUser = localStorage.getItem('current_user_id');
+        
+        if (cachedKey && cachedUser) {
+            this.currentUser = { 
+                id: cachedUser, 
+                name: cachedUser, 
+                account: cachedUser, 
+                keys: [{ name: 'Cached Key', value: cachedKey }] 
+            };
+            this.updateSystemUser();
+            return;
+        }
+
+        // 2. 如果没有缓存，显示登录界面
+        // this.open(); 
     },
 
     open() {
@@ -52,12 +69,20 @@ export const loginApp = {
     updateSystemUser() {
         // 通知系统用户已变更
         bus.emit('system:user_changed', this.currentUser);
+        
+        // 保存到本地缓存
+        localStorage.setItem('current_user_id', this.currentUser.account);
+        
         // 发送 Key 给服务器 (如果有选中的 Key)
         if (this.currentUser.keys.length > 0) {
             // 默认使用第一个 Key
             const activeKey = this.currentUser.keys[0].value;
+            localStorage.setItem('angel_api_key', activeKey); // 缓存 Key
             network.send({ type: 'auth', key: activeKey });
         }
+        
+        // 重新加载该用户的窗口布局
+        // store.syncFromClientDB(); // 需要 store 支持重载
     },
 
     render() {
@@ -69,7 +94,9 @@ export const loginApp = {
             z-index: 9999; display: flex; justify-content: center; align-items: center;
         `;
 
-        const user = this.currentUser || this.users[0];
+        // 默认显示 admin
+        const defaultUser = { name: 'Admin', account: 'admin', avatar: 'assets/wp-0.avif', keys: [] };
+        const user = this.currentUser || defaultUser;
 
         overlay.innerHTML = `
             <div class="login-card" style="
@@ -79,50 +106,66 @@ export const loginApp = {
             ">
                 <div style="text-align: center;">
                     <img src="${user.avatar}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
-                    <h2 style="margin: 10px 0; color: #333;">${user.name}</h2>
-                    <p style="color: #666; font-size: 14px;">@${user.account}</p>
+                    <h2 style="margin: 10px 0; color: #333;">Login</h2>
                 </div>
 
                 <div class="form-group">
                     <label>账号</label>
-                    <input type="text" value="${user.account}" disabled style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
+                    <input type="text" id="login-account" value="${user.account}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
                 </div>
 
                 <div class="form-group">
                     <label>密码</label>
-                    <input type="password" placeholder="默认为空" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
-                </div>
-
-                <div class="form-group">
-                    <label>API Keys</label>
-                    <div id="key-list" style="max-height: 100px; overflow-y: auto; border: 1px solid #eee; padding: 5px; border-radius: 8px; margin-bottom: 5px;">
-                        ${user.keys.map(k => `<div style="font-size: 12px; padding: 2px;">🔑 ${k.name}</div>`).join('') || '<div style="color:#999; font-size:12px;">暂无 Key</div>'}
-                    </div>
-                    <button id="btn-add-key" style="width: 100%; padding: 5px; background: #f0f0f0; border: none; border-radius: 5px; cursor: pointer;">+ 添加 Key</button>
+                    <input type="password" id="login-password" placeholder="默认为空" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;">
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button id="btn-login" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">登录</button>
-                    <button id="btn-switch" style="flex: 1; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer;">切换账号</button>
                 </div>
+                <div id="login-msg" style="color: red; text-align: center; font-size: 12px;"></div>
             </div>
         `;
 
         document.body.appendChild(overlay);
 
         // 绑定事件
-        document.getElementById('btn-login').onclick = () => {
-            // 简单模拟登录成功
-            this.close();
-            bus.emit('system:speak', `欢迎回来，${user.name}`);
-        };
+        document.getElementById('btn-login').onclick = async () => {
+            const account = document.getElementById('login-account').value;
+            const password = document.getElementById('login-password').value;
+            const msg = document.getElementById('login-msg');
 
-        document.getElementById('btn-add-key').onclick = () => {
-            const key = prompt("请输入新的 Gemini API Key:");
-            if (key) {
-                user.keys.push({ name: `Key ${user.keys.length + 1}`, value: key });
-                this.render(); // 重新渲染
-                document.getElementById('login-overlay').remove(); // 移除旧的
+            try {
+                msg.innerText = "正在验证...";
+                const res = await fetch(`${WEB_API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account, password })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // 💾 保存 Token
+                    if (data.token) {
+                        localStorage.setItem('angel_auth_token', data.token);
+                    }
+
+                    this.currentUser = {
+                        id: account,
+                        name: account,
+                        account: account,
+                        avatar: 'assets/wp-0.avif',
+                        keys: data.keys
+                    };
+                    this.close();
+                    this.updateSystemUser();
+                    bus.emit('system:speak', `欢迎回来，${account}`);
+                } else {
+                    const err = await res.json();
+                    msg.innerText = err.detail || "登录失败";
+                }
+            } catch (e) {
+                msg.innerText = "连接服务器失败";
             }
         };
         

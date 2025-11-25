@@ -1,4 +1,4 @@
-import { DEFAULT_APPS } from './config.js'; // ⚙️ 导入默认配置
+import { DEFAULT_APPS, WEB_API_URL } from './config.js'; // ⚙️ 导入默认配置
 
 export const VERSION = '1.0.0'; // 💖 系统核心模块版本号
 
@@ -62,11 +62,15 @@ class Store {
         }
     }
 
-    // 💖 从 客户端数据库 同步数据
+    // 💖 从 Agent端 同步数据
     async syncFromClientDB() {
         try {
-            // 修正：使用 memory_window.json
-            const res = await fetch('http://localhost:8000/load_memory?file=memory_window.json');
+            // 获取当前用户 ID (默认为 default)
+            // 实际应从 loginApp 获取，这里简化处理
+            const userId = localStorage.getItem('current_user_id') || 'admin';
+            
+            // 修正：使用 memory_window.json 并传递 user_id
+            const res = await fetch(`${WEB_API_URL}/load_memory?file=memory_window.json&user_id=${userId}`);
             const data = await res.json();
             if (data) {
                 this.apps = data.apps || {};
@@ -110,7 +114,7 @@ class Store {
     // 💖 保存数据到 客户端数据库
     async save() {
         try {
-            await fetch('http://localhost:8000/save_layout', {
+            await fetch(`${WEB_API_URL}/save_layout`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
@@ -140,7 +144,7 @@ class Store {
         
         // 📡 调用后端 API 清空文件
         try {
-            await fetch('http://localhost:8000/save_layout', {
+            await fetch(`${WEB_API_URL}/save_layout`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ data: {} })

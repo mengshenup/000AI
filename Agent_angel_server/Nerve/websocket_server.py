@@ -2,12 +2,41 @@ import asyncio # ⚡ 异步 I/O
 import json # 📄 JSON 处理
 import time # ⏱️ 时间模块
 import base64 # 🧬 Base64 编码
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect # 🔌 WebSocket 组件
+import hmac # 🔐 HMAC 签名
+import hashlib # 🔐 哈希算法
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query # 🔌 WebSocket 组件
 from Body.browser_manager import global_browser_manager # 🌐 全局浏览器管理器 (单例)
 from Energy.cost_tracker import global_cost_tracker # 💰 成本追踪器
 from Brain.gemini_client import global_gemini # 🧠 Gemini AI 客户端
+from Online.stream_manager import global_stream_manager # 📺 导入流媒体管理器
 
 router = APIRouter() # 🛣️ 创建 WebSocket 路由
+
+# 🔑 密钥配置 (必须与 Web_compute_high 保持一致)
+SECRET_KEY = "angel_secret_2025"
+
+# 🛠️ 工具函数：Token 验证
+def verify_token(token: str, user_id: str) -> bool:
+    try:
+        parts = token.split('.')
+        if len(parts) != 3: return False
+        
+        uid, timestamp, signature = parts
+        if uid != user_id: return False
+        
+        # 验证过期 (例如 24小时)
+        if time.time() - int(timestamp) > 86400: return False
+        
+        msg = f"{uid}.{timestamp}"
+        expected_signature = hmac.new(
+            SECRET_KEY.encode(), 
+            msg.encode(), 
+            hashlib.sha256
+        ).hexdigest()
+        
+        return hmac.compare_digest(signature, expected_signature)
+    except:
+        return False
 
 # =================================
 #  🎉 WebSocket 服务 (无参数)
@@ -48,16 +77,17 @@ async def send_impulse(ws: WebSocket, type_str: str, data: dict = None):
         pass # 🛡️ 忽略发送失败
 
 @router.websocket("/ws/{user_id}")
-async def neural_pathway(websocket: WebSocket, user_id: str):
+async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(None)):
     # =================================
-    #  🎉 神经通路 (WebSocket连接, 用户ID)
+    #  🎉 神经通路 (WebSocket连接, 用户ID, Token)
     #
     #  🎨 代码用途：
     #     WebSocket 主循环，负责生命周期管理：
-    #     1. 建立连接并获取专属 Session (Context)。
-    #     2. 启动接收循环监听前端指令。
-    #     3. 在主循环中处理指令并定时发送视觉帧（截图）。
-    #     4. 异常处理与资源释放。
+    #     1. 验证 Token 安全性。
+    #     2. 建立连接并获取专属 Session (Context)。
+    #     3. 启动接收循环监听前端指令。
+    #     4. 在主循环中处理指令并定时发送视觉帧（截图）。
+    #     5. 异常处理与资源释放。
     #
     #  💡 易懂解释：
     #     Angel 的主意识流！🌊 只要连接还在，Angel 就活着。它一边听你的指挥（点击、跳转），一边把看到的画面（截图）实时传给你。
@@ -68,12 +98,21 @@ async def neural_pathway(websocket: WebSocket, user_id: str):
     """神经通路 (WebSocket Endpoint)"""
     await websocket.accept() # 🤝 接受连接
     
+    # 0. 安全验证
+    if not token or not verify_token(token, user_id):
+        await websocket.close(code=1008, reason="Invalid Token")
+        return
+
     # 1. 获取专属会话 (Session)
     try:
         session = await global_browser_manager.get_or_create_session(user_id)
         page = session['page']
         hand = session['hand']
-        eye = session['eye']
+        # eye = session['eye'] # 👁️ Eye 模块现在由 Online 模块动态调用
+        
+        # 📺 启动直播流 (Online 模块接管)
+        await global_stream_manager.start_stream(user_id, websocket)
+        
         await send_impulse(websocket, "log", {"msg": f"✨ Session Ready for {user_id}!"})
     except Exception as e:
         await websocket.close(code=1011, reason=f"Init Failed: {str(e)}")
@@ -114,85 +153,49 @@ async def neural_pathway(websocket: WebSocket, user_id: str):
     #  🔄 主循环 (Main Loop)
     # =================================
     try:
-        last_frame_time = 0
-        last_activity_check = 0
-        is_active_mode = False
-        
-        # 📸 发送初始帧 (Initial Frame)
-        try:
-            init_bytes = await page.screenshot(format="jpeg", quality=config['quality'], scale="css")
-            b64_init = base64.b64encode(init_bytes).decode('utf-8')
-            await send_impulse(websocket, "vision", {"frame": b64_init})
-        except: pass
-
         while True:
-            # 1. 处理指令 (非阻塞)
-            while not queue.empty():
-                cmd = await queue.get()
-                if cmd is None: raise WebSocketDisconnect() # 🛑 收到停止信号
+            # 1. 处理指令 (阻塞等待，因为推流已移至 Online 模块)
+            cmd = await queue.get()
+            if cmd is None: raise WebSocketDisconnect() # 🛑 收到停止信号
 
-                type_str = cmd.get('type')
-                
-                # 🎮 控制指令
-                if type_str == 'click':
-                    asyncio.create_task(hand.click(cmd['x'], cmd['y']))
-                elif type_str == 'move':
-                    asyncio.create_task(hand.human_move(cmd['x'] * 1920, cmd['y'] * 1080)) # ⚠️ 需优化：使用真实 Viewport
-                elif type_str == 'scroll':
-                    asyncio.create_task(hand.scroll(cmd['deltaY']))
-                elif type_str == 'navigate':
-                    asyncio.create_task(page.goto(cmd['url']))
-                
-                # 🧠 认知指令
-                elif type_str == 'task':
-                    # 设定用户目标
-                    from Brain.cognitive_system import global_cognitive_system
-                    await global_cognitive_system.set_goal(user_id, cmd['goal'])
-                    await send_impulse(websocket, "log", {"msg": f"🎯 收到任务: {cmd['goal']}"})
-
-                # ⚙️ 配置指令
-                elif type_str == 'config':
-                    if 'fps' in cmd: config['fps'] = min(30, max(1, int(cmd['fps'])))
-                    if 'quality' in cmd: config['quality'] = min(100, max(10, int(cmd['quality'])))
-                    if 'stream' in cmd: config['stream_active'] = bool(cmd['stream'])
-
-            # 2. 智能推流逻辑 (Smart Streaming)
-            now = time.time()
+            type_str = cmd.get('type')
             
-            # 检查活跃状态 (每 0.1s 检查一次)
-            if now - last_activity_check > 0.1:
-                # 如果最后操作在 2秒内，视为活跃
-                was_active = is_active_mode
-                is_active_mode = (now - hand.last_action_time) < 2.0
-                
-                # 状态切换通知
-                if is_active_mode and not was_active:
-                    await send_impulse(websocket, "status", {"msg": "⚡ Human-AI Collaboration Active"})
-                elif not is_active_mode and was_active:
-                    await send_impulse(websocket, "status", {"msg": "💤 Agent Waiting..."})
-                
-                last_activity_check = now
-
-            # 决定是否推流
-            should_stream = config['stream_active'] and is_active_mode
-            target_interval = 1.0 / config['fps']
+            # 🎮 控制指令
+            if type_str == 'click':
+                asyncio.create_task(hand.click(cmd['x'], cmd['y']))
+            elif type_str == 'move':
+                asyncio.create_task(hand.human_move(cmd['x'] * 1920, cmd['y'] * 1080)) # ⚠️ 需优化：使用真实 Viewport
+            elif type_str == 'scroll':
+                asyncio.create_task(hand.scroll(cmd['deltaY']))
+            elif type_str == 'navigate':
+                asyncio.create_task(page.goto(cmd['url']))
             
-            if should_stream and (now - last_frame_time >= target_interval):
-                try:
-                    # 📸 截图
-                    screenshot_bytes = await page.screenshot(
-                        format="jpeg",
-                        quality=config['quality'],
-                        scale="css"
-                    )
-                    
-                    # 🧬 编码并发送
-                    b64_data = base64.b64encode(screenshot_bytes).decode('utf-8')
-                    await send_impulse(websocket, "vision", {"frame": b64_data})
-                    
-                    last_frame_time = now
-                except Exception as e:
-                    print(f"⚠️ Screenshot failed: {e}")
+            # 🧠 认知指令
+            # ⚙️ 配置指令
+            elif type_str == 'config':
+                # TODO: 将配置传递给 StreamManager
+                pass
+            
+            # 💓 心跳响应
+            elif type_str == 'ping':
+                await send_impulse(websocket, "pong")
+
+    except WebSocketDisconnect:
+            # ⚙️ 配置指令
+            elif type_str == 'config':
+                # TODO: 将配置传递给 StreamManager
+                pass
+
+    except WebSocketDisconnect:
+        print(f"🔌 Client {user_id} disconnected")
+    except Exception as e:
+        print(f"⚠️ Error in neural pathway: {e}")
+    finally:
+        receiver_task.cancel()
+        # 🛑 停止直播流
+        global_stream_manager.stop_stream(user_id)
+        # 注意：不关闭 BrowserContext，保持后台运行
+        pass
 
             # 3. 智能休眠 (Yield Control)
             if is_active_mode:

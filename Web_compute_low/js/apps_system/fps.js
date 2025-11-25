@@ -1,5 +1,7 @@
 import { createCapsule } from '../system/capsule_manager.js?v=1';
 
+export const VERSION = '1.0.0'; // 💖 版本号
+
 export const config = {
     // =================================
     //  🎉 FPS 监控配置

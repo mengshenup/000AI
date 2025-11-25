@@ -3,6 +3,8 @@ import { wm } from '../system/window_manager.js';
 import { pm } from '../system/process_manager.js'; // 🛡️ 导入进程管理器
 import { ANGEL_QUOTES, APP_OPEN_MESSAGES } from './angel_data.js';
 
+export const VERSION = '1.0.0'; // 💖 版本号
+
 export const config = {
     // =================================
     //  🎉 应用配置 (ID, 名称, 图标...)

@@ -4,6 +4,7 @@ import { network as net } from './network.js'; // 🌐 导入网络模块
 import { wm } from './window_manager.js'; // 🪟 导入窗口管理器
 import { store } from './store.js'; // 💾 导入状态存储
 import { loginApp } from '../apps_system/login.js'; // 🆕 导入登录应用
+import { WEB_API_URL } from './config.js'; // 🌐 导入 Web API 地址
 
 // 🗑️ 移除静态导入，改为动态加载
 // import './apps/browser.js'; 
@@ -95,7 +96,7 @@ window.onload = async () => {
 
     try {
         // 1. 获取应用列表 (动态加载)
-        const res = await fetch('http://localhost:8000/get_apps_list');
+        const res = await fetch(`${WEB_API_URL}/get_apps_list`);
         const { apps, system_apps, system_core } = await res.json();
 
         // 辅助函数：检查是否需要更新 (优先对比行数)

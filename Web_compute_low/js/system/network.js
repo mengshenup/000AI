@@ -43,17 +43,21 @@ export class Network {
             }
             console.log(`🆔 Current User ID: ${userId}`);
 
-            // 2. 创建 WebSocket 连接对象 (带上 User ID)
+            // 2. 创建 WebSocket 连接对象 (带上 User ID 和 Token)
             // 注意：WS_URL 默认为 ws://localhost:8000/ws，我们需要拼接 ID
             // 如果 WS_URL 结尾没有 /，补一个
             const baseUrl = WS_URL.endsWith('/') ? WS_URL : WS_URL + '/';
-            // 这里的 WS_URL 是 http://.../ws 还是 /ws ? 假设是 ws://localhost:8000/ws
-            // 后端路由是 /ws/{user_id}
-            // 所以我们需要把 /ws 替换掉或者拼接
-            // 简单处理：假设 WS_URL 是 ws://host:port/ws
-            const finalUrl = `${baseUrl}${userId}`;
+            
+            // 获取 Token
+            const token = localStorage.getItem('angel_auth_token') || '';
+            
+            // 拼接 URL: ws://host:port/ws/{user_id}?token=...
+            const finalUrl = `${baseUrl}${userId}?token=${encodeURIComponent(token)}`;
             
             this.ws = new WebSocket(finalUrl); // 📞 拨号
+
+            // 💓 启动心跳
+            this.startHeartbeat();
 
             // 当连接成功建立时触发
             this.ws.onopen = () => {
@@ -80,6 +84,7 @@ export class Network {
             // 当连接关闭时触发
             this.ws.onclose = () => {
                 console.log("WS Closed, retrying..."); // 📝 打印日志
+                if (this.heartbeatTimer) clearInterval(this.heartbeatTimer); // 🛑 停止心跳
                 bus.emit('system:speak', "网络中断，正在重连...📡"); // 🗣️ 通知用户
 
                 // 清除旧的定时器，防止重复
@@ -91,6 +96,16 @@ export class Network {
             // 捕获连接过程中的同步错误
             console.error(e); // ❌ 打印错误
         }
+    }
+
+    // 💓 心跳机制
+    startHeartbeat() {
+        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        this.heartbeatTimer = setInterval(() => {
+            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000); // 每 30 秒发送一次心跳
     }
 
     send(arg1, arg2 = {}) {

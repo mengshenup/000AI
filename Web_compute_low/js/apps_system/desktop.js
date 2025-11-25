@@ -1,6 +1,8 @@
 import { store } from '../system/store.js';
 import { bus } from '../system/event_bus.js';
 
+export const VERSION = '1.0.0'; // 💖 版本号
+
 export const config = {
     id: 'sys-desktop',
     name: '桌面',
