@@ -106,31 +106,52 @@ class Store {
         //  🎉 同步数据 (Sync Data) (无参数)
         //
         //  🎨 代码用途：
-        //     从后端 API (Web_compute_high) 拉取最新的窗口布局和应用状态。
+        //     加载应用状态。优先级：本地缓存 (LocalStorage) -> 服务器 (Web_compute_high) -> 默认空状态。
         //
         //  💡 易懂解释：
-        //     打电话问总部：“我上次把东西放哪了？”📞
-        //
-        //  ⚠️ 警告：
-        //     如果网络请求失败，会捕获异常并打印错误，但不会中断程序运行。
+        //     1. 先翻翻口袋（本地缓存）有没有记事本。
+        //     2. 如果没有，就打电话问总部（服务器）。
+        //     3. 如果还是没有，就拿一本新的（默认空）。
         // =================================
+        
+        // 获取当前用户 ID
+        const userId = localStorage.getItem('current_user_id') || 'default';
+        const cacheKey = `angel_memory_bank_${userId}`; // 🔑 本地缓存 Key
+
+        // 1. 尝试读取本地缓存
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+            try {
+                const data = JSON.parse(cachedData);
+                console.log("📂 从本地缓存加载 Memorybank");
+                this.apps = data.apps || {};
+                if (data.installedApps) this.installedApps = data.installedApps;
+                return; // ✅ 命中缓存，直接返回
+            } catch (e) {
+                console.warn("⚠️ 本地缓存数据损坏，尝试从服务器加载");
+            }
+        }
+
+        // 2. 尝试从服务器加载
         try {
-            // 获取当前用户 ID (默认为 default)
-            // 实际应从 loginApp 获取，这里简化处理
-            const userId = localStorage.getItem('current_user_id') || 'admin'; // 🆔 获取当前用户 ID
-            
             // 修正：使用 memory_window.json 并传递 user_id
             const res = await fetch(`${WEB_API_URL}/load_memory?user_id=${userId}`); // 📡 发起网络请求
             const data = await res.json(); // 📦 解析 JSON 响应
             if (data) { // ✅ 如果有数据
+                console.log("☁️ 从服务器加载 Memorybank");
                 this.apps = data.apps || {}; // 📂 加载应用状态
                 // 💖 加载已安装应用缓存 (如果有)
                 if (data.installedApps) { // 💾 如果有安装列表
                     this.installedApps = data.installedApps; // 📂 加载安装列表
                 }
+                
+                // 🔄 同步到本地缓存
+                localStorage.setItem(cacheKey, JSON.stringify(data));
             }
         } catch (e) { // 🛡️ 捕获异常
-            console.error("无法加载布局:", e); // ❌ 打印错误
+            console.error("无法加载布局 (服务器不可用):", e); // ❌ 打印错误
+            // 3. 默认空状态 (构造函数中已初始化为空对象，此处无需操作)
+            console.log("🆕 使用默认空 Memorybank");
         }
     }
 
@@ -179,10 +200,10 @@ class Store {
         //  🎉 保存数据 (Save Data) (无参数)
         //
         //  🎨 代码用途：
-        //     将当前内存中的应用状态和安装列表发送到后端 API 进行持久化存储。
+        //     将当前内存中的应用状态和安装列表保存到本地缓存，并异步发送到后端 API 进行持久化存储。
         //
         //  💡 易懂解释：
-        //     写日记。把今天发生的事情（窗口位置、安装了啥）记下来，防止忘了。📝
+        //     写日记。先写在随身带的小本本上（本地缓存），有空了再誊写到保险柜里（服务器）。📝
         //
         //  ⚠️ 警告：
         //     这是一个异步操作。
@@ -190,16 +211,23 @@ class Store {
         try {
             // 获取当前用户 ID
             const userId = localStorage.getItem('current_user_id') || 'default';
+            const cacheKey = `angel_memory_bank_${userId}`; // 🔑 本地缓存 Key
             
+            const payloadData = { 
+                apps: this.apps, // 📂 应用状态
+                installedApps: this.installedApps // 💾 持久化安装列表
+            };
+
+            // 1. 立即保存到本地缓存
+            localStorage.setItem(cacheKey, JSON.stringify(payloadData));
+
+            // 2. 异步发送到服务器
             await fetch(`${WEB_API_URL}/save_memory`, { // 📡 发起 POST 请求
                 method: 'POST', // 📮 使用 POST 方法
                 headers: { 'Content-Type': 'application/json' }, // 🏷️ 设置内容类型为 JSON
                 body: JSON.stringify({ // 📦 打包数据
                     user_id: userId, // 👤 用户 ID
-                    data: { 
-                        apps: this.apps, // 📂 应用状态
-                        installedApps: this.installedApps // 💾 持久化安装列表
-                    } 
+                    data: payloadData
                 })
             });
         } catch (e) { // 🛡️ 捕获异常

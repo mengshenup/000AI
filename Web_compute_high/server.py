@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException # 🚀 FastAPI 框架
 from fastapi.middleware.cors import CORSMiddleware # 🛡️ CORS 中间件
 from pydantic import BaseModel # 🏗️ 数据验证模型
 import uvicorn # 🦄 ASGI 服务器
+from dotenv import load_dotenv # 🔑 环境变量加载
 
 # =================================
 #  🎉 Web Compute High Server (Web端高算力节点)
@@ -43,6 +44,52 @@ KEY_FILE = MEMORY_DIR / "memory_key.json" # 🔑 用户密钥数据
 
 # 🔑 密钥配置 (生产环境应从环境变量加载)
 SECRET_KEY = "angel_secret_2025" # 🔐 用于签名的私钥
+
+# =================================
+#  🎉 初始化认证系统 (无参数)
+#
+#  🎨 代码用途：
+#     确保 memory_key.json 存在，并包含默认的 admin 账号。
+#     尝试从 .env 文件读取 GEMINI_API_KEY 并注入到 admin 账号中。
+#
+#  💡 易懂解释：
+#     管家上岗前先检查钥匙柜！🔑
+#     如果没有管理员账号，就赶紧造一个，顺便把保险箱（.env）里的备用钥匙挂上去。
+# =================================
+def init_auth_system():
+    # 1. 加载环境变量
+    env_path = MEMORY_DIR / ".env"
+    load_dotenv(env_path)
+    api_key = os.getenv("GEMINI_API_KEY", "") # 🔑 获取 API Key，默认为空
+
+    # 2. 读取或创建用户库
+    users = load_json(KEY_FILE, {})
+    
+    # 3. 确保 admin 存在
+    if "admin" not in users:
+        print("🆕 初始化默认管理员账号: admin")
+        users["admin"] = {
+            "password": "", # 🔑 默认无密码
+            "keys": []
+        }
+    
+    # 4. 注入/更新 Key (如果 admin 是新格式)
+    if isinstance(users["admin"], dict):
+        # 检查是否已有该 Key，避免重复
+        has_key = any(k.get("value") == api_key for k in users["admin"].get("keys", []))
+        if api_key and not has_key:
+            users["admin"]["keys"] = users["admin"].get("keys", [])
+            users["admin"]["keys"].append({
+                "name": "System Key (.env)",
+                "value": api_key
+            })
+            print("🔑 已将 .env 中的 Key 注入 admin 账号")
+    
+    # 5. 保存更改
+    save_json(KEY_FILE, users)
+
+# 初始化认证
+init_auth_system()
 
 app = FastAPI(title="Angel Web Compute High", version="1.0.0") # 📱 创建 FastAPI 应用
 
@@ -156,8 +203,8 @@ async def login(req: LoginRequest):
     #  🎉 用户登录 (登录请求)
     #
     #  🎨 代码用途：
-    #     验证用户账号密码。如果账号不存在则自动注册。
-    #     验证通过后返回 Token。
+    #     验证用户账号密码。支持新旧两种存储格式。
+    #     验证通过后返回 Token 和 API Keys。
     #
     #  💡 易懂解释：
     #     有人敲门！🚪 “口令？” “芝麻开门！”
@@ -165,19 +212,43 @@ async def login(req: LoginRequest):
     # =================================
     users = load_json(KEY_FILE, {}) # 📖 读取用户库
     
-    # 自动注册逻辑 (简化版)
+    # 自动注册逻辑 (简化版 - 默认使用新格式)
     if req.account not in users:
-        users[req.account] = req.password # 📝 记录新用户
+        users[req.account] = {
+            "password": req.password,
+            "keys": []
+        } # 📝 记录新用户 (新格式)
         save_json(KEY_FILE, users) # 💾 保存
         print(f"🆕 新用户注册: {req.account}")
     
+    # 获取存储的密码和 Keys
+    stored_user = users[req.account]
+    stored_password = ""
+    user_keys = []
+
+    if isinstance(stored_user, dict):
+        # 新格式: {"password": "...", "keys": [...]}
+        stored_password = stored_user.get("password", "")
+        user_keys = stored_user.get("keys", [])
+    else:
+        # 旧格式: "password"
+        stored_password = stored_user
+        user_keys = []
+
     # 验证密码
-    if users[req.account] != req.password:
+    if stored_password != req.password:
         raise HTTPException(status_code=401, detail="密码错误") # ❌ 密码错误
     
     # 生成 Token
     token = create_token(req.account) # 🎫 签发 Token
-    return {"status": "success", "token": token, "user_id": req.account} # ✅ 返回成功信息
+    
+    # 返回成功信息，包含 Keys
+    return {
+        "status": "success", 
+        "token": token, 
+        "user_id": req.account,
+        "keys": user_keys # 🗝️ 返回用户的 API Keys
+    }
 
 @app.post("/save_memory")
 async def save_memory(state: AppState):
