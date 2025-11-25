@@ -65,7 +65,8 @@ class Store {
     // 💖 从 客户端数据库 同步数据
     async syncFromClientDB() {
         try {
-            const res = await fetch('http://localhost:8000/load_layout');
+            // 修正：使用 memory_window.json
+            const res = await fetch('http://localhost:8000/load_memory?file=memory_window.json');
             const data = await res.json();
             if (data) {
                 this.apps = data.apps || {};

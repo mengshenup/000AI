@@ -3,6 +3,7 @@ import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器 (确
 import { network as net } from './network.js'; // 🌐 导入网络模块
 import { wm } from './window_manager.js'; // 🪟 导入窗口管理器
 import { store } from './store.js'; // 💾 导入状态存储
+import { loginApp } from '../apps_system/login.js'; // 🆕 导入登录应用
 
 // 🗑️ 移除静态导入，改为动态加载
 // import './apps/browser.js'; 

@@ -71,7 +71,7 @@ export class WindowManager {
         });
 
         // this.updateTaskbar();      // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
-        this.initWallpaperApp();   // 🎨 初始化壁纸设置 APP 的内容
+        // this.initWallpaperApp();   // 🎨 初始化壁纸设置 APP 的内容 (已移除，改为独立 App)
         this.restoreWindows();     // 🔄 恢复上次窗口的位置和状态
         this.setupGlobalEvents();  // 🖱️ 设置全局鼠标点击等事件监听
 

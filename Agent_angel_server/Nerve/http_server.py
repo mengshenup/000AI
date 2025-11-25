@@ -6,7 +6,7 @@ import subprocess # 🐚 执行系统命令
 import os # 📂 文件操作
 
 router = APIRouter() # 🛣️ 创建 HTTP 路由
-DATA_FILE = "window_memory.json" # 💾 窗口记忆文件 (原 apps.json)
+DATA_FILE = "memory_window.json" # 💾 窗口记忆文件 (原 window_memory.json)
 
 class AppState(BaseModel):
     # =================================
@@ -20,34 +20,44 @@ class AppState(BaseModel):
     # =================================
     data: dict # 📦 包含应用布局信息的字典
 
-@router.post("/save_layout")
-async def save_layout(state: AppState):
+@router.post("/save_memory")
+async def save_memory(state: AppState, file: str = "memory_window.json"):
     # =================================
-    #  🎉 保存布局 (应用状态)
+    #  🎉 保存记忆 (应用状态, 文件名)
     #
     #  🎨 代码用途：
-    #     接收前端发送的桌面布局数据，并调用 FileManager 持久化存储到磁盘。
+    #     接收前端发送的数据，并调用 FileManager 持久化存储到磁盘。
+    #     支持指定文件名，默认为 memory_window.json。
     #
     #  💡 易懂解释：
     #     Angel 记性很好的！🧠 你把桌面摆成什么样，我都帮你记下来，下次开机还是老样子！
     # =================================
     """保存记忆"""
-    success = FileManager.save(DATA_FILE, state.data) # 💾 保存到文件
+    success = FileManager.save(file, state.data) # 💾 保存到文件
     return {"status": "ok" if success else "error"} # 📨 返回操作结果
 
-@router.get("/load_layout")
-async def load_layout():
+@router.get("/load_memory")
+async def load_memory(file: str = "memory_window.json"):
     # =================================
-    #  🎉 读取布局 (无参数)
+    #  🎉 读取记忆 (文件名)
     #
     #  🎨 代码用途：
-    #     从磁盘读取之前保存的桌面布局数据，返回给前端。
+    #     从磁盘读取之前保存的数据，返回给前端。
     #
     #  💡 易懂解释：
     #     恢复现场！✨ 变魔术一样，把上次的桌面变回来！
     # =================================
     """读取记忆"""
-    return FileManager.load(DATA_FILE, default={}) # 📖 读取文件并返回
+    return FileManager.load(file, default={}) # 📖 读取文件并返回
+
+# 兼容旧接口 (重定向到新接口逻辑)
+@router.post("/save_layout")
+async def save_layout_legacy(state: AppState):
+    return await save_memory(state, file="memory_window.json")
+
+@router.get("/load_layout")
+async def load_layout_legacy():
+    return await load_memory(file="memory_window.json")
 
 @router.get("/system_info")
 async def get_system_info():

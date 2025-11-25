@@ -14,11 +14,23 @@ export function init() {
     // 初始渲染
     update();
     renderTrayIcons();
+    bindStartButton(); // 🆕 绑定开始按钮
 
     // 监听事件
     bus.on('app:opened', () => update());
     bus.on('app:closed', () => update());
     bus.on('window:focus', () => update());
+}
+
+// 🆕 绑定开始按钮事件
+function bindStartButton() {
+    const btnStart = document.getElementById('btn-start');
+    if (btnStart) {
+        btnStart.onclick = () => {
+            // 触发打开登录界面事件
+            bus.emit('system:open_login');
+        };
+    }
 }
 
 function update() {
