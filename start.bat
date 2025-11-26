@@ -4,100 +4,117 @@ cd /d "%~dp0"
 title Angel System Launcher
 color 0f
 
-echo [信息] 正在启动 Angel 系统...
+:Start
+cls
+echo ========================================================
+echo  🚀 Angel System Launcher
+echo ========================================================
+echo.
 echo [信息] 正在检查端口占用情况...
 
 :: ==========================================
 :: 1. 清理端口 5500 (Web Low)
 :: ==========================================
-:check_5500
+:Check5500
 netstat -aon | findstr ":5500" >nul
-if %errorlevel% equ 0 (
-    for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5500"') do (
-        echo [清理] 端口 5500 被占用，PID: %%a
-        tasklist /fi "pid eq %%a"
-        taskkill /f /pid %%a >nul 2>&1
-    )
-    timeout /t 1 >nul
-    goto check_5500
-) else (
-    echo [状态] 端口 5500 未被占用。
+if %errorlevel% equ 0 goto :Clean5500
+goto :Check9000
+
+:Clean5500
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5500"') do (
+    echo [清理] 端口 5500 被占用，PID: %%a
+    tasklist /fi "pid eq %%a"
+    taskkill /f /pid %%a >nul 2>&1
 )
+timeout /t 1 >nul
+goto :Check5500
 
 :: ==========================================
 :: 2. 清理端口 9000 (Web High)
 :: ==========================================
-:check_9000
+:Check9000
 netstat -aon | findstr ":9000" >nul
-if %errorlevel% equ 0 (
-    for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":9000"') do (
-        echo [清理] 端口 9000 被占用，PID: %%a
-        tasklist /fi "pid eq %%a"
-        taskkill /f /pid %%a >nul 2>&1
-    )
-    timeout /t 1 >nul
-    goto check_9000
-) else (
-    echo [状态] 端口 9000 未被占用。
+if %errorlevel% equ 0 goto :Clean9000
+goto :Check8000
+
+:Clean9000
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":9000"') do (
+    echo [清理] 端口 9000 被占用，PID: %%a
+    tasklist /fi "pid eq %%a"
+    taskkill /f /pid %%a >nul 2>&1
 )
+timeout /t 1 >nul
+goto :Check9000
 
 :: ==========================================
 :: 3. 清理端口 8000 (Agent)
 :: ==========================================
-:check_8000
+:Check8000
 netstat -aon | findstr ":8000" >nul
-if %errorlevel% equ 0 (
-    for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000"') do (
-        echo [清理] 端口 8000 被占用，PID: %%a
-        tasklist /fi "pid eq %%a"
-        taskkill /f /pid %%a >nul 2>&1
-    )
-    timeout /t 1 >nul
-    goto check_8000
-) else (
-    echo [状态] 端口 8000 未被占用。
-)
+if %errorlevel% equ 0 goto :Clean8000
+goto :LaunchServices
 
+:Clean8000
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000"') do (
+    echo [清理] 端口 8000 被占用，PID: %%a
+    tasklist /fi "pid eq %%a"
+    taskkill /f /pid %%a >nul 2>&1
+)
+timeout /t 1 >nul
+goto :Check8000
+
+:LaunchServices
 echo.
 echo [信息] 端口清理完毕，开始启动服务...
 echo.
 
 :: 1. 启动 Web_compute_low
 echo [1/3] 正在启动 Web_compute_low (端口 5500)...
-start "Angel Web Low" /min cmd /k "Web_compute_low\start_server.bat"
+start "Angel Web Low" /min cmd /k "Web_compute_low\Web_compute_low_start.bat"
 
-:wait_5500
+:Wait5500
 timeout /t 2 >nul
 netstat -an | find "5500" >nul
 if %errorlevel% neq 0 (
     echo    ...等待 Web_compute_low 就绪...
-    goto wait_5500
+    goto :Wait5500
 )
 echo [成功] Web_compute_low 已启动。
 
 :: 2. 启动 Web_compute_high
 echo [2/3] 正在启动 Web_compute_high (端口 9000)...
-start "Angel Web High" /min cmd /k "Web_compute_high\start_server.bat"
+start "Angel Web High" /min cmd /k "Web_compute_high\Web_compute_high_start.bat"
 
-:wait_9000
+:Wait9000
 timeout /t 2 >nul
 netstat -an | find "9000" >nul
 if %errorlevel% neq 0 (
     echo    ...等待 Web_compute_high 就绪...
-    goto wait_9000
+    goto :Wait9000
 )
 echo [成功] Web_compute_high 已启动。
 
 :: 3. 启动 Agent_angel_server
 echo [3/3] 正在启动 Agent_angel_server (端口 8000)...
-start "Angel Agent Server" /min cmd /k "Agent_angel_server\start_server.bat"
+start "Angel Agent Server" /min cmd /k "Agent_angel_server\Agent_angel_server_start.bat"
 
-:wait_8000
+:Wait8000
 timeout /t 2 >nul
 netstat -an | find "8000" >nul
 if %errorlevel% neq 0 (
     echo    ...等待 Agent_angel_server 就绪...
-    goto wait_8000
+    goto :Wait8000
+)
+echo [成功] Agent_angel_server 已启动。
+
+echo.
+echo ========================================================
+echo  🎉 所有服务启动完成！
+echo ========================================================
+echo.
+echo [提示] 按回车键可以重新扫描并重启所有服务...
+pause
+goto :Start
 )
 echo [成功] Agent_angel_server 已启动。
 
