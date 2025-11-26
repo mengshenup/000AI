@@ -1,0 +1,45 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "WSL: Build (Web_compute_low)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "cargo",
+                "build",
+                "--manifest-path",
+                "./Web_compute_low/Cargo.toml"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "WSL: Run (Web_compute_low)",
+            "type": "shell",
+            "command": "wsl",
+            "args": [
+                "cargo",
+                "run",
+                "--manifest-path",
+                "./Web_compute_low/Cargo.toml"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        }
+    ]
+}
