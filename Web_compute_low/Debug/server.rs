@@ -16,7 +16,7 @@
 
 use axum::{
     Router,
-    http::{StatusCode, Method},
+    http::Method,
 };
 use tower_http::{
     services::ServeDir,

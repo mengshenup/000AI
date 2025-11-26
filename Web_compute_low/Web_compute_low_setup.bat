@@ -1,5 +1,6 @@
 @echo off
 setlocal
+cd /d "%~dp0"
 chcp 65001 >nul
 goto :MainMenu
 
@@ -7,7 +8,7 @@ goto :MainMenu
 cls
 echo ========================================================
 echo   Angel Client Setup (Web_compute_low)
-echo   v2.2 (Crash Recovery & Memory Fix)
+echo   v2.2 (Crash Recovery ^& Memory Fix)
 echo ========================================================
 echo.
 echo   1. 开始配置/继续安装 (Start/Continue Setup)
@@ -176,14 +177,23 @@ echo    (Entering Linux/WSL build process...)
 :: 检查 WSL 内的 Rust 环境
 echo.
 echo [2/3] 正在检查 WSL 内的 Rust 环境...
-:: 使用 cmd /c 防止检测命令崩溃脚本
+:: 严格验证: 同时检查 cargo 和 rustc，防止环境损坏导致编译死机
 cmd /c "wsl cargo --version >nul 2>&1"
-if %errorlevel% equ 0 goto :WSLRustFound
+set CARGO_EXIST=%errorlevel%
+cmd /c "wsl rustc --version >nul 2>&1"
+set RUSTC_EXIST=%errorlevel%
 
-:WSLRustNotFound
-echo ❌ WSL 内未检测到 Rust 环境。
-echo    (Rust not found in WSL.)
+if %CARGO_EXIST% equ 0 if %RUSTC_EXIST% equ 0 goto :WSLRustFound
+
+echo ❌ WSL 内未检测到 Rust 环境或环境已损坏 (Corrupted or Missing).
+echo    (Cargo: %CARGO_EXIST%, Rustc: %RUSTC_EXIST%)
 echo.
+echo    🧹 正在清理残留文件 (Cleaning up leftovers)...
+:: 无论是否存在，都尝试清理，确保安装环境纯净
+cmd /c "wsl rm -rf ~/.rustup/toolchains/stable-*"
+cmd /c "wsl rm -rf ~/.rustup/toolchains/*-linux-gnu"
+cmd /c "wsl rm -rf ~/.cargo/bin"
+
 echo    正在尝试自动安装 Rust...
 echo    (Installing Rust...)
 echo.
@@ -195,16 +205,19 @@ echo    正在下载并安装... (Downloading and Installing...)
 
 :: 分步执行，避免管道符 | 导致 CMD 解析崩溃
 echo    [1/2] Downloading installer...
-cmd /c "wsl curl -sSf https://sh.rustup.rs -o rustup-init.sh"
+:: 使用更清晰的临时文件名，避免误触
+cmd /c "wsl curl -sSf https://sh.rustup.rs -o temp_rust_installer_DO_NOT_RUN.sh"
 if %errorlevel% neq 0 goto :InstallError
 
 echo    [2/2] Running installer (Minimal Profile)...
 echo    (Using minimal profile to save memory...)
-cmd /c "wsl sh rustup-init.sh -y --profile minimal"
+cmd /c "wsl sh temp_rust_installer_DO_NOT_RUN.sh -y --profile minimal"
 if %errorlevel% neq 0 goto :TryAptInstall
 
 :: 清理
-cmd /c "wsl rm rustup-init.sh"
+cmd /c "wsl rm temp_rust_installer_DO_NOT_RUN.sh"
+:: 清理旧的残留文件 (如果有)
+if exist "rustup-init.sh" del "rustup-init.sh"
 
 echo ✅ Rust 安装完成！
 goto :WSLRustFound
@@ -250,44 +263,185 @@ goto :EOF
 echo WSL Rust 环境已就绪:
 cmd /c "wsl cargo --version"
 
-:: 2.5 安装依赖 (防止缺少 OpenSSL 导致编译失败)
-echo.
-echo [2.5/3] 安装构建依赖 (Installing dependencies)...
-echo    (build-essential, pkg-config, libssl-dev)
-echo    正在更新软件源...
-cmd /c "wsl -u root apt-get update >nul 2>&1"
-echo    正在安装库文件...
-cmd /c "wsl -u root apt-get install -y build-essential pkg-config libssl-dev >nul 2>&1"
+:: 生成临时 PowerShell 编译脚本 (通用)
+echo $ErrorActionPreference = "Stop" > build_task.ps1
+echo $logOut = "build.log" >> build_task.ps1
+echo $logErr = "build.err" >> build_task.ps1
+echo Write-Host "🚀 [PowerShell] Starting Build Process..." -ForegroundColor Cyan >> build_task.ps1
+echo if (Test-Path $logOut) { Remove-Item $logOut } >> build_task.ps1
+echo if (Test-Path $logErr) { Remove-Item $logErr } >> build_task.ps1
+echo try { >> build_task.ps1
+echo     # 使用 Invoke-Expression 和 Tee-Object 实现实时输出 + 日志记录 >> build_task.ps1
+echo     # 2^>^&1 将错误流合并到输出流，确保所有信息都被捕获 >> build_task.ps1
+echo     $cmd = "wsl bash -c 'source $HOME/.cargo/env 2>/dev/null; export CARGO_BUILD_JOBS=2; cargo build --bin server'" >> build_task.ps1
+echo     Invoke-Expression $cmd 2>&1 | Tee-Object -FilePath $logOut >> build_task.ps1
+echo     if ($LASTEXITCODE -ne 0) { throw "Exit code $LASTEXITCODE" } >> build_task.ps1
+echo } catch { >> build_task.ps1
+echo     Write-Host "❌ Failed to start WSL process: $_" -ForegroundColor Red; exit 1 >> build_task.ps1
+echo } >> build_task.ps1
+echo if (Test-Path $logErr) { Add-Content -Path $logOut -Value (Get-Content $logErr); Remove-Item $logErr } >> build_task.ps1
+echo if ($process.ExitCode -ne 0) { >> build_task.ps1
+echo     Write-Host "`n❌ Build Failed with Exit Code $($process.ExitCode)" -ForegroundColor Red >> build_task.ps1
+echo     if (Test-Path $logOut) { Write-Host "`n=== Error Log (Last 20 Lines) ===" -ForegroundColor Yellow; Get-Content $logOut -Tail 20; Write-Host "================================" -ForegroundColor Yellow } >> build_task.ps1
+echo     exit 1 >> build_task.ps1
+echo } >> build_task.ps1
+echo Write-Host "`n✅ Build Successful!" -ForegroundColor Green; exit 0 >> build_task.ps1
 
-:: 编译项目 (Linux Target)
+:: ---------------------------------------------------------
+:: 2.9 预编译测试 (Pre-flight Check)
+:: ---------------------------------------------------------
+echo.
+echo [2.9/3] 执行编译器健康检查 (Compiler Health Check)...
+echo    (Compiling minimal test case: Debug/test_compile.rs)
+
+:: 清理旧的测试产物
+if exist "Debug\test_compile" del "Debug\test_compile"
+
+:: 使用 rustc 直接编译，不依赖 cargo，快速验证工具链核心
+:: 即使源码有错，rustc 也会报错退出，而不会导致死机 (因为是单文件编译)
+cmd /c "wsl rustc Debug/test_compile.rs -o Debug/test_compile"
+
+if %errorlevel% neq 0 (
+    echo.
+    echo ❌ 编译器检查失败 (Compiler Check Failed).
+    echo    Rust 环境似乎仍然不稳定，或者测试代码有误。
+    echo    (Rust environment seems unstable.)
+    pause
+    goto :EOF
+)
+
+:: 运行测试程序
+cmd /c "wsl ./Debug/test_compile"
+if %errorlevel% neq 0 (
+    echo.
+    echo ⚠️  测试程序无法运行 (Test binary failed to run).
+    pause
+) else (
+    echo    ✅ 编译器工作正常 (Compiler is healthy)!
+)
+
+:: ---------------------------------------------------------
+:: 尝试 1: 快速构建 (Fast Build)
+:: ---------------------------------------------------------
 echo.
 echo [3/3] 正在 WSL 中编译项目 (Linux)...
 echo    (Compiling project in WSL...)
 echo.
+echo    🚀 尝试快速构建 (Attempting Fast Build)...
 
-:: 强制清理 (应对死机导致的构建缓存损坏)
-echo    🧹 正在清理旧的构建缓存 (Cleaning old build artifacts)...
-cmd /c "wsl cargo clean >nul 2>&1"
+powershell -ExecutionPolicy Bypass -File "build_task.ps1"
+if %errorlevel% equ 0 goto :BuildSuccess
 
-echo    🚀 开始编译 (Building)... 
-echo    (这可能需要几分钟，日志保存在 build.log)
+:: ---------------------------------------------------------
+:: 尝试 2: 修复并重试 (Repair & Retry)
+:: ---------------------------------------------------------
+echo.
+echo ⚠️  快速构建失败，正在尝试自动修复环境...
+echo    (Fast build failed. Attempting auto-repair...)
 echo.
 
-:: 使用 cmd /c 隔离执行，并重定向日志防止控制台崩溃
-cmd /c "wsl cargo build --bin server > build.log 2>&1"
+:: 1. 安装依赖
+echo    [Fix 1/3] 检查并安装依赖 (Installing dependencies)...
+cmd /c "wsl -u root apt-get update >nul 2>&1"
+cmd /c "wsl -u root apt-get install -y build-essential pkg-config libssl-dev >nul 2>&1"
 
-if %errorlevel% neq 0 (
+:: 2. 清理缓存
+echo    [Fix 2/3] 清理构建缓存 (Cleaning target)...
+cmd /c "wsl cargo clean >nul 2>&1"
+
+:: 3. 重置 Lockfile (解决版本冲突)
+echo    [Fix 3/4] 重置 Cargo.lock (Resetting lockfile)...
+if exist "Cargo.lock" del "Cargo.lock"
+
+:: 4. 升级 Rust (用户要求最新版)
+echo    [Fix 4/4] 升级 Rust 到最新版 (Upgrading Rust to latest)...
+
+:: [Critical Fix] 强制删除损坏的工具链 (Fixing 'invalid ELF header')
+:: 之前死机导致文件损坏，必须物理删除，不能只靠覆盖
+echo    🧹 正在清除损坏的 Rust 文件 (Deleting corrupted toolchain)...
+cmd /c "wsl rm -rf ~/.rustup/toolchains/stable-*"
+cmd /c "wsl rm -rf ~/.rustup/toolchains/*-linux-gnu"
+
+:: 4.1 卸载旧版 (apt)
+echo    (Removing old apt version...)
+cmd /c "wsl -u root apt-get remove -y cargo rustc >nul 2>&1"
+cmd /c "wsl -u root apt-get autoremove -y >nul 2>&1"
+
+:: 4.2 尝试安装 rustup
+echo    (Installing rustup...)
+:: 尝试通过 apt 安装 rustup (如果源里有)
+cmd /c "wsl -u root apt-get install -y rustup >nul 2>&1"
+
+:: 检查 rustup 是否可用
+cmd /c "wsl rustup --version >nul 2>&1"
+if %errorlevel% equ 0 (
+    echo    (Rustup installed via apt. Installing stable toolchain...)
+    echo    (Forcing reinstall to fix 'invalid ELF header' errors...)
+    echo    (Using Safe-Mode Concurrency: 2 Threads)
+    
+    :: 使用 2 个线程，既不慢也不卡死
+    cmd /c "wsl bash -c 'export RUSTUP_IO_THREADS=2; rustup toolchain install stable --profile minimal --force'"
+    cmd /c "wsl rustup default stable"
+) else (
+    echo    (Apt rustup not found. Retrying script installer...)
+    echo    (Optimizing for Windows Server WSL1 environment...)
+    
+    :: 释放内存
+    wsl --terminate Ubuntu >nul 2>&1
+    
+    :: 下载安装脚本
+    cmd /c "wsl curl -sSf https://sh.rustup.rs -o temp_rust_installer_DO_NOT_RUN.sh"
+    
+    :: 计算当前目录的 WSL 路径 (例如 /mnt/c/000AI/...)
+    for /f "delims=" %%i in ('wsl wslpath -a .') do set "WSL_PWD=%%i"
+    
+    :: 创建临时目录 (使用 Windows 磁盘而非 WSL 内存盘)
+    if not exist "wsl_tmp" mkdir "wsl_tmp"
+    
+    echo    (Installing with TMPDIR on Windows drive to prevent RAM overflow...)
+    :: 关键配置:
+    :: 1. TMPDIR: 指向 Windows 目录，避免 WSL1 内存文件系统溢出
+    :: 2. RUSTUP_IO_THREADS=1: 下载时强制单线程
+    :: 3. RUSTUP_INIT_SKIP_PATH_CHECK=yes: 跳过路径检查，减少交互
+    :: 4. 无需 --profile minimal，因为我们手动指定组件
+    cmd /c "wsl bash -c 'export TMPDIR=%WSL_PWD%/wsl_tmp; export RUSTUP_IO_THREADS=1; sh temp_rust_installer_DO_NOT_RUN.sh -y --default-toolchain none'"
+    
+    :: 手动安装 stable 工具链 (更可控)
+    echo    (Installing stable toolchain manually...)
+    cmd /c "wsl bash -c 'export TMPDIR=%WSL_PWD%/wsl_tmp; export RUSTUP_IO_THREADS=1; source $HOME/.cargo/env; rustup toolchain install stable --profile minimal'"
+    cmd /c "wsl bash -c 'source $HOME/.cargo/env; rustup default stable'"
+    
+    :: 清理
+    if exist "wsl_tmp" rmdir /s /q "wsl_tmp"
+    cmd /c "wsl rm temp_rust_installer_DO_NOT_RUN.sh"
+)
+
+:: 4.3 验证版本
+echo    (Verifying Rust version...)
+:: 确保 cargo 在路径中 (如果是新安装的)
+cmd /c "wsl bash -c 'source $HOME/.cargo/env 2>/dev/null; cargo --version'"
+
+echo.
+echo    🔄 正在重试编译 (Retrying Build)...
+powershell -ExecutionPolicy Bypass -File "build_task.ps1"
+set PS_EXIT_CODE=%errorlevel%
+
+:: 清理脚本
+if exist build_task.ps1 del build_task.ps1
+
+if %PS_EXIT_CODE% neq 0 (
     echo.
-    echo ❌ WSL 编译失败 (Compilation Failed).
+    echo ❌ 最终编译失败 (Final Build Failed).
     echo.
-    echo    === 错误日志 (Last 20 lines) ===
-    powershell -Command "if (Test-Path build.log) { Get-Content build.log -Tail 20 } else { echo 'No log file found.' }"
-    echo    ================================
-    echo.
-    echo    可能的原因:
-    echo    1. 内存不足 (Memory Limit).
-    echo    2. 依赖缺失 (Dependencies).
-    echo.
+    echo    请检查上方日志。
+    echo    如果问题依旧，请尝试重启电脑或检查网络。
+    pause
+    goto :EOF
+)
+
+:BuildSuccess
+if exist build_task.ps1 del build_task.ps1
+    echo [Batch] Build script returned error.
     pause
     goto :EOF
 )
