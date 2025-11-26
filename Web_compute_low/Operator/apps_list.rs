@@ -50,7 +50,7 @@ fn main() -> Result<()> {
 
     // 1. 确定扫描路径
     // 假设我们在 Web_compute_low 根目录运行 (通过 cargo run)
-    // 或者在 Ops 目录运行
+    // 或者在 Operator 目录运行
     let current_dir = std::env::current_dir()?;
     
     // 尝试定位 js/apps 目录

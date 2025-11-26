@@ -1,0 +1,5 @@
+{
+    "chat.agent.maxRequests": 50,
+    "chat.agent.thinkingStyle": "fixedScrolling",
+    "chat.customAgentInSubagent.enabled": true
+}

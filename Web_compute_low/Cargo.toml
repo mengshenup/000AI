@@ -20,5 +20,5 @@ name = "apps_list"
 path = "Ops/apps_list.rs"
 
 [[bin]]
-name = "server"
-path = "Debug/server.rs"
+name = "simple_server"
+path = "Debug/simple_server.rs"

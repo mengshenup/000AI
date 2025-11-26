@@ -9,7 +9,9 @@
                 "cargo",
                 "build",
                 "--manifest-path",
-                "./Web_compute_low/Cargo.toml"
+                "./Web_compute_low/Cargo.toml",
+                "--target-dir",
+                "./Web_compute_low/no_code/target"
             ],
             "group": {
                 "kind": "build",
@@ -31,7 +33,9 @@
                 "cargo",
                 "run",
                 "--manifest-path",
-                "./Web_compute_low/Cargo.toml"
+                "./Web_compute_low/Cargo.toml",
+                "--target-dir",
+                "./Web_compute_low/no_code/target"
             ],
             "problemMatcher": [
                 "$rustc"
