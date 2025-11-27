@@ -1,5 +1,184 @@
 {
-    "chat.agent.maxRequests": 50,
+    "chat.agent.maxRequests": 200,
     "chat.agent.thinkingStyle": "fixedScrolling",
-    "chat.customAgentInSubagent.enabled": true
+    "chat.customAgentInSubagent.enabled": true,
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": true,
+        "markdown": true,
+        "scminput": true,
+        "yaml": true,
+        "json": true,
+        "bat": true,
+        "powershell": true,
+        "shellscript": true
+    },
+    "github.copilot.editor.enableAutoCompletions": true,
+    "github.copilot.chat.locale": "zh-cn",
+    "github.copilot.inlineChat.enable": true,
+    "editor.inlineSuggest.enabled": true,
+    "editor.inlineSuggest.showToolbar": "always",
+    "chat.commandCenter.enabled": true,
+    "github.copilot.advanced.messages": true,
+    "github.copilot.chat.terminal.executeCommand.enabled": true,
+    "github.copilot.chat.editing.alwaysSave": true,
+    "github.copilot.chat.runCommand.enabled": true,
+    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass"]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "github.copilot.chat.terminal.executeCommand.confirm": false,
+    "github.copilot.chat.runCommand.confirm": false,
+    "terminal.integrated.enableMultiLinePasteWarning": "never",
+    "security.workspace.trust.enabled": false,
+    "chat.tools.terminal.autoApprove": {
+        // --- 1. 交互式确认（专治 "按Y继续"） ---
+        "A": true, "a": true,   // Yes to All (全部覆盖)
+        "Q": true, "q": true,   // Quit (退出)
+
+        // --- 2. 脚本与解释器 ---
+        "cmd": true,
+        "pwsh": true,
+        "powershell": true,
+        "bash": true,
+        "wsl": true,
+        "&": true,              // PowerShell 调用符
+        "**/*.bat": true,       // 所有批处理
+        "**/*.cmd": true,       // 所有CMD脚本
+        "**/*.ps1": true,       // 所有PowerShell脚本
+        "**/*.sh": true,        // 所有Shell脚本
+        "**/*.exe": true,       // 所有可执行程序 (慎用，但为了方便...)
+
+        // --- 3. 文件操作 (DOS/Windows) ---
+        "cd": true, "dir": true, "ls": true, 
+        "echo": true, "type": true, "cat": true,
+        "copy": true, "xcopy": true, "robocopy": true,
+        "move": true, "ren": true, "rename": true,
+        "md": true, "mkdir": true,
+        "rd": true, "rmdir": true, "del": true, "erase": true,
+        "more": true, "less": true, "clip": true,
+
+        // --- 4. PowerShell 常用动词 ---
+        "Get-ChildItem": true, "Get-Content": true, "Get-Location": true,
+        "Get-Process": true, "Get-Service": true, "Get-Date": true,
+        "Set-Location": true, "Set-Content": true, "Add-Content": true,
+        "New-Item": true, "Remove-Item": true, "Move-Item": true,
+        "Copy-Item": true, "Rename-Item": true, "Clear-Content": true,
+        "Write-Host": true, "Write-Output": true, 
+        "Stop-Process": true, "Start-Process": true,
+        "Invoke-WebRequest": true, "iwr": true, 
+        "Invoke-RestMethod": true, "irm": true,
+        "Test-Path": true, 
+
+        // --- 5. 开发工具链 (根据需要增减) ---
+        "git": true, "git status": true, "git add": true, "git commit": true, "git push": true,
+        "npm": true, "node": true, "npx": true, "yarn": true, "pnpm": true,
+        "python": true, "pip": true, "py": true,
+        "cargo": true, "rustc": true,
+        "docker": true, "docker-compose": true,
+        "code": true, "notepad": true,
+
+        // --- 6. 文本处理与搜索 ---
+        "grep": true, "find": true, "findstr": true, 
+        "awk": true, "sed": true, "cut": true, "sort": true, "uniq": true,
+        "head": true, "tail": true, "wc": true, "tr": true, "jq": true,
+
+        // --- 7. 系统网络 ---
+        "ping": true, "ipconfig": true, "ifconfig": true, "netstat": true,
+        "ssh": true, "curl": true, "wget": true,
+        "chmod": true, "chown": true,
+
+        "cmp": true,
+        "which": true,
+        "basename": true,
+        "dirname": true,
+        "realpath": true,
+        "readlink": true,
+        "stat": true,
+        "file": true,
+        "du": true,
+        "df": true,
+        "sleep": true,
+        "git log": true,
+        "git show": true,
+        "git diff": true,
+        "git grep": true,
+        "git branch": true,
+        "/^git branch\\b.*-(d|D|m|M|-delete|-force)\\b/": true,
+        "Get-Random": true,
+        "Split-Path": true,
+        "Join-Path": true,
+        "Start-Sleep": true,
+        "Where-Object": true,
+        "/^Select-[a-z0-9]/i": true,
+        "/^Measure-[a-z0-9]/i": true,
+        "/^Compare-[a-z0-9]/i": true,
+        "/^Format-[a-z0-9]/i": true,
+        "/^Sort-[a-z0-9]/i": true,
+        "column": true,
+        "/^column\\b.*-c\\s+[0-9]{4,}/": true,
+        "date": true,
+        "/^date\\b.*(-s|--set)\\b/": true,
+        "/^find\\b.*-(delete|exec|execdir|fprint|fprintf|fls|ok|okdir)\\b/": true,
+        "/^sort\\b.*-(o|S)\\b/": true,
+        "tree": true,
+        "/^tree\\b.*-o\\b/": true,
+        "rm": true,
+        "ri": true,
+        "dd": true,
+        "kill": true,
+        "ps": true,
+        "top": true,
+        "spps": true,
+        "taskkill": true,
+        "taskkill.exe": true,
+        "Set-ItemProperty": true,
+        "sp": true,
+        "Set-Acl": true,
+        "xargs": true,
+        "eval": true,
+        "Invoke-Expression": true,
+        "iex": true,
+        // 1. 基础单字母
+        "Y": true, "y": true, "N": true, "n": true,
+        
+        // 2. 带“回车符”的组合 (\r = CR, Windows常用)
+        "Y\r": true, "y\r": true, "N\r": true, "n\r": true,
+        
+        // 3. 带“换行符”的组合 (\n = LF, 有时候也会用到)
+        "Y\n": true, "y\n": true, "N\n": true, "n\n": true,
+        
+        // 4. 带“回车+换行”的组合 (\r\n)
+        "Y\r\n": true, "y\r\n": true, "N\r\n": true, "n\r\n": true,
+
+        // 5. 纯回车
+        "\r": true, "\n": true, "\r\n": true, "": true,
+
+        // 1. 专门针对 C 盘绝对路径的脚本 (解决 wsl.cmd 问题)
+        "c:\\**\\*.cmd*": true,   // 👈 注意这里最后的星号！
+        "c:\\**\\*.bat*": true,   // 👈 这里的 bat 也建议加上
+        "c:\\**\\*.exe*": true,
+        "c:\\000AI\\**": true,
+        // 2. 允许 wsl.cmd 这个特定的命令名 (双重保险)
+        "wsl.cmd": true,
+
+        // 3. 👑 真正的上帝模式 (只保留这一个！删掉下面那个弱的！)
+        "/^[\\s\\S]*$/": true
+    },
+    "files.watcherExclude": {
+        "**/target/**": true,
+        "**/node_modules/**": true,
+        "**/Debug/Trash/**": true,
+        "**/.git/objects/**": true
+    },
+    "search.exclude": {
+        "**/target": true,
+        "**/Debug/Trash": true
+    }
 }

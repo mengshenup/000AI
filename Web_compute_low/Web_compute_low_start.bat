@@ -54,6 +54,21 @@ wsl bash -c "lsof -t -i:5500 | xargs -r kill -9" >nul 2>&1
 :: 启动服务器
 echo [启动] Running in WSL (Portable Env)...
 echo    Target: Debug/simple_server
+
+:: [Pre-flight Check] 检查文件是否存在
+wsl bash -c "[ -f ./Debug/simple_server ]"
+if %errorlevel% neq 0 (
+    echo.
+    echo ❌ 启动失败：找不到服务器程序。
+    echo    (Binary 'Debug/simple_server' not found)
+    echo.
+    echo    👉 请先运行 [Web_compute_low_build.bat] 进行编译！
+    echo       (Please run build script first!)
+    echo.
+    pause
+    goto :EndLoop
+)
+
 cmd /c "wsl bash -c '%RUST_ENV% ./Debug/simple_server'"
 
 :EndLoop

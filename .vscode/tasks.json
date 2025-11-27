@@ -1,49 +1,142 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "WSL: Build (Web_compute_low)",
-            "type": "shell",
-            "command": "wsl",
-            "args": [
-                "cargo",
-                "build",
-                "--manifest-path",
-                "./Web_compute_low/Cargo.toml",
-                "--target-dir",
-                "./Web_compute_low/no_code/target"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "problemMatcher": [
-                "$rustc"
-            ],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        },
-        {
-            "label": "WSL: Run (Web_compute_low)",
-            "type": "shell",
-            "command": "wsl",
-            "args": [
-                "cargo",
-                "run",
-                "--manifest-path",
-                "./Web_compute_low/Cargo.toml",
-                "--target-dir",
-                "./Web_compute_low/no_code/target"
-            ],
-            "problemMatcher": [
-                "$rustc"
-            ],
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared"
-            }
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "WSL: Build (Web_compute_low)",
+			"type": "shell",
+			"command": "wsl",
+			"args": [
+				"cargo",
+				"build",
+				"--manifest-path",
+				"./Web_compute_low/Cargo.toml",
+				"--target-dir",
+				"./Web_compute_low/no_code/target"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "WSL: Run (Web_compute_low)",
+			"type": "shell",
+			"command": "wsl",
+			"args": [
+				"cargo",
+				"run",
+				"--manifest-path",
+				"./Web_compute_low/Cargo.toml",
+				"--target-dir",
+				"./Web_compute_low/no_code/target"
+			],
+			"problemMatcher": [
+				"$rustc"
+			],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			}
+		},
+		{
+			"label": "Run Test Setup V2",
+			"type": "shell",
+			"command": "c:\\000AI\\Debug\\Trash\\20251127\\test_setup_v2.bat",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Type File Content",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"type c:\\000AI\\Web_compute_low\\Web_compute_low_setup_v2.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Test Setup V1",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"del c:\\000AI\\Debug\\Trash\\20251127\\test_output.log & c:\\000AI\\Debug\\Trash\\20251127\\test_setup.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Test Setup V2 Clean",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"del c:\\000AI\\Debug\\Trash\\20251127\\new_test_output.log & c:\\000AI\\Debug\\Trash\\20251127\\test_setup_v2.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Test Setup V2 Clean Debug",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"del c:\\000AI\\Debug\\Trash\\20251127\\new_test_output.log & c:\\000AI\\Debug\\Trash\\20251127\\test_setup_v2.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Test Setup V2 Path Debug",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"del c:\\000AI\\Debug\\Trash\\20251127\\new_test_output.log & c:\\000AI\\Debug\\Trash\\20251127\\test_setup_v2.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Test Setup V2 Full Log",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"del c:\\000AI\\Debug\\Trash\\20251127\\new_test_output.log & c:\\000AI\\Debug\\Trash\\20251127\\test_setup_v2.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "Run Test Setup V2 Mock CMD",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"del c:\\000AI\\Debug\\Trash\\20251127\\new_test_output.log & c:\\000AI\\Debug\\Trash\\20251127\\test_setup_v2.bat"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		}
+	]
 }
