@@ -1,15 +1,16 @@
 @echo off
 REM ==========================================================================
-REM    File: Web_compute_low Environment Setup Script
-REM    Logic: Auto-detect WSL, install Rust, configure dev environment
-REM    Desc: Fully automated installer for Rust in WSL.
-REM    Note: Supports non-interactive mode (NONINTERACTIVE=1)
-REM    History:
-REM       [2025-11-27] [PauseBlock]: Replaced pause with timeout in non-interactive mode
-REM       [2025-11-27] [SyntaxError]: Fixed unescaped brackets in if-blocks
-REM       [2025-11-27] [EmojiCrash]: Removed Emojis causing parser errors
-REM       [2025-11-27] [InstallFail]: Added log capture and error checking
-REM       [2025-11-27] [DistroInstall]: Fixed blocking Start-Process call
+REM    📃 文件功能 : Web_compute_low 环境安装脚本
+REM    ⚡ 逻辑摘要 : 自动检测 WSL，安装 Rust，配置开发环境
+REM    💡 易懂解释 : 全自动的 Rust 安装器，像泡面一样简单！
+REM    🔋 扩展备注 : 支持非交互模式 (NONINTERACTIVE=1)
+REM    🧱 Web_compute_low_setup.bat 踩坑记录 (必须累加，严禁覆盖) :
+REM       1. [2025-11-27] [PauseBlock]: 非交互模式下用 timeout 替换 pause
+REM       2. [2025-11-27] [SyntaxError]: 修复 if 块中未转义的括号
+REM       3. [2025-11-27] [EmojiCrash]: 移除导致解析错误的 Emoji
+REM       4. [2025-11-27] [InstallFail]: 添加日志捕获和错误检查
+REM       5. [2025-11-27] [DistroInstall]: 修复阻塞的 Start-Process 调用
+REM       6. [2025-11-28] [Translation]: 翻译提示为简体中文，修复 echo 引起的 bash 错误
 REM ==========================================================================
 setlocal
 cd /d "%~dp0"
@@ -34,33 +35,33 @@ goto :MainMenu
 cls
 echo ========================================================
 echo   Angel Client Setup (Web_compute_low)
-echo   v2.3 (Ultra-Safe Mode Enabled)
+echo   v2.3 (已启用超安全模式)
 echo ========================================================
 echo.
-echo   1. Start/Continue Setup
-echo   2. [Reset/Fix] Ubuntu (Reset/Fix Ubuntu)
-echo      - Select this if password setup failed or install stuck!
+echo   1. 开始/继续 安装
+echo   2. [重置/修复] Ubuntu (Reset/Fix Ubuntu)
+echo      - 如果密码设置失败或安装卡住，请选择此项！
 echo.
 if "%NONINTERACTIVE%"=="1" (
-    echo [Auto] Non-Interactive Mode detected. Defaulting to Option 1.
+    echo [自动] 检测到非交互模式。默认为选项 1。
     set choice=1
 ) else (
-    set /p choice="Please select (Input 1 or 2): "
+    set /p choice="请选择 (输入 1 或 2): "
 )
 if "%choice%"=="2" goto :FactoryReset
 goto :CheckEnv
 
 :FactoryReset
 echo.
-echo [Trash] Uninstalling old Ubuntu instance...
-echo    (Unregistering Ubuntu...)
+echo [清理] 正在卸载旧的 Ubuntu 实例...
+echo    (正在注销 Ubuntu...)
 call %WSL_CMD% --unregister Ubuntu
 
-echo [Trash] Cleaning local Rust environment...
+echo [清理] 正在清理本地 Rust 环境...
 if exist "no_code\wsl_rust_env" rmdir /s /q "no_code\wsl_rust_env"
 
 echo.
-echo [OK] Cleanup complete! You can now reinstall.
+echo [完成] 清理完成！您现在可以重新安装。
 echo.
 if "%NONINTERACTIVE%"=="1" (
     timeout /t 3 >nul
@@ -74,20 +75,20 @@ echo ========================================================
 echo   Angel Client Setup (Web_compute_low)
 echo ========================================================
 echo.
-echo [0/3] Checking system resources...
+echo [0/3] 正在检查系统资源...
 
 for /f "tokens=2 delims==" %%a in ('wmic OS get FreePhysicalMemory /value') do set FreeMem=%%a
 set /a FreeMemMB=%FreeMem%/1024
-echo    Available Memory: %FreeMemMB% MB
+echo    可用内存: %FreeMemMB% MB
 
 if %FreeMemMB% LSS 1500 (
-    echo    [WARN] Low Memory ^(^<1.5GB^)! Enabling Ultra-Safe Mode.
+    echo    [警告] 内存不足 ^(^<1.5GB^)! 已启用超安全模式。
     set SAFE_MODE=1
     set "RUSTUP_IO_THREADS=1"
     set "CARGO_BUILD_JOBS=1"
     set "WSLENV=RUSTUP_IO_THREADS/p:CARGO_BUILD_JOBS/p"
 ) else (
-    echo    [OK] Memory sufficient.
+    echo    [OK] 内存充足。
     set SAFE_MODE=0
     set "RUSTUP_IO_THREADS=1"
     set "WSLENV=RUSTUP_IO_THREADS/p"
@@ -95,10 +96,10 @@ if %FreeMemMB% LSS 1500 (
 
 wmic os get caption | findstr /i "Server" >nul
 if %errorlevel% neq 0 goto :NotServer
-echo [WARN] Windows Server detected.
-echo    Please ensure WSL is enabled.
+echo [警告] 检测到 Windows Server。
+echo    "请确保 WSL 功能已启用。"
 :NotServer
-echo [Debug] Checking WSL status...
+echo [调试] 正在检查 WSL 状态...
 call %WSL_CMD% --status >nul 2>&1
 if %errorlevel% neq 0 goto :WSLNotFound
 
@@ -108,86 +109,86 @@ if %errorlevel% neq 0 goto :WSLNotFound
 call %WSL_CMD% echo check >nul 2>&1
 if %errorlevel% neq 0 goto :DistroNotFound
 
-echo [OK] Environment Check Passed (WSL Linux Mode).
+echo [OK] 环境检查通过 (WSL Linux 模式)。
 goto :WSLModeTarget
 
 :WSLBroken
 echo.
-echo [Error] WSL Core Broken.
-echo    (Unable to list distributions.)
+echo [错误] WSL 核心损坏。
+echo    (无法列出发行版。)
 echo.
-echo    [Auto] Attempting auto-fix (Running wsl --update)...
+echo    [自动] 尝试自动修复 (运行 wsl --update)...
 call %WSL_CMD% --update
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Auto-fix failed.
-    echo    Please run in PowerShell (Admin):
+    echo [错误] 自动修复失败。
+    echo    请在 PowerShell (管理员) 中运行:
     echo      dism.exe /online /cleanup-image /restorehealth
     echo      sfc /scannow
     echo.
     if "%NONINTERACTIVE%"=="1" ( timeout /t 5 >nul ) else ( pause )
     exit /b 1
 )
-echo [OK] Fix attempt complete. Please restart script.
+echo [OK] 修复尝试完成。请重新启动脚本。
 if "%NONINTERACTIVE%"=="1" ( timeout /t 3 >nul ) else ( pause )
 exit /b
 
 :WSLNotFound
-echo [Error] WSL not found (Windows Subsystem for Linux).
+echo [错误] 未找到 WSL (Windows Subsystem for Linux)。
 echo.
-echo    Attempting to auto-install WSL...
-echo    (Installing WSL...)
+echo    正在尝试自动安装 WSL...
+echo    (正在安装 WSL...)
 echo.
-echo    Requires Admin privileges.
-echo    (Requires Admin privileges.)
+echo    需要管理员权限。
+echo    (需要管理员权限。)
 echo.
 
 powershell -Command "Start-Process '%WSL_CMD%' -ArgumentList '--install' -Verb RunAs -Wait"
 
 echo.
-echo [Info] Please follow the prompts.
-echo    (Please follow the prompts.)
+echo [信息] 请按照提示操作。
+echo    (请按照提示操作。)
 echo.
-echo    After installation, please [RESTART COMPUTER] and run again.
-echo    (Please RESTART your computer after installation.)
+echo    安装完成后，请 [重启计算机] 并再次运行。
+echo    (安装完成后请重启计算机。)
 if "%NONINTERACTIVE%"=="1" ( timeout /t 5 >nul ) else ( pause )
 exit /b
 
 :DistroNotFound
-echo [Error] No default Linux distro found.
+echo [错误] 未找到默认 Linux 发行版。
 echo.
-echo    [Compat] Setting WSL default version to 1...
-echo    (Setting WSL default version to 1 for compatibility...)
+echo    [兼容性] 将 WSL 默认版本设置为 1...
+echo    (为了兼容性将 WSL 默认版本设置为 1...)
 call %WSL_CMD% --set-default-version 1 >nul 2>&1
 
 echo.
 echo    ========================================================
-echo    [Installation Guide]
+echo    [安装指南]
 echo    ========================================================
-echo    A black Ubuntu window will pop up.
-echo    Please follow these steps:
+echo    将会弹出一个黑色的 Ubuntu 窗口。
+echo    请按照以下步骤操作：
 echo.
-echo    1. When you see "Enter new UNIX username":
-echo       Type: admin  (and press Enter)
+echo    1. 当看到 "Enter new UNIX username":
+echo       输入: admin  (然后按回车)
 echo.
-echo    2. When you see "New password":
-echo       Type: 0      (Note: It will be invisible!)
-echo       Press Enter
+echo    2. 当看到 "New password":
+echo       输入: 0      (注意: 输入时看不见！)
+echo       按回车
 echo.
-echo    3. When you see "Retype new password":
-echo       Type: 0
-echo       Press Enter
+echo    3. 当看到 "Retype new password":
+echo       输入: 0
+echo       按回车
 echo.
-echo    (Linux security requires manual password entry)
+echo    (Linux 安全机制需要手动输入密码)
 echo    ========================================================
 echo.
-echo    [Known Issues / 常见问题]
-echo    If you see "password updated successfully" but then an error:
-echo    "Create process failed" or "Broken pipe"...
-echo    Please ignore it! Installation is likely successful.
-echo    Close the popup window and press any key here to continue.
+echo    [常见问题]
+echo    如果你看到 "password updated successfully" 但随后出现错误:
+echo    "Create process failed" 或 "Broken pipe"...
+echo    请忽略它！安装很可能已经成功。
+echo    关闭弹出窗口并在此处按任意键继续。
 echo.
-echo    Ready? Press any key to start installation...
+echo    准备好了吗？按任意键开始安装...
 if "%NONINTERACTIVE%"=="1" (
     timeout /t 3 >nul
 ) else (
@@ -195,14 +196,14 @@ if "%NONINTERACTIVE%"=="1" (
 )
 
 if "%NONINTERACTIVE%"=="1" (
-    echo [Auto] Attempting non-interactive install (Ubuntu)...
+    echo [自动] 尝试非交互式安装 (Ubuntu)...
     call %WSL_CMD% --install -d Ubuntu
 ) else (
     powershell -Command "Start-Process cmd -ArgumentList '/k %WSL_CMD% --install -d Ubuntu' -Verb RunAs -Wait"
 )
 
 echo.
-echo [Info] After the window closes, press any key to continue...
+echo [信息] 窗口关闭后，按任意键继续...
 if "%NONINTERACTIVE%"=="1" (
     timeout /t 5 >nul
 ) else (
@@ -212,12 +213,12 @@ if "%NONINTERACTIVE%"=="1" (
 call %WSL_CMD% -d Ubuntu echo check >nul 2>&1
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Still cannot connect to Ubuntu.
+    echo [错误] 仍然无法连接到 Ubuntu。
     echo.
-    echo    This might be because the installation stuck or environment issues.
+    echo    这可能是因为安装卡住或环境问题。
     echo.
-    echo    - Suggest selecting "2. Reset/Fix Ubuntu" in main menu
-    echo       to delete and reinstall.
+    echo    - 建议在主菜单中选择 "2. 重置/修复 Ubuntu"
+    echo       以删除并重新安装。
     echo.
     if "%NONINTERACTIVE%"=="1" (
         exit /b 1
@@ -229,8 +230,8 @@ if %errorlevel% neq 0 (
 goto :WSLMode
 
 echo.
-echo [Info] If installation succeeded, press any key to continue...
-echo    (If installation is complete, press any key to continue...)
+echo [信息] 如果安装成功，按任意键继续...
+echo    (如果安装完成，按任意键继续...)
 if "%NONINTERACTIVE%"=="1" (
     timeout /t 3 >nul
 ) else (
@@ -240,18 +241,18 @@ if "%NONINTERACTIVE%"=="1" (
 call %WSL_CMD% echo check >nul 2>&1
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Still cannot connect to Linux distro.
+    echo [错误] 仍然无法连接到 Linux 发行版。
     echo.
-    echo    Possible Reasons:
-    echo    1. You just installed WSL but haven't [RESTARTED COMPUTER].
-    echo       (You need to RESTART your computer.)
-    echo    2. Windows Server might need manual feature enablement.
-    echo       (Windows Server might need manual feature enablement.)
+    echo    可能的原因:
+    echo    1. 你刚刚安装了 WSL 但没有 [重启计算机]。
+    echo       (你需要重启计算机。)
+    echo    2. Windows Server 可能需要手动启用功能。
+    echo       (Windows Server 可能需要手动启用功能。)
     echo.
-    echo    Please try running this manually to see errors:
+    echo    请尝试手动运行此命令以查看错误:
     echo    %WSL_CMD% --install -d Ubuntu
     echo.
-    echo    Then restart computer.
+    echo    然后重启计算机。
     if "%NONINTERACTIVE%"=="1" (
         exit /b 1
     ) else (
@@ -262,63 +263,64 @@ if %errorlevel% neq 0 (
 goto :WSLMode
 
 :WSLModeTarget
-echo [Debug] Arrived at WSLModeTarget.
+echo [调试] 已到达 WSLModeTarget。
 echo.
-echo [1/4] Entering Linux/WSL build process...
-echo    (Entering Linux/WSL build process...)
+echo [1/4] 进入 Linux/WSL 构建流程...
+echo    (进入 Linux/WSL 构建流程...)
 
 echo.
-echo [1.1/4] Checking Dependencies...
-echo    (Installing build-essential, pkg-config, libssl-dev...)
+echo [1.1/4] 检查依赖项...
+echo    (安装 build-essential, pkg-config, libssl-dev...)
 
-echo    [Clean] Cleaning package locks...
+echo    [清理] 清理包锁...
 call %WSL_CMD% -u root rm /var/lib/apt/lists/lock >nul 2>&1
 call %WSL_CMD% -u root rm /var/cache/apt/archives/lock >nul 2>&1
 call %WSL_CMD% -u root rm /var/lib/dpkg/lock* >nul 2>&1
 call %WSL_CMD% -u root dpkg --configure -a >nul 2>&1
 call %WSL_CMD% -u root apt-get update >nul 2>&1
 
-echo    [Install] Installing/Updating compiler toolchain...
+echo    [安装] 安装/更新编译器工具链...
 
 if "%SAFE_MODE%"=="1" (
-    echo    [Ultra-Safe Mode] Installing step-by-step...
-    echo       (Installing dependencies one by one...)
+    echo    [超安全模式] 正在逐步安装...
+    echo       (正在逐个安装依赖项...)
     
-    echo       ...Step 1: Update (Log: setup_apt_update.log)
-    start /b /low /wait cmd /c "%WSL_CMD% -u root apt-get update <nul > setup_apt_update.log 2>&1"
-    timeout /t 3 >nul
+    echo       ...步骤 1: 更新 (日志: setup_apt_update.log)
+    call %WSL_CMD% -u root apt-get update <nul > setup_apt_update.log 2>&1
+    ping 127.0.0.1 -n 4 >nul
 
-    echo       ...Step 2: Install build-essential (Log: setup_apt_gcc.log)
-    start /b /low /wait cmd /c "%WSL_CMD% -u root apt-get install -y build-essential <nul > setup_apt_gcc.log 2>&1"
-    timeout /t 5 >nul
+    echo       ...步骤 2: 安装 build-essential (日志: setup_apt_gcc.log)
+    call %WSL_CMD% -u root apt-get install -y build-essential <nul > setup_apt_gcc.log 2>&1
+    ping 127.0.0.1 -n 6 >nul
 
-    echo       ...Step 3: Install pkg-config (Log: setup_apt_pkg.log)
-    start /b /low /wait cmd /c "%WSL_CMD% -u root apt-get install -y pkg-config <nul > setup_apt_pkg.log 2>&1"
-    timeout /t 3 >nul
+    echo       ...步骤 3: 安装 pkg-config (日志: setup_apt_pkg.log)
+    call %WSL_CMD% -u root apt-get install -y pkg-config <nul > setup_apt_pkg.log 2>&1
+    ping 127.0.0.1 -n 4 >nul
 
-    echo       ...Step 4: Install libssl-dev (Log: setup_apt_ssl.log)
-    start /b /low /wait cmd /c "%WSL_CMD% -u root apt-get install -y libssl-dev <nul > setup_apt_ssl.log 2>&1"
-    timeout /t 3 >nul
+    echo       ...步骤 4: 安装 libssl-dev (日志: setup_apt_ssl.log)
+    call %WSL_CMD% -u root apt-get install -y libssl-dev <nul > setup_apt_ssl.log 2>&1
+    ping 127.0.0.1 -n 4 >nul
+    echo [调试] 安全模式块结束
 ) else (
     %WSL_CMD% -u root apt-get install -y build-essential pkg-config libssl-dev >nul 2>&1
 )
 
-echo    [Verify] Verifying components...
+echo    [验证] 正在验证组件...
 %WSL_CMD% bash -c "cc --version >/dev/null 2>&1 && pkg-config --version >/dev/null 2>&1"
 
 cmd /c "%WSL_CMD% bash -c "pkg-config --exists openssl || pkg-config --exists libssl""
 if %errorlevel% neq 0 (
-    echo    [Warn] OpenSSL check failed, attempting fix...
+    echo    [警告] OpenSSL 检查失败，正在尝试修复...
     cmd /c "%WSL_CMD% -u root apt-get install -y --reinstall libssl-dev pkg-config"
 )
 
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Missing Dependencies.
-    echo    GCC or pkg-config not installed correctly. Likely network or lock issue.
+    echo [错误] 缺少依赖项。
+    echo    GCC 或 pkg-config 未正确安装。可能是网络或锁问题。
     echo.
-    echo    Attempting force fix...
-    echo    (Attempting force fix...)
+    echo    正在尝试强制修复...
+    echo    (正在尝试强制修复...)
     
     cmd /c "%WSL_CMD% -u root dpkg --configure -a"
     cmd /c "%WSL_CMD% -u root apt-get update"
@@ -327,8 +329,8 @@ if %errorlevel% neq 0 (
     cmd /c "%WSL_CMD% bash -c "cc --version >nul 2>&1""
     if %errorlevel% neq 0 (
         echo.
-        echo [Error] Fix failed. Cannot install compiler.
-        echo    Check network, or try manually:
+        echo [错误] 修复失败。无法安装编译器。
+        echo    请检查网络，或尝试手动安装:
         echo    %WSL_CMD% -u root apt-get install build-essential pkg-config libssl-dev
         if "%NONINTERACTIVE%"=="1" (
             exit /b 1
@@ -339,7 +341,7 @@ if %errorlevel% neq 0 (
     )
 )
 
-echo [OK] Dependency check complete.
+echo [OK] 依赖项检查完成。
 
 :: [Fix] Use Windows path with /p flag for correct WSLENV translation
 set "RUST_DIR=%~dp0no_code\wsl_rust_env"
@@ -354,28 +356,28 @@ set "RUST_ENV=export PATH=\"$CARGO_HOME/bin:$PATH\";"
 set "RUST_ENV_CLEAN=%RUST_ENV:\=%"
 
 echo.
-echo [Config] Enabling Portable Rust Environment...
-echo    Location: %RUST_DIR%
+echo [配置] 正在启用便携式 Rust 环境...
+echo    位置: %RUST_DIR%
 
 call %WSL_CMD% bash -c "%RUST_ENV% rustc --version >nul 2>&1 && %RUST_ENV% cargo --version >nul 2>&1"
 if %errorlevel% equ 0 goto :WSLRustFound
 
 :WSLRustNotFound
-echo [Error] Portable Rust not found or corrupted.
-echo    (Portable Rust not found or corrupted.)
+echo [错误] 便携式 Rust 未找到或已损坏。
+echo    (便携式 Rust 未找到或已损坏。)
 echo.
-echo    Installing to project dir...
-echo    (Prevents system freeze)
+echo    正在安装到项目目录...
+echo    (防止系统冻结)
 echo.
 
 if exist "no_code\wsl_rust_env" (
-    echo    [Clean] Cleaning old environment...
+    echo    [清理] 正在清理旧环境...
     rmdir /s /q "no_code\wsl_rust_env"
     if exist "no_code\wsl_rust_env" (
         echo.
-        echo [Error] Cannot delete "no_code\wsl_rust_env".
-        echo    Reason: File in use (VS Code, Terminal?).
-        echo    Please close all related programs and retry.
+        echo [错误] 无法删除 "no_code\wsl_rust_env"。
+        echo    原因: 文件正在使用中 (VS Code, 终端?)。
+        echo    请关闭所有相关程序并重试。
         if "%NONINTERACTIVE%"=="1" (
             exit /b 1
         ) else (
@@ -386,16 +388,16 @@ if exist "no_code\wsl_rust_env" (
 )
 mkdir "no_code\wsl_rust_env"
 
-echo    [Check] Pre-flight checks...
+echo    [检查] 预检...
 call %WSL_CMD% ping -c 1 8.8.8.8 >nul 2>&1
-if %errorlevel% neq 0 echo    [WARN] Network unreachable (Ping 8.8.8.8 failed).
+if %errorlevel% neq 0 echo    [警告] 网络不可达 (Ping 8.8.8.8 失败)。
 
-echo    [Download] Downloading installer...
+echo    [下载] 正在下载安装程序...
 call %WSL_CMD% curl -sSf https://sh.rustup.rs -o temp_rust_installer_DO_NOT_RUN.sh
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Install failed. Check network or disk space.
-    echo    (Download Failed. Check network/disk.)
+    echo [错误] 安装失败。请检查网络或磁盘空间。
+    echo    (下载失败。请检查网络/磁盘。)
     if "%NONINTERACTIVE%"=="1" ( exit /b 1 ) else ( pause )
     exit /b
 )
@@ -404,9 +406,9 @@ if %errorlevel% neq 0 (
 call %WSL_CMD% bash -c "if [ $(wc -c < temp_rust_installer_DO_NOT_RUN.sh) -lt 10000 ]; then exit 1; fi"
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Download Corrupted.
-    echo    File too small (<10KB), likely network interruption.
-    echo    Cleaning up and exiting...
+    echo [错误] 下载损坏。
+    echo    文件太小 (<10KB)，可能是网络中断。
+    echo    正在清理并退出...
     call %WSL_CMD% rm temp_rust_installer_DO_NOT_RUN.sh
     if "%NONINTERACTIVE%"=="1" (
         exit /b 1
@@ -416,15 +418,15 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-echo    [Install] Starting installation...
-echo    (Using single thread to prevent freeze...)
+echo    [安装] 正在开始安装...
+echo    (使用单线程以防止冻结...)
 
 :: [Fix] Ensure log directory exists
 if not exist "Debug" mkdir "Debug"
 
 if "%SAFE_MODE%"=="1" (
-    echo    [Ultra-Safe Mode] Running installation with low priority...
-    echo       (Log: Debug\setup_rust_install.log^)
+    echo    [超安全模式] 正在以低优先级运行安装...
+    echo       (日志: Debug\setup_rust_install.log^)
     
     REM [Fix] Generate a temporary shell script to avoid Batch quoting hell
     echo export TMPDIR='/tmp' > install_rust_task.sh
@@ -433,21 +435,21 @@ if "%SAFE_MODE%"=="1" (
     REM [Fix] Convert CRLF to LF for WSL
     call %WSL_CMD% sed -i 's/\r$//' install_rust_task.sh
 
-    start /b /low /wait cmd /c "%WSL_CMD% bash install_rust_task.sh > Debug\setup_rust_install.log 2>&1"
+    call %WSL_CMD% bash install_rust_task.sh > Debug\setup_rust_install.log 2>&1
     
     REM Cleanup temp script
     timeout /t 1 >nul
     if exist install_rust_task.sh del install_rust_task.sh
 ) else (
-    echo    [Log] Logging installation to Debug\setup_rust_install.log ...
+    echo    [日志] 正在将安装记录到 Debug\setup_rust_install.log ...
     call %WSL_CMD% bash -c "export TMPDIR='/tmp'; %RUST_ENV% sh temp_rust_installer_DO_NOT_RUN.sh -y --no-modify-path --profile minimal" > Debug\setup_rust_install.log 2>&1
 )
 
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Install failed. Check network or disk space.
-    echo    (Installer Script Failed. Check network/disk.)
-    echo    Showing last 10 lines of log:
+    echo [错误] 安装失败。请检查网络或磁盘空间。
+    echo    (安装脚本失败。请检查网络/磁盘。)
+    echo    显示日志的最后 10 行:
     echo    ----------------------------------------
     powershell -Command "Get-Content -Tail 10 Debug\setup_rust_install.log"
     echo    ----------------------------------------
@@ -461,9 +463,9 @@ call %WSL_CMD% rm temp_rust_installer_DO_NOT_RUN.sh
 call %WSL_CMD% bash -c "%RUST_ENV% rustc --version"
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Verification Failed.
-    echo    Installer succeeded but rustc cannot run.
-    echo    Check Debug\setup_rust_install.log for details.
+    echo [错误] 验证失败。
+    echo    安装程序成功，但 rustc 无法运行。
+    echo    请检查 Debug\setup_rust_install.log 了解详情。
     if "%NONINTERACTIVE%"=="1" (
         exit /b 1
     ) else (
@@ -472,7 +474,7 @@ if %errorlevel% neq 0 (
     goto :EOF
 )
 
-echo [OK] Rust installation complete!
+echo [OK] Rust 安装完成！
 set JUST_INSTALLED=1
 goto :WSLRustFound
 
@@ -481,7 +483,7 @@ goto :InstallError
 
 :InstallError
 echo.
-echo [Error] Installation Failed.
+echo [错误] 安装失败。
 if "%NONINTERACTIVE%"=="1" (
     exit /b 1
 ) else (
@@ -490,12 +492,12 @@ if "%NONINTERACTIVE%"=="1" (
 goto :EOF
 
 :WSLRustFound
-echo [OK] WSL Rust Environment Ready:
+echo [OK] WSL Rust 环境就绪:
 call %WSL_CMD% bash -c "%RUST_ENV% rustc --version"
 
 echo.
-echo [2.9/4] Compiler Health Check...
-echo    (Compiling minimal test case: Debug/test_compile.rs)
+echo [2.9/4] 编译器健康检查...
+echo    (编译最小测试用例: Debug/test_compile.rs)
 
 if not exist "Debug" mkdir "Debug"
 
@@ -507,27 +509,27 @@ call %WSL_CMD% bash -c "%RUST_ENV% rustc Debug/test_compile.rs -o Debug/test_com
 
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Compiler Check Failed.
-    echo    Rust environment seems corrupted (maybe interrupted install).
+    echo [错误] 编译器检查失败。
+    echo    Rust 环境似乎已损坏 (可能是安装中断)。
     
     if "%RETRY_COUNT%"=="0" (
         echo.
-        echo    [Auto] Auto-repairing corrupted environment...
-        echo    (Auto-repairing corrupted environment...)
+        echo    [自动] 自动修复损坏的环境...
+        echo    (自动修复损坏的环境...)
         
         set RETRY_COUNT=1
         
         if exist "no_code\wsl_rust_env" (
-            echo    [Clean] Deleting corrupted environment...
+            echo    [清理] 删除损坏的环境...
             rmdir /s /q "no_code\wsl_rust_env"
         )
         
-        echo    [Back] Returning to install flow...
+        echo    [返回] 返回安装流程...
         goto :WSLRustNotFound
     ) else (
         echo.
-        echo [Error] Auto-repair failed.
-        echo    Check disk space, permissions, or network.
+        echo [错误] 自动修复失败。
+        echo    请检查磁盘空间、权限或网络。
         if "%NONINTERACTIVE%"=="1" (
             exit /b 1
         ) else (
@@ -540,73 +542,73 @@ if %errorlevel% neq 0 (
 cmd /c "%WSL_CMD% bash -c "./Debug/test_compile""
 if %errorlevel% neq 0 (
     echo.
-    echo [Warn] Test binary failed to run.
+    echo [警告] 测试二进制文件运行失败。
     if "%NONINTERACTIVE%"=="1" (
-        echo [Auto] Skipping pause on error.
+        echo [自动] 出错时跳过暂停。
     ) else (
         pause
     )
 ) else (
-    echo    [OK] Compiler is healthy!
+    echo    [OK] 编译器健康！
 )
 
 echo.
-echo [4/4] Checking Portable Rust...
+echo [4/4] 正在检查便携式 Rust...
 
 if "%JUST_INSTALLED%"=="1" (
-    echo    [Info] Fresh install, skipping update check.
-    echo    (Skipping update check for fresh install.)
+    echo    [信息] 全新安装，跳过更新检查。
+    echo    (全新安装跳过更新检查。)
     goto :SetupComplete
 )
 
-echo    [Update] Updating Rust...
+echo    [更新] 正在更新 Rust...
 call %WSL_CMD% bash -c "%RUST_ENV% rustup update stable"
 
 if %errorlevel% neq 0 (
     echo.
-    echo [Warn] Update failed. Environment might be corrupted.
-    echo    (Update failed. Environment might be corrupted.)
-    echo    [Reset] Resetting Portable Environment...
+    echo [警告] 更新失败。环境可能已损坏。
+    echo    (更新失败。环境可能已损坏。)
+    echo    [重置] 重置便携式环境...
     
     if exist "no_code\wsl_rust_env" rmdir /s /q "no_code\wsl_rust_env"
     
-    echo    [Back] Returning to install flow...
+    echo    [返回] 返回安装流程...
     goto :WSLRustNotFound
 )
 
 :: ============================================================================
 :: 5. Build Project
 :: ============================================================================
-echo [Build] Building Project...
-echo    (Building Project...)
+echo [构建] 正在构建项目...
+echo    (正在构建项目...)
 echo.
 
 if not exist "no_code\target" mkdir "no_code\target"
 
-echo    [Cargo] Running cargo build...
-echo    (This may take a while for the first time...)
+echo    [Cargo] 正在运行 cargo build...
+echo    (第一次可能需要一段时间...)
 
 if "%SAFE_MODE%"=="1" (
-    echo    [Ultra-Safe Mode] Building with low priority...
-    start /b /low /wait cmd /c "%WSL_CMD% bash -c '%RUST_ENV% cargo build --manifest-path Cargo.toml --target-dir no_code/target' > Debug\setup_build.log 2>&1"
+    echo    [超安全模式] 正在以低优先级构建...
+    call %WSL_CMD% bash -c "%RUST_ENV% cargo build --manifest-path Cargo.toml --target-dir no_code/target" > Debug\setup_build.log 2>&1
 ) else (
     call %WSL_CMD% bash -c "%RUST_ENV% cargo build --manifest-path Cargo.toml --target-dir no_code/target"
 )
 
 if %errorlevel% neq 0 (
     echo.
-    echo [Error] Build Failed.
-    echo    (Build Failed.)
-    echo    Check Debug\setup_build.log for details.
+    echo [错误] 构建失败。
+    echo    (构建失败。)
+    echo    请检查 Debug\setup_build.log 了解详情。
     if "%NONINTERACTIVE%"=="1" ( exit /b 1 ) else ( pause )
     exit /b
 )
 
 echo.
-echo [Success] Setup Complete!
-echo    (Setup Complete!)
+echo [成功] 安装完成！
+echo    (安装完成！)
 echo.
-echo    You can now run 'Web_compute_low_start.bat'.
+echo    您现在可以运行 'Web_compute_low_start.bat'。
 echo.
 
 :SetupComplete
@@ -616,18 +618,18 @@ if exist build_task.ps1 del build_task.ps1
 if exist setup_apt_update.log (
     if not exist "Debug\Trash\AutoClean" mkdir "Debug\Trash\AutoClean"
     move setup_*.log "Debug\Trash\AutoClean\" >nul 2>&1
-    echo    [Clean] Archived install logs to Debug\Trash\AutoClean
+    echo    [清理] 已将安装日志归档到 Debug\Trash\AutoClean
 )
 
 echo.
 echo ========================================================
-echo   [Setup Complete]
+echo   [安装完成]
 echo ========================================================
 echo.
-echo   Next Steps:
-echo   1. Run Web_compute_low_build.bat  -> Build Project
-echo   2. Run Web_compute_low_start.bat  -> Start Server
-echo   3. Run Web_compute_low_package.bat -> Package for Release
+echo   下一步:
+echo   1. 运行 Web_compute_low_build.bat  -> 构建项目
+echo   2. 运行 Web_compute_low_start.bat  -> 启动服务器
+echo   3. 运行 Web_compute_low_package.bat -> 打包发布
 echo.
 if "%NONINTERACTIVE%"=="1" (
     timeout /t 3 >nul

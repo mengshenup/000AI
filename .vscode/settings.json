@@ -171,14 +171,17 @@
         // 3. 👑 真正的上帝模式 (只保留这一个！删掉下面那个弱的！)
         "/^[\\s\\S]*$/": true
     },
+
+    "terminal.integrated.autoReplies": {
+        "Terminate batch job (Y/N)?": "Y\r"
+    },
+
     "files.watcherExclude": {
         "**/target/**": true,
         "**/node_modules/**": true,
-        "**/Debug/Trash/**": true,
         "**/.git/objects/**": true
     },
     "search.exclude": {
-        "**/target": true,
-        "**/Debug/Trash": true
+        "**/target": true
     }
 }
