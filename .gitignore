@@ -29,6 +29,7 @@ Web_compute_high/Memorybank/
 Web_compute_low/target/
 Web_compute_low/Debug/Trash/
 Web_compute_low/no_code/
+Web_compute_low/Ubuntu_Data/
 Debug/
 .venv/
 .git/

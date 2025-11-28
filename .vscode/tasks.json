@@ -137,6 +137,49 @@
 			"isBackground": false,
 			"problemMatcher": [],
 			"group": "test"
+		},
+		{
+			"label": "Web_compute_low_setup.bat (Run)",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"\"cd /d ${workspaceFolder}\\Web_compute_low && call Web_compute_low_setup.bat\""
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\Web_compute_low"
+			},
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test",
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"clear": true
+			},
+			"detail": "Runs the setup script once from the Run Test entry."
+		},
+		{
+			"label": "Web_compute_low_setup.bat (Debug)",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/k",
+				"\"cd /d ${workspaceFolder}\\Web_compute_low && call Web_compute_low_setup.bat\""
+			],
+			"options": {
+				"cwd": "${workspaceFolder}\\Web_compute_low"
+			},
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test",
+			"presentation": {
+				"reveal": "always",
+				"panel": "dedicated",
+				"focus": true,
+				"clear": true
+			},
+			"detail": "Keeps the cmd window open for the Debug Test entry so you can inspect output between steps."
 		}
 	]
 }
