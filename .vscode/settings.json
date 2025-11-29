@@ -1,300 +1,97 @@
 {
+    // ============================================
+    // 🐍 核心环境与个人习惯
+    // ============================================
+    "python.defaultInterpreterPath": "c:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+    "git.enableSmartCommit": true,
+    "explorer.confirmDelete": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    "powershell.promptToUpdatePowerShell": false,
+    "terminal.integrated.cwd": "${workspaceFolder}",
+
+    // ============================================
+    // 🤖 Copilot 全自动免打扰配置 (2025 终极版)
+    // ============================================
+    "github.copilot.enable": {
+        "*": true, "plaintext": true, "markdown": true, "scminput": true, 
+        "yaml": true, "json": true, "bat": true, "powershell": true, "shellscript": true
+    },
     "chat.agent.maxRequests": 200,
     "chat.agent.thinkingStyle": "fixedScrolling",
     "chat.customAgentInSubagent.enabled": true,
-    "github.copilot.enable": {
-        "*": true,
-        "plaintext": true,
-        "markdown": true,
-        "scminput": true,
-        "yaml": true,
-        "json": true,
-        "bat": true,
-        "powershell": true,
-        "shellscript": true
-    },
+    "chat.commandCenter.enabled": true,
+    "github.copilot.advanced.messages": true,
+    "github.copilot.nextEditSuggestions.enabled": true,
     "github.copilot.editor.enableAutoCompletions": true,
     "github.copilot.chat.locale": "zh-cn",
     "github.copilot.inlineChat.enable": true,
     "editor.inlineSuggest.enabled": true,
     "editor.inlineSuggest.showToolbar": "always",
-    "chat.commandCenter.enabled": true,
-    "github.copilot.advanced.messages": true,
-    "github.copilot.chat.terminal.executeCommand.enabled": true,
-    "github.copilot.chat.editing.alwaysSave": true,
-    "github.copilot.chat.runCommand.enabled": true,
-    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
-    "terminal.integrated.cwd": "${workspaceFolder}",
-    "terminal.integrated.shellIntegration.enabled": true,
-    "terminal.integrated.profiles.windows": {
-        "PowerShell": {
-            "source": "PowerShell",
-            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass"]
-        }
+
+    // --- 🔐 权限总闸 ---
+    "chat.tools.global.autoApprove": true, 
+    "chat.tools.terminal.enableAutoApprove": true,
+
+    // --- 🛠️ 终端命令全放行 ---
+    "chat.tools.terminal.autoApprove": {
+        "/^[\\s\\S]*$/": { "approve": true, "matchCommandLine": true }
     },
-    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "github.copilot.chat.terminal.autoApprove": {
+        "/^[\\s\\S]*$/": { "approve": true, "matchCommandLine": true }
+    },
+
+    // --- ⚡ 代码生成与保存 ---
+    "github.copilot.chat.codeGeneration.autoApprove": { "/.*/": true },
+    "github.copilot.chat.editing.alwaysSave": true,
+
+    // --- 🚫 弹窗屏蔽 ---
     "github.copilot.chat.terminal.executeCommand.confirm": false,
     "github.copilot.chat.runCommand.confirm": false,
+    "github.copilot.chat.terminal.executeCommand.enabled": true,
+    "github.copilot.chat.runCommand.enabled": true,
+
+    // ============================================
+    // 🦀 Rust 新手极速优化配置 (重点修改)
+    // ============================================
+    
+    // 1. 【核心加速】禁用启动时的全量缓存预热
+    // 效果：打开项目不再全速转圈，改为点开哪个文件分析哪个。解决“打开慢”的元凶。
+    "rust-analyzer.cachePriming.enable": false,
+
+    // 2. 【新手导师模式】保持使用 Clippy
+    // 建议新手保留这个！它会像老师一样教你写出地道的 Rust 代码。
+    // 如果你实在觉得写代码时电脑太卡，再把下面改成 "check"。
+    "rust-analyzer.check.command": "clippy",
+
+    // 3. 仅在保存时检查，打字时不干扰
+    "rust-analyzer.checkOnSave": true,
+    
+    // // 4. 不下载标准库源码 (节省硬盘IO，需加速可保留，需看源码学习可删掉此行)
+    // "rust-analyzer.cargo.sysrootSrc": null,
+
+    // ============================================
+    // 🛠️ 系统性能与排除项
+    // ============================================
+    "terminal.integrated.shellIntegration.enabled": true,
     "terminal.integrated.enableMultiLinePasteWarning": "never",
-    "chat.tools.terminal.enableAutoApprove": true,
-    "security.workspace.trust.enabled": true,
-    "chat.tools.global.autoApprove": true,
-    "chat.tools.terminal.autoApprove": {
-        "/^.*$/": true,
-        "*": true,                // 任意单层文件
-        "**": true,               // 任意多层路径
-        "**/*": true,             // 任意文件夹下的文件 (正斜杠)
-        "**\\*": true,            // 任意文件夹下的文件 (反斜杠)
-        "**/*.*": true,           // 任意带后缀的文件
-        "**\\*.*": true,
-        "Restart-Service": true,
-        "Stop-Service": true,
-        "*Service": true,
-        "*/**": true,
-        "*\\**": true,
-        // 针对 C 盘的暴力覆盖
-        "c:/**": true,            
-        "c:\\**": true,
-        "c:/**/*": true,
-        "c:\\**\\*": true,
-
-        // 针对当前项目 (000AI) 的死角覆盖
-        "**/000AI/**": true,
-        "**/Debug/**": true,      // 无论在哪里，Debug 目录都放行
-
-        // =========================================================
-        // 👻 第二区：特殊字符与空设备
-        // =========================================================
-        "**\\$null": true, "c:\\000AI\\$null": true,
-        "nul": true, "**\\nul": true,
-        
-        // =========================================================
-        // 🤖 第三区：所有脚本与可执行文件后缀
-        // =========================================================
-        "**\\*.bat*": true,
-        "**\\*.cmd": true, "**\\*.cmd*": true,
-        "**/*.ps1*": true, "**\\*.ps1": true, "**\\*.ps1*": true,
-        "**/*.exe*": true, "**\\*.exe": true, "**\\*.exe*": true,
-        "**/*.py": true,
-        
-        // 开发环境
-        "/^[\\s\\S]*$/": true,
-        "c:/000AI/$null": true,
-        "c:\\000AI\\nul": true,
-        "c:/000AI/nul": true,
-        "$null": true,
-        "**/*$null*": true,
-
-        // --- 1. 交互式确认（专治 "按Y继续"） ---
-        "A": true, "a": true,   // Yes to All (全部覆盖)
-        "Q": true, "q": true,   // Quit (退出)
-        "0": true, "1": true, "2": true, "3": true, "4": true,
-        "5": true, "6": true, "7": true, "8": true, "9": true,
-        "0\r": true, "1\r": true, "2\r": true, "3\r": true, "4\r": true,
-        "5\r": true, "6\r": true, "7\r": true, "8\r": true, "9\r": true,
-        "0\n": true, "1\n": true, "2\n": true, "3\n": true, "4\n": true,
-        "5\n": true, "6\n": true, "7\n": true, "8\n": true, "9\n": true,
-        "0\r\n": true, "1\r\n": true, "2\r\n": true, "3\r\n": true, "4\r\n": true,
-        "5\r\n": true, "6\r\n": true, "7\r\n": true, "8\r\n": true, "9\r\n": true,  
-
-        // --- 2. 脚本与解释器 ---
-        "cmd": true,
-        "pwsh": true,
-        "powershell": true,
-        "bash": true,
-        "wsl": true,
-        "&": true,              // PowerShell 调用符
-        "**/*.ps1": true,       // 所有PowerShell脚本
-        "**/*.sh": true,        // 所有Shell脚本
-        "**/*.exe": true,       // 所有可执行程序 (慎用，但为了方便...)
-
-        // --- 3. 文件操作 (DOS/Windows) ---
-        "cd": true, "dir": true, "ls": true, 
-        "echo": true, "type": true, "cat": true,
-        "copy": true, "xcopy": true, "robocopy": true,
-        "move": true, "ren": true, "rename": true,
-        "md": true, "mkdir": true,
-        "rd": true, "rmdir": true, "del": true, "erase": true,
-        "more": true, "less": true, "clip": true,
-
-        // --- 4. PowerShell 常用动词 ---
-        "Get-ChildItem": true, "Get-Content": true, "Get-Location": true,
-        "Get-Process": true, "Get-Service": true, "Get-Date": true,
-        "Set-Location": true, "Set-Content": true, "Add-Content": true,
-        "New-Item": true, "Remove-Item": true, "Move-Item": true,
-        "Copy-Item": true, "Rename-Item": true, "Clear-Content": true,
-        "Write-Host": true, "Write-Output": true, 
-        "Stop-Process": true, "Start-Process": true,
-        "Invoke-WebRequest": true, "iwr": true, 
-        "Invoke-RestMethod": true, "irm": true,
-        "Test-Path": true, 
-
-        // --- 5. 开发工具链 (根据需要增减) ---
-        "git": true, "git status": true, "git add": true, "git commit": true, "git push": true,
-        "npm": true, "node": true, "npx": true, "yarn": true, "pnpm": true,
-        "python": true, "pip": true, "py": true,
-        "cargo": true, "rustc": true,
-        "docker": true, "docker-compose": true,
-        "code": true, "notepad": true,
-
-        // --- 6. 文本处理与搜索 ---
-        "grep": true, "find": true, "findstr": true, 
-        "awk": true, "sed": true, "cut": true, "sort": true, "uniq": true,
-        "head": true, "tail": true, "wc": true, "tr": true, "jq": true,
-
-        // --- 7. 系统网络 ---
-        "ping": true, "ipconfig": true, "ifconfig": true, "netstat": true,
-        "ssh": true, "curl": true, "wget": true,
-        "chmod": true, "chown": true,
-
-        "cmp": true,
-        "which": true,
-        "basename": true,
-        "dirname": true,
-        "realpath": true,
-        "readlink": true,
-        "stat": true,
-        "file": true,
-        "du": true,
-        "df": true,
-        "sleep": true,
-        "git log": true,
-        "git show": true,
-        "git diff": true,
-        "git grep": true,
-        "git branch": true,
-        "/^git branch\\b.*-(d|D|m|M|-delete|-force)\\b/": true,
-        "Get-Random": true,
-        "Split-Path": true,
-        "Join-Path": true,
-        "Start-Sleep": true,
-        "Where-Object": true,
-        "/^Select-[a-z0-9]/i": true,
-        "/^Measure-[a-z0-9]/i": true,
-        "/^Compare-[a-z0-9]/i": true,
-        "/^Format-[a-z0-9]/i": true,
-        "/^Sort-[a-z0-9]/i": true,
-        "column": true,
-        "/^column\\b.*-c\\s+[0-9]{4,}/": true,
-        "date": true,
-        "/^date\\b.*(-s|--set)\\b/": true,
-        "/^find\\b.*-(delete|exec|execdir|fprint|fprintf|fls|ok|okdir)\\b/": true,
-        "/^sort\\b.*-(o|S)\\b/": true,
-        "tree": true,
-        "/^tree\\b.*-o\\b/": true,
-        "rm": true,
-        "ri": true,
-        "dd": true,
-        "kill": true,
-        "ps": true,
-        "top": true,
-        "spps": true,
-        "taskkill": true,
-        "taskkill.exe": true,
-        "tasklist": true,
-        "Set-ItemProperty": true,
-        "sp": true,
-        "Set-Acl": true,
-        "xargs": true,
-        "eval": true,
-        "Invoke-Expression": true,
-        "iex": true,
-
-
-// 👇👇👇【核心修复区：全方位覆盖路径】👇👇👇
-
-        // 1. 针对 Trash 文件夹 (正反斜杠全写上！)
-        "**/Trash/**": true,             // 标准写法
-        "**/Debug/Trash/**": true,       // 完整路径
-        "c:/000AI/Debug/Trash/**": true, // 绝对路径(正斜杠)
-        "c:\\000AI\\Debug\\Trash\\**": true, // 绝对路径(反斜杠)
-
-        // 2. 针对 .log 日志文件 (允许写入任何日志)
-        "**/*.log": true,
-        "**/*.txt": true,
-
-        // 3. 针对 Bat/Cmd 脚本
-        "**/*.bat": true, "**/*.bat*": true,
-        "**/*.cmd": true, "**/*.cmd*": true,
-
-        // 4. 针对整个项目目录 (正斜杠版)
-        "c:/000AI/**": true,
-        "Debug\\**": true,
-        "Debug/**": true,
-        "**\\*.bat": true,
-        "c:\\000AI\\Web_compute_low\\**": true,
-
-        // 1. 基础单字母
-        "Y": true, "y": true, "N": true, "n": true,
-        
-        // 2. 带“回车符”的组合 (\r = CR, Windows常用)
-        "Y\r": true, "y\r": true, "N\r": true, "n\r": true,
-        
-        // 3. 带“换行符”的组合 (\n = LF, 有时候也会用到)
-        "Y\n": true, "y\n": true, "N\n": true, "n\n": true,
-        
-        // 4. 带“回车+换行”的组合 (\r\n)
-        "Y\r\n": true, "y\r\n": true, "N\r\n": true, "n\r\n": true,
-
-        // 5. 纯回车
-        "\r": true, "\n": true, "\r\n": true, "": true,
-
-        // --- 8. Windows 进程与服务管理 (专治 Debug 弹窗) ---
-        "net": true,            // 网络/用户管理 (net start/stop)
-        "sc": true,             // 服务控制 (sc query/config)
-        "reg": true,            // 注册表操作 (reg query/add)
-        "wmic": true,           // 系统管理工具 (老脚本常用)
-        "systeminfo": true,     // 系统详细信息
-        "whoami": true,         // 查看当前用户
-        "where": true,          // 查找程序路径
-        "driverquery": true,    // 驱动查询
-
-        // --- 9. 批处理脚本常用工具 ---
-        "timeout": true,        // 脚本延时
-        "pause": true,          // 脚本暂停
-        "choice": true,         // 交互式选择
-        "attrib": true,         // 修改文件属性 (隐藏/只读)
-        "fc": true,             // 文件比较 (File Compare)
-        "subst": true,          // 虚拟盘符
-        "mountvol": true,       // 挂载卷
-        
-        // --- 10. 环境变量与网络诊断 ---
-        "set": true,            // 设置变量
-        "setx": true,           // 永久设置变量
-        "nslookup": true,       // 域名解析查询
-        "tracert": true,        // 路由追踪
-        "route": true,          // 路由表
-        "hostname": true,       // 主机名
-        
-        // --- 11. 查缺补漏 (根据你的 Debug 习惯) ---
-        "runas": true,          // 以管理员运行
-        "chcp": true,           // 修改控制台编码
-        "mode": true,           // 修改控制台显示模式
-
-        // 1. 专门针对 C 盘绝对路径的脚本 (解决 wsl.cmd 问题)
-        "c:\\**\\*.cmd*": true,   // 👈 注意这里最后的星号！
-        "c:\\**\\*.bat*": true,   // 👈 这里的 bat 也建议加上
-        "c:\\**\\*.exe*": true,
-        "c:\\000AI\\**": true,
-        // 2. 允许 wsl.cmd 这个特定的命令名 (双重保险)
-        "wsl.cmd": true
-    },
-
     "terminal.integrated.autoReplies": {
         "Terminate batch job (Y/N)?": "Y\r"
     },
-
+    
+    // 这里的排除非常重要，防止 VS Code 浪费资源去监控编译生成的文件
     "files.watcherExclude": {
-        "**/target/**": true,
-        "**/node_modules/**": true,
+        "**/target/**": true, 
+        "**/node_modules/**": true, 
         "**/.git/objects/**": true
     },
     "search.exclude": {
         "**/target": true
     },
-    "python.testing.pytestArgs": [
-        "Debug"
-    ],
+
+    // ============================================
+    // 🧪 Python 配置
+    // ============================================
+    "python.testing.pytestArgs": ["Debug"],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true
 }

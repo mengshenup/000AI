@@ -180,6 +180,97 @@
 				"clear": true
 			},
 			"detail": "Keeps the cmd window open for the Debug Test entry so you can inspect output between steps."
+		},
+		{
+			"label": "Kill Setup",
+			"type": "shell",
+			"command": "taskkill",
+			"args": [
+				"/F",
+				"/IM",
+				"setup.exe",
+				"/IM",
+				"wsl.exe"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Run Setup CPP",
+			"type": "shell",
+			"command": "c:\\000AI\\Web_compute_low\\run_setup_cpp.bat",
+			"args": [],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Delete Setup CPP",
+			"type": "shell",
+			"command": "c:\\000AI\\Web_compute_low\\delete_setup.bat",
+			"args": [],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Compile Setup CPP",
+			"type": "shell",
+			"command": "g++",
+			"args": [
+				"-o",
+				"Web_compute_low\\setup.exe",
+				"Web_compute_low\\setup.cpp",
+				"-static-libgcc",
+				"-static-libstdc++"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "List Setup EXE",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"dir",
+				"c:\\000AI\\Web_compute_low\\setup.exe"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Kill Setup Force",
+			"type": "shell",
+			"command": "taskkill",
+			"args": [
+				"/F",
+				"/IM",
+				"setup.exe",
+				"/IM",
+				"wsl.exe"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Check WSL Status",
+			"type": "shell",
+			"command": "wsl",
+			"args": [
+				"--status"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "Restart VMCompute",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"net stop vmcompute /y && net start vmcompute"
+			],
+			"isBackground": false,
+			"group": "test"
 		}
 	]
 }

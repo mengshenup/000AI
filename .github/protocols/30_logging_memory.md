@@ -1,52 +1,105 @@
 # 🧠 000AI Logging & Memory Protocol (v2.0)
 
-## 🏦 记忆库模式 (The Memory Bank Pattern)
+## ⏱️ 实时心跳日志 (Real-time Heartbeat Log)
 
-Instead of relying solely on Markdown logs, you MUST use structured JSON files in `Debug/Memorybank/` to manage state.
-
-**1. 🌍 系统上下文 (`systemContext.json`)**
-*   **内容**: OS 版本, 工具链状态, 环境变量, 已知限制.
-*   **更新**: 每次 `10_environment_safety.md` 检查后更新.
-*   **Schema**:
-    ```json
-    {
-      "os": "Windows Server 2022",
-      "shell": "pwsh",
-      "tools": {"python": "3.10", "cargo": "1.70"},
-      "constraints": ["no_store", "low_memory"]
-    }
-    ```
-
-**2. 🏗️ 产品上下文 (`productContext.json`)**
-*   **内容**: 项目的高层目标, 设计原则, 核心功能列表.
-*   **更新**: 仅在架构变更时更新.
-
-**3. ⚡ 活动上下文 (`activeContext.json`)**
-*   **内容**: 当前任务的实时状态.
-*   **核心字段**:
-    *   `task_id`: 当前任务ID.
-    *   `step_index`: 当前执行到的步骤索引.
-    *   `steps`: 步骤列表 (状态: pending/active/done/failed).
-    *   `variables`: 任务运行时的临时变量.
-*   **规则**: 每次 `<plan>` 或 `<reflexion>` 后必须更新此文件.
+**1. 💓 工作日志 (`000AI_Copilot_WorkLog.md`)**
+*   **位置**: 项目根目录 (`C:\000AI\000AI_Copilot_WorkLog.md`)
+*   **责任人**: **All Personas** (Architect/Engineer/Auditor)
+*   **频率**: **状态切换时** (Plan -> Logic -> Code -> Test -> Reflexion)。
+*   **内容**: 必须用自然语言告诉用户“我正在做什么”。
+*   **格式**: `[YYYY-MM-DD HH:MM] 🔄 [Phase]: 正在执行... (下一步: ...)`
+    *   `[Phase]` 必须是以下之一: `Plan`, `Logic`, `Code`, `Test`, `Reflexion`, `Annotation`, `Conclusion`。
+    *   **时间同步**: 必须优先使用用户提供的当前时间（若有），或根据上一次日志时间合理推演，避免时间倒流或过大误差。
+*   **禁止**: 仅记录“完成”，必须记录“进行中”的状态。
 
 ---
 
-## 📝 审计与日志 (Audit & Logging)
+## 🧠 记忆库 (Memory Bank) - Internal State
 
-**1. 📘 主工作日志 (Master Work Log)**
-*   **文件**: `000AI_Copilot_WorkLog.md`
-*   **规则**: 仅记录高层里程碑 (Milestones). 详细步骤移至 `activeContext.json`.
+**位置**: `C:\000AI\Debug\<ProjectName>\Memory\`
 
-**2. ⚡ 实时日志 (Live Logging)**
-*   **文件**: `Debug/Logs/<YYYYMMDD>/<HHMM>_<TaskName>.md`
-*   **规则**: 记录 `<test_action>` 的原始输出和 `<reflexion>` 的思考过程.
+**1. 🌍 上下文状态 (`activeContext.json`)**
+*   **责任人**: **Architect** (Plan 阶段)
+*   **内容**: 当前任务的实时状态 (Step Index, Variables) 以及 **Feature Toggles**。
+*   **Schema**:
+    ```json
+    {
+      "task_id": "...",
+      "step_index": 0,
+      "variables": {},
+      "related_files": [
+        "src/main.py",
+        "src/utils.py"
+      ],
+      "features": {
+        "auth_module": "active",
+        "payment_gateway": "disabled"
+      }
+    }
+    ```
+*   **更新**: 每次 `<plan>` 之后必须更新。`related_files` 必须包含当前任务涉及的所有关键文件路径。
 
-**3. 🚦 功能状态控制 (Feature Status Control)**
-*   **文件**: `Debug/Memorybank/feature_status.json`
-*   **Schema**: `{"feature_name": {"status": "active", "last_verified": "2023-10-27"}}`
+**2. ⚡ 实时反思流 (`reflexion_history.md`)**
+*   **责任人**: **Auditor** (Reflexion 阶段)
+*   **核心**: 这是 Agent 的**长期记忆**与**思维链**。
+*   **触发**: 每次生成 `<reflexion>` 标签时。
+*   **动作**: **必须实时追加** (Append) 到此文件，不可覆盖。
+*   **格式**:
+    ```markdown
+    ### [YYYY-MM-DD HH:MM] Reflexion (TaskID: xxx)
+    - **Trigger**: Test Failure / Step Completion
+    - **Analysis**: ...
+    - **Decision**: Loop back to Logic / Proceed to Annotation
+    - **Validation Check**: (Only for Annotation phase) Passed / Failed
+    ```
 
-**4. 🧠 长期记忆 (Long-term Memory)**
-*   **知识库**: `Debug/Memory/knowledge_base.json`
-    *   **Schema**: `{"pattern": "错误特征", "fix": "解决方案", "context": "适用场景"}`
-    *   **触发**: 每次解决复杂 BUG 后，必须提取通用规则写入。
+**3. 📚 知识库 (`knowledge_base.json`)**
+*   **责任人**: **Auditor** (Reflexion 阶段)
+*   **内容**: 沉淀的通用规则与错误模式。
+*   **Snippet Library**: 必须包含标准的文件头模板和常用复杂结构（如 `try-except`）的注释模板，以减少语法错误。
+*   **触发**: 解决复杂 Bug 后。
+
+---
+
+## 💾 任务状态 (Task State) - Execution Control
+
+**位置**: `C:\000AI\Debug\<ProjectName>\State\`
+
+**1. 📋 任务队列 (`task_queue.json`)**
+*   **责任人**: **Architect** (Plan 阶段)
+*   **内容**: 待执行的原子任务列表。
+*   **Schema**: `[{"id": 1, "task": "...", "status": "pending", "retries": 0}]`
+
+**2. 📸 运行快照 (`checkpoint.json`)**
+*   **责任人**: **Engineer** (Code/Test 阶段)
+*   **内容**: 长耗时任务的断点信息。
+*   **Schema**: `{"task_id": 1, "timestamp": "...", "progress": "50%"}`
+
+---
+
+## 📊 报告归档 (Reports Archive) - Deliverables
+
+**位置**: `C:\000AI\Debug\<ProjectName>\Reports\`
+
+**1. 📑 任务结案报告 (`Task_Report_<Date>_<TaskID>.md`)**
+*   **责任人**: **Engineer** (Annotation 阶段)
+*   **触发**: 任务彻底完成 (Annotation 之后)。
+*   **内容**:
+    *   任务目标
+    *   最终变更文件列表
+    *   **Validation Status**: 必须声明 `validate_annotation.py` 已通过所有文件验证。
+    *   遇到的核心困难与解决方案
+    *   后续建议
+
+**2. 🧪 测试总结报告 (`Test_Report_<Date>.md`)**
+*   **责任人**: **Engineer** (Test 阶段)
+*   **触发**: 批量测试结束后。
+*   **内容**: 通过率、覆盖率、性能数据。
+
+---
+
+## 📝 原始日志 (Raw Logs)
+
+**1. ⚡ 原始输出日志 (`Logs/`)**
+*   **位置**: `C:\000AI\Debug\<ProjectName>\Logs\`
+*   **内容**: 存放 `<test_action>` 的原始 `stdout/stderr` 捕获，用于调试。

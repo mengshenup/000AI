@@ -1,7 +1,12 @@
 import asyncio # ⚡ 异步 I/O 库，用于并发执行任务
 import json # 📄 JSON 处理库，用于数据格式转换
+import os # 📂 操作系统接口
 from Body.browser_manager import global_browser_manager # 🌐 导入全局浏览器管理器实例
 from Brain.gemini_client import global_gemini # 🧠 导入全局 Gemini 客户端实例
+
+# 📂 状态文件路径定义
+TASK_QUEUE_PATH = r"C:\000AI\Debug\Agent_angel_server\State\task_queue.json"
+ACTIVE_CONTEXT_PATH = r"C:\000AI\Debug\Agent_angel_server\Memory\activeContext.json"
 
 class CognitiveSystem:
     # =================================
@@ -44,10 +49,10 @@ class CognitiveSystem:
         #  🎉 初始化 (无参数)
         #
         #  🎨 代码用途：
-        #     初始化认知系统的状态变量。
+        #     初始化认知系统的状态变量，并从磁盘加载持久化状态。
         #
         #  💡 易懂解释：
-        #     指挥官刚上任，先整理一下办公桌，准备好笔记本（user_goals）记录任务！📝
+        #     指挥官刚上任，先整理一下办公桌，把上次没做完的任务单（task_queue.json）拿出来！📝
         #
         #  ⚠️ 警告：
         #     注意避免重复初始化。
@@ -56,6 +61,43 @@ class CognitiveSystem:
         self.initialized = True # ✅ 标记为已初始化
         self.running = False # 🛑 初始状态为停止
         self.user_goals = {} # 🎯 用户目标字典 {user_id: "当前任务描述"}
+        self._load_state() # 📂 从磁盘加载状态
+
+    def _load_state(self):
+        # 📂 加载任务队列
+        try:
+            if os.path.exists(TASK_QUEUE_PATH):
+                with open(TASK_QUEUE_PATH, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for item in data:
+                        if isinstance(item, dict) and 'id' in item and 'task' in item:
+                             self.user_goals[str(item['id'])] = {
+                                 "description": item['task'],
+                                 "step": item.get('step', 0),
+                                 "status": item.get('status', 'pending')
+                             }
+                print(f"📂 [认知] 已加载 {len(self.user_goals)} 个任务。")
+        except Exception as e:
+            print(f"❌ [认知] 加载状态失败: {e}")
+
+    def _save_state(self):
+        # 💾 保存任务队列
+        try:
+            queue_data = []
+            for uid, goal in self.user_goals.items():
+                queue_data.append({
+                    "id": uid,
+                    "task": goal['description'],
+                    "step": goal['step'],
+                    "status": goal['status']
+                })
+            
+            os.makedirs(os.path.dirname(TASK_QUEUE_PATH), exist_ok=True)
+            
+            with open(TASK_QUEUE_PATH, 'w', encoding='utf-8') as f:
+                json.dump(queue_data, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"❌ [认知] 保存状态失败: {e}")
 
     async def start(self):
         # =================================
@@ -94,6 +136,7 @@ class CognitiveSystem:
             "step": 0, # 👣 当前步数重置为 0
             "status": "active" # ▶️ 状态设置为活跃
         }
+        self._save_state() # 💾 保存状态到磁盘
 
     async def _main_loop(self):
         # =================================
@@ -176,6 +219,8 @@ class CognitiveSystem:
                     if goal['step'] > 20: # 🛑 防止死循环，最大 20 步
                         print(f"🛑 [认知] 任务步数超限，强制停止。") # 📢 打印超限日志
                         goal['status'] = 'failed' # ❌ 标记状态为失败
+                    
+                    self._save_state() # 💾 保存状态到磁盘
 
             except Exception as e: # ❌ 捕获主循环异常
                 print(f"❌ [认知] 思考循环出错: {e}") # 📢 打印错误信息
