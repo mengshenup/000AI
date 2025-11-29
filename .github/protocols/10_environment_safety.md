@@ -41,17 +41,6 @@
     *   假设目标机器是裸机 (Vanilla OS)。
     *   严禁假设 `winget`, `store`, `wsl` 存在，必须提供 `curl`/`powershell` 回退方案。
 
-## 🛠️ 工具链 (Toolchain)
-
-**1. 验证工具**
-*   **位置**: `C:\000AI\.github\tools`
-*   **validate_annotation.py**: 
-    *   **强制性**: 必须在 Protocol 20 的 Step 6 (Annotation) 中调用。
-    *   **作用**: 自动检查代码注释覆盖率 (100% Line Coverage)。
-    *   **失败后果**: 若验证失败，任务不得进入 Step 7 (Conclusion)。
-    *   **自维护 (Self-Healing)**: 若工具存在逻辑缺陷，Agent 必须自行修复并迭代该工具。
-    *   **Final Gatekeeper**: 它是防止“上下文遗忘”的最终防线。无论你认为代码多么完美，必须由该工具签字放行。
-
 ## 🛡️ 文件生命周期协议 (File Lifecycle Protocol)
 
 **1. 📂 目录结构规范 (Directory Structure Standards)**

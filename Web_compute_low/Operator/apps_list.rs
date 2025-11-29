@@ -1,165 +1,219 @@
-// =================================
-//  🎉 应用列表同步工具 (Apps List Sync)
+/* ==========================================================================
+   📃 文件功能 : 扫描本地应用目录并同步至服务端
+   ⚡ 逻辑摘要 : 遍历文件系统 -> 构建应用清单 -> 批量HTTP推送 -> 提交事务
+   💡 易懂解释 : 就像快递员小哥，挨家挨户收快递（扫描文件），装满一车（Batch）就发往集散中心（服务端），最后签单确认（Commit）。
+   🔋 扩展备注 : 未来可增加增量同步功能，仅上传修改过的文件。
+   📊 当前状态 : 活跃 (最后更新: 2025-11-29)
+   🧱 apps_list.rs 踩坑记录 (必须累加，严禁覆盖) :
+      1. 2025-11-29 [待验证] 路径分隔符: Windows下路径可能包含反斜杠 -> 已统一替换为Unix风格 (Line 108)
+   ========================================================================== */
+
+use std::fs; // 📂 文件系统操作库
+use std::path::Path; // 🛣️ 路径处理模块
+use walkdir::WalkDir; // 🚶 目录递归遍历器
+use serde::{Serialize, Deserialize}; // 🧬 序列化协议
+use reqwest::blocking::Client; // 🌐 阻塞式网络客户端
+use anyhow::{Result, Context}; // 🛡️ 错误处理增强
+
+const SERVER_URL: &str = "http://localhost:9000"; // 🎯 服务端地址锚点
+const BATCH_SIZE: usize = 50; // 📦 批量传输阈值
+
+// =============================================================================
+//  🎉 应用数据胶囊 (应用名称，相对路径，文件大小，文件内容)
 //
 //  🎨 代码用途：
-//     扫描本地 js/apps 目录，构建应用清单，并将其推送到服务端。
-//     使用 Rust 高性能库 (Reqwest/Tokio) 实现。
+//      定义单个应用文件的元数据和内容结构，用于序列化传输。
 //
 //  💡 易懂解释：
-//     这是快递员小哥！他拿着一张清单（apps_list），
-//     把家里（Web_compute_low）做好的玩具（JS应用），
-//     一个个登记好，然后送到学校（Web_compute_high）去展示。
-//
+//      这就是一个快递包裹单，上面写着里面装的是什么（内容）、叫什么名字（名称）、有多重（大小）、送到哪里（路径）。
+//  
 //  ⚠️ 警告：
-//     虽然引入了 Axum 库，但当前主要使用 Reqwest 进行客户端推送。
-//     如果未来需要让客户端变成服务器被动接收请求，可以直接复用 Axum 依赖。
-// =================================
-
-use std::fs;
-use std::path::Path;
-use walkdir::WalkDir;
-use serde::{Serialize, Deserialize};
-use reqwest::blocking::Client; // 使用阻塞式客户端以简化脚本逻辑
-use anyhow::{Result, Context};
-
-// 💖 服务器地址配置
-const SERVER_URL: &str = "http://localhost:9000";
-const BATCH_SIZE: usize = 50;
-
+//      内存溢出: 如果单个文件过大，content字段可能占用过多内存。
+//  
+//  ⚙️ 触发源 (Trigger Source)：
+//      apps_list.rs -> main() -> WalkDir遍历 -> AppData构建
+// =============================================================================
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct AppData {
-    name: String,
-    path: String,
-    size: u64,
-    content: String,
+    name: String, // 🏷️ 应用名称标识
+    path: String, // 📂 相对路径定位
+    size: u64, // ⚖️ 文件字节大小
+    content: String, // 📝 源码内容载荷
 }
 
+// =============================================================================
+//  🎉 批量请求载体 (应用列表)
+//
+//  🎨 代码用途：
+//      封装一组应用数据，作为HTTP请求的Body发送给服务端。
+//
+//  💡 易懂解释：
+//      这是一辆快递货车，里面装了很多个快递包裹（AppData），一次性拉走。
+//  
+//  ⚠️ 警告：
+//      网络超时: 如果列表过长，序列化后的JSON可能导致请求体过大。
+//  
+//  ⚙️ 触发源 (Trigger Source)：
+//      apps_list.rs -> send_batch() -> BatchRequest构建
+// =============================================================================
 #[derive(Debug, Serialize)]
 struct BatchRequest {
-    apps: Vec<AppData>,
+    apps: Vec<AppData>, // 📚 应用数据集合
 }
 
+// =============================================================================
+//  🎉 主入口函数 ()
+//
+//  🎨 代码用途：
+//      程序的执行起点，协调扫描、打包、发送的全过程。
+//
+//  💡 易懂解释：
+//      这是快递站长，指挥大家开始干活：先找到仓库（目录），然后打包（扫描），最后发车（发送）。
+//  
+//  ⚠️ 警告：
+//      无特殊风险
+//  
+//  ⚙️ 触发源 (Trigger Source)：
+//      命令行执行 -> cargo run
+// =============================================================================
 fn main() -> Result<()> {
-    // 启用控制台颜色支持 (Windows)
     #[cfg(windows)]
-    let _ = console::enable_ansi_support();
+    let _ = console::enable_ansi_support(); // 🎨 终端颜色激活
 
-    println!("========================================================");
-    println!(" 🎉 Angel Apps List Sync (Rust Edition)");
-    println!("========================================================");
+    println!("========================================================"); // 🖨️ 分隔线输出
+    println!(" 🎉 Angel Apps List Sync (Rust Edition)"); // 🖨️ 标题打印
+    println!("========================================================"); // 🖨️ 分隔线输出
 
-    // 1. 确定扫描路径
-    // 假设我们在 Web_compute_low 根目录运行 (通过 cargo run)
-    // 或者在 Operator 目录运行
-    let current_dir = std::env::current_dir()?;
+    let current_dir = std::env::current_dir()?; // 📍 当前路径获取
     
-    // 尝试定位 js/apps 目录
-    let apps_dir = if current_dir.join("js").join("apps").exists() {
-        current_dir.join("js").join("apps")
-    } else if current_dir.parent().map(|p| p.join("js").join("apps").exists()).unwrap_or(false) {
-        current_dir.parent().unwrap().join("js").join("apps")
-    } else {
-        // 默认回退到相对路径
-        Path::new("js/apps").to_path_buf()
+    let apps_dir = if current_dir.join("js").join("apps").exists() { // 🔍 路径存在判定
+        current_dir.join("js").join("apps") // 🎯 根目录定位
+    } else if current_dir.parent().map(|p| p.join("js").join("apps").exists()).unwrap_or(false) { // 🔍 父级路径判定
+        current_dir.parent().unwrap().join("js").join("apps") // 🎯 父级目录定位
+    } else { // 🤷 默认路径回退
+        Path::new("js/apps").to_path_buf() // 🎯 默认路径构造
     };
 
-    println!("📂 目标扫描目录: {:?}", apps_dir);
+    println!("📂 目标扫描目录: {:?}", apps_dir); // 🖨️ 扫描目标回显
 
-    if !apps_dir.exists() {
-        println!("❌ 错误: 找不到 js/apps 目录！请确保在 Web_compute_low 目录下运行。");
-        return Ok(());
+    if !apps_dir.exists() { // 🛑 目录存在校验
+        println!("❌ 错误: 找不到 js/apps 目录！请确保在 Web_compute_low 目录下运行。"); // 🖨️ 错误信息提示
+        return Ok(()); // 🚪 提前退出程序
     }
 
-    // 2. 扫描文件
-    let mut apps_buffer: Vec<AppData> = Vec::new();
-    let client = Client::new();
-    let mut total_synced = 0;
+    let mut apps_buffer: Vec<AppData> = Vec::new(); // 🧺 缓冲队列初始化
+    let client = Client::new(); // 🌐 网络客户端创建
+    let mut total_synced = 0; // 🔢 同步计数归零
 
-    println!("🚀 开始扫描并同步...");
+    println!("🚀 开始扫描并同步..."); // 🖨️ 任务开始提示
 
-    for entry in WalkDir::new(&apps_dir).into_iter().filter_map(|e| e.ok()) {
-        let path = entry.path();
-        if path.is_file() && path.extension().map_or(false, |ext| ext == "js") {
-            // 读取文件内容
-            let content = fs::read_to_string(path).unwrap_or_default();
-            let name = path.file_stem().unwrap().to_string_lossy().to_string();
+    for entry in WalkDir::new(&apps_dir).into_iter().filter_map(|e| e.ok()) { // 🚶 目录递归遍历
+        let path = entry.path(); // 📂 文件路径提取
+        
+        if path.is_file() && path.extension().is_some_and(|ext| ext == "js") { // 🔍 JS文件过滤
+            let content = fs::read_to_string(path).unwrap_or_default(); // 📖 文件内容读取
+            let name = path.file_stem().unwrap().to_string_lossy().to_string(); // 🏷️ 文件名提取
             
-            // 计算相对路径
-            let relative_path = path.strip_prefix(&apps_dir.parent().unwrap_or(&apps_dir))
-                .unwrap_or(path)
-                .to_string_lossy()
-                .replace("\\", "/");
+            let relative_path = path.strip_prefix(apps_dir.parent().unwrap_or(&apps_dir)) // 📐 相对路径计算
+                .unwrap_or(path) // 🛡️ 路径回退保护
+                .to_string_lossy() // 🧬 字符串转换
+                .replace("\\", "/"); // 🔄 路径分隔符统一
 
-            let size = content.len() as u64;
+            let size = content.len() as u64; // ⚖️ 文件大小计算
 
-            let app = AppData {
-                name,
-                path: relative_path,
-                size,
-                content,
+            let app = AppData { // 📦 数据对象构建
+                name, // 🏷️ 名称赋值
+                path: relative_path, // 📂 路径赋值
+                size, // ⚖️ 大小赋值
+                content, // 📝 内容赋值
             };
 
-            apps_buffer.push(app);
+            apps_buffer.push(app); // 📥 缓冲区压入
 
-            // 3. 批量发送
-            if apps_buffer.len() >= BATCH_SIZE {
-                send_batch(&client, &apps_buffer)?;
-                total_synced += apps_buffer.len();
-                apps_buffer.clear();
-                println!("   📦 已推送 {} 个应用...", total_synced);
+            if apps_buffer.len() >= BATCH_SIZE { // ⚖️ 批量阈值判定
+                send_batch(&client, &apps_buffer)?; // 📤 批量数据发送
+                total_synced += apps_buffer.len(); // 🔢 计数器累加
+                apps_buffer.clear(); // 🧹 缓冲区清空
+                println!("   📦 已推送 {} 个应用...", total_synced); // 🖨️ 进度信息打印
             }
         }
     }
 
-    // 4. 发送剩余的
-    if !apps_buffer.is_empty() {
-        send_batch(&client, &apps_buffer)?;
-        total_synced += apps_buffer.len();
+    if !apps_buffer.is_empty() { // 🔍 剩余数据检查
+        send_batch(&client, &apps_buffer)?; // 📤 尾部数据发送
+        total_synced += apps_buffer.len(); // 🔢 计数器累加
     }
 
-    // 5. 提交更改
-    println!("💾 正在提交更改到服务器...");
-    let commit_url = format!("{}/admin/sync_commit", SERVER_URL);
-    let res = client.post(&commit_url).send();
+    println!("💾 正在提交更改到服务器..."); // 🖨️ 提交状态提示
+    let commit_url = format!("{}/admin/sync_commit", SERVER_URL); // 🔗 提交接口拼接
+    let res = client.post(&commit_url).send(); // 📨 提交请求发送
 
-    match res {
-        Ok(response) => {
-            if response.status().is_success() {
-                println!("✅ 同步成功！共处理了 {} 个应用。", total_synced);
-            } else {
-                println!("❌ 提交失败: Status {}", response.status());
-                println!("   Response: {}", response.text().unwrap_or_default());
+    match res { // ⚖️ 响应结果匹配
+        Ok(response) => { // ✅ 请求成功分支
+            if response.status().is_success() { // 🔍 状态码校验
+                println!("✅ 同步成功！共处理了 {} 个应用。", total_synced); // 🖨️ 成功信息打印
+            } else { // ❌ 状态码错误分支
+                println!("❌ 提交失败: Status {}", response.status()); // 🖨️ 失败状态打印
+                println!("   Response: {}", response.text().unwrap_or_default()); // 🖨️ 响应内容打印
             }
         },
-        Err(e) => {
-            println!("❌ 连接服务器失败: {}", e);
-            println!("   请确保 Web_compute_high (Port 9000) 已启动。");
+        Err(e) => { // ❌ 请求异常分支
+            println!("❌ 连接服务器失败: {}", e); // 🖨️ 异常信息打印
+            println!("   请确保 Web_compute_high (Port 9000) 已启动。"); // 🖨️ 故障排查提示
         }
     }
 
-    Ok(())
+    Ok(()) // 🚪 正常退出
 }
 
+// =============================================================================
+//  🎉 批量发送函数 (HTTP客户端，应用列表)
+//
+//  🎨 代码用途：
+//      将构建好的应用列表序列化为JSON，并通过HTTP POST请求发送到服务端。
+//
+//  💡 易懂解释：
+//      这是发车指令，把装好货的卡车开往目的地。
+//  
+//  ⚠️ 警告：
+//      网络异常: 如果服务端不可达，会抛出错误。
+//  
+//  ⚙️ 触发源 (Trigger Source)：
+//      main() -> 批量阈值触发/尾部数据触发 -> send_batch()
+// =============================================================================
 fn send_batch(client: &Client, apps: &[AppData]) -> Result<()> {
-    let url = format!("{}/admin/sync_batch", SERVER_URL);
-    let body = BatchRequest { apps: apps.to_vec() };
+    let url = format!("{}/admin/sync_batch", SERVER_URL); // 🔗 接口地址拼接
+    let body = BatchRequest { apps: apps.to_vec() }; // 📦 请求体构建
     
-    let res = client.post(&url)
-        .json(&body)
-        .send()
-        .context("❌ 发送批次数据失败")?;
+    let res = client.post(&url) // 📨 POST请求构建
+        .json(&body) // 🧬 JSON序列化
+        .send() // 🚀 请求发送
+        .context("❌ 发送批次数据失败")?; // 🛡️ 错误上下文注入
 
-    if !res.status().is_success() {
-        println!("⚠️ 批次上传警告: {}", res.status());
+    if !res.status().is_success() { // 🔍 响应状态检查
+        println!("⚠️ 批次上传警告: {}", res.status()); // 🖨️ 警告信息打印
     }
-    Ok(())
+    Ok(()) // 🚪 正常返回
 }
 
-// 💖 这里的 console 模块是为了让 Windows 终端支持颜色
 #[cfg(windows)]
 mod console {
+    // =============================================================================
+    //  🎉 启用ANSI支持 ()
+    //
+    //  🎨 代码用途：
+    //      在Windows环境下启用控制台的ANSI转义序列支持，以显示彩色文本。
+    //
+    //  💡 易懂解释：
+    //      给黑白的电视机装上彩色显像管。
+    //  
+    //  ⚠️ 警告：
+    //      无特殊风险
+    //  
+    //  ⚙️ 触发源 (Trigger Source)：
+    //      main() -> console::enable_ansi_support()
+    // =============================================================================
     pub fn enable_ansi_support() -> Result<(), u32> {
-        // 简单的封装，实际生产环境可以使用 `console` crate
-        Ok(())
+        Ok(()) // 🚪 占位返回
     }
 }

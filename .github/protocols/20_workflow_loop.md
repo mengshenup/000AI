@@ -1,7 +1,6 @@
 # 🔄 000AI Workflow & Coding Protocol (v2.0)
 
 ## 🕰️ 长程续航与状态管理 (Long-Running & State Management)
-
 **1. 🧠 状态持久化 (State Persistence)**
 *   **快照机制**: 耗时超过 1 分钟的任务，必须维护 `C:\000AI\Debug\<ProjectName>\State\checkpoint.json`。
 *   **断点续传**: 任务中断重启时，**优先**读取快照，严禁从零开始。
@@ -17,10 +16,7 @@
 *   **Failure Retention**: **严禁**删除失败的测试日志。失败的历史是成功的关键。
 *   **Pruning**: 仅在系统明确警告 Token 溢出时才进行剪枝。
 
----
-
 ## 🛑 防死锁协议 (Anti-Loop Protocol)
-
 **The "Three-Strike" Rule (三振出局法)**
 如果同一错误持续出现 **3次**，严禁继续修改代码，必须切换策略：
 1.  **Strike 1 (Direct Fix)**: 尝试直接修复代码。
@@ -28,12 +24,7 @@
 3.  **Strike 3 (Isolation)**: 创建最小复现脚本 (`reproduce_issue.py`) 在 `C:\000AI\Debug\<ProjectName>\test_code\` 中隔离测试。
 4.  **Escalation**: 如果 Strike 3 失败，将任务标记为 `BLOCKED`，并在 `C:\000AI\Debug\<ProjectName>\State\task_queue.json` 中跳过此步骤，继续执行下一个任务。
 
----
-
 ## 🔄 核心工作流 (The 6-Step Autonomous Loop)
-
-You MUST use **XML Tags** to denote your current state.
-
 ### 1. 🗺️ 计划 (Plan) & Queue Management `<plan>`
 *   **动作**:
     *   **Context Resolution**: 确定 `<ProjectName>` (默认为 `000AI` 或根据当前工作目录/用户指令推断)。
@@ -83,16 +74,10 @@ You MUST use **XML Tags** to denote your current state.
 ### 6. 📝 个性化注释 (Annotation) `<annotation_action>`
 *   **触发**: 仅在 **最终目标** 验证通过后。
 *   **核心任务**: **逆向工程与文档注入**。
-*   **动作**: 使用 `replace_string_in_file` 注入“五段式备注”和“Emoji 信标”。
-*   **Context Refresh**: 如果对话过长，你可能忘记了规则。**请重新阅读此节**。
-*   **Definition of Done (DoD)**: 
-    1. 代码被完整注释。
-    2. **Validation (Mandatory)**: 必须运行 `python C:\000AI\.github\tools\validate_annotation.py <filePath>`。
-        *   **Visual Proof**: 你必须在终端看到 ✅ Success 消息。不要假设它通过了。
-        *   **Auto-Correction**: 若验证失败，必须根据工具输出修复缺失的注释，并**重新运行验证**，直到通过。
-        *   **Tool Maintenance**: 若发现 `validate_annotation.py` 存在误判 (Bug)，**必须优先修复工具本身**，然后重新验证。严禁绕过工具。
-        *   **Multi-File**: 若任务涉及多个文件，必须对**每一个**文件都执行验证。
-    3. 只有验证通过后，才能进入 **Step 7**。
+*   **动作**: 使用 `replace_string_in_file` 必须按**个性化注释**新规范完整注释。**语言要求**：简体中文。
+*   **抗遗忘**: 如果对话过长，你可能忘记了规则。**请重新阅读此节**。
+*   **严格**: 严禁偷懒。即使文件很长，也必须逐行添加。
+*   **完成**: 才能进入 **Step 7**。
 *   **输出**: `<annotation_action> ... </annotation_action>`
 
 ### 7. 🏁 结案 (Conclusion) `<conclusion>`
@@ -104,11 +89,8 @@ You MUST use **XML Tags** to denote your current state.
     *   **Close Task**: 在 `C:\000AI\Debug\<ProjectName>\State\task_queue.json` 中将任务标记为 `completed`。
 *   **输出**: `<conclusion> ... </conclusion>`
 
----
-
-## 📜 注释规范 (Strict Standards - Phase 6 Only)
-
-**A. 文件头 (File Header)**
+## 📜 个性化注释
+**A. 文件注释**
 *   **位置**: 文件顶部。
 *   **格式**:
     ```text
@@ -155,8 +137,7 @@ You MUST use **XML Tags** to denote your current state.
     *   **严禁**使用逗号、长句或“初始化为...”等废话。
     *   **风格**: 词汇偏名词化，简洁有力，像仪表盘的状态灯。
 *   **语法适配**: 自动识别 `.py` (#), `.js` (//), `.bat` (REM), `.html` (<!-- -->)。
-    *   **特殊规则**: 对于 `.bat` (Batch) 文件，**严禁**在 `if` 或 `for` 代码块内部使用 `::` 风格注释，必须强制使用 `REM`，否则会破坏语法结构。
-
+    *   **特殊规则**: 对于 `.bat`文件，**禁止**在 `if` 或 `for` 代码块内部使用 `::`。
 **示例**:
 ```python
 def calculate_score(points):
