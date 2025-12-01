@@ -3,11 +3,11 @@ cd /d "%~dp0"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$Script = (Get-Content '%~f0' | Select-Object -Skip 5) -join [Environment]::NewLine; Invoke-Expression $Script"
 goto :eof
 REM ==========================================
-# 🚀 Angel Agent Server 启动器 (PowerShell 版)
+# 🚀 Angel Web High 启动器 (PowerShell 版)
 # ==========================================
 
 $ErrorActionPreference = "SilentlyContinue"
-$Host.UI.RawUI.WindowTitle = "Angel Agent Server (8000)"
+$Host.UI.RawUI.WindowTitle = "Angel Web High (9000)"
 
 function Kill-Port ($port) {
     $tcp = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
@@ -18,9 +18,9 @@ function Kill-Port ($port) {
     }
 }
 
-Kill-Port 8000
+Kill-Port 9000
 
-Write-Host "🚀 正在启动 Agent_angel_server..." -ForegroundColor Green
+Write-Host "🚀 正在启动 Web_compute_high..." -ForegroundColor Green
 
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Host "❌ 严重错误：未找到 Python 环境！" -ForegroundColor Red
@@ -35,12 +35,11 @@ if (Test-Path 'requirements.txt') {
     Write-Host "⚠️ 未找到 requirements.txt，可能导致运行错误。" -ForegroundColor Yellow
 }
 
-$env:PYTHONPATH = $PWD.Path
-if (Test-Path 'Brain/main.py') {
-    python Brain/main.py
+if (Test-Path 'server.py') {
+    python server.py
     Write-Host "程序已退出。" -ForegroundColor Yellow
     Read-Host "按回车键退出..."
 } else {
-    Write-Host "❌ 错误：找不到 Brain/main.py 文件！" -ForegroundColor Red
+    Write-Host "❌ 错误：找不到 server.py 文件！" -ForegroundColor Red
     Read-Host "按回车键退出..."
 }

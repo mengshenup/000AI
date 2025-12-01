@@ -95,8 +95,44 @@ window.onload = async () => {
 
     try {
         // 1. 获取应用列表 (动态加载)
-        const res = await fetch(`${WEB_API_URL}/get_apps_list`); // 💖 从服务器获取应用列表
-        const { apps, system_apps, system_core } = await res.json(); // 💖 解析 JSON 数据
+        let appsData;
+        try {
+            const res = await fetch(`${WEB_API_URL}/get_apps_list`); // 💖 从服务器获取应用列表
+            appsData = await res.json(); // 💖 解析 JSON 数据
+        } catch (e) {
+            // =================================
+            //  🎉 离线模式回退 (Offline Fallback)
+            //
+            //  🎨 代码用途：
+            //     当无法连接到后端服务器时，使用本地硬编码的应用列表，确保系统能正常启动。
+            //
+            //  💡 易懂解释：
+            //     如果电话打不通（断网了），就照着上次记下来的菜单（本地列表）做菜吧！🍲
+            // =================================
+            console.warn("无法连接应用服务器，使用本地离线模式", e);
+            appsData = {
+                apps: [
+                    { id: "win-angel", filename: "browser.js", version: "1.0.0" },
+                    { id: "win-settings", filename: "personalization.js", version: "1.0.0" },
+                    { id: "win-taskmgr", filename: "task_manager.js", version: "1.0.0" },
+                    { id: "win-manual", filename: "manual.js", version: "1.0.0" },
+                    { id: "win-performance", filename: "performance.js", version: "1.0.0" },
+                    { id: "win-intelligence", filename: "intelligence.js", version: "1.0.0" }
+                ],
+                system_apps: [
+                    { id: "sys-taskbar", filename: "taskbar.js", version: "1.0.0" },
+                    { id: "sys-desktop", filename: "desktop.js", version: "1.0.0" },
+                    { id: "sys-context-menu", filename: "context_menu.js", version: "1.0.0" },
+                    { id: "app-login", filename: "login.js", version: "1.0.0" },
+                    { id: "sys-angel", filename: "angel.js", version: "1.0.0" },
+                    { id: "sys-billing", filename: "billing.js", version: "1.0.0" },
+                    { id: "sys-traffic", filename: "traffic.js", version: "1.0.0" },
+                    { id: "sys-fps", filename: "fps.js", version: "1.0.0" }
+                ],
+                system_core: []
+            };
+        }
+        const { apps, system_apps, system_core } = appsData;
 
         // 辅助函数：检查是否需要更新 (优先对比行数)
         const checkUpdate = (serverApp, cachedApp) => {

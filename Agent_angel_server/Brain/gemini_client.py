@@ -42,7 +42,7 @@ class GeminiClient:
             self.model = genai.GenerativeModel('gemini-1.5-flash') # 🧠 加载 Flash 模型（速度快，适合实时任务）
         else:
             self.model = None # 🚫 模型不可用
-            print("⚠️ 未找到 Gemini API Key 或缺少库。大脑功能已禁用。") # ⚠️ 打印警告信息
+            print("⚠️ [提示] Gemini API Key 未配置或库缺失 (大脑功能受限)") # ⚠️ 打印警告信息
 
     async def analyze_video(self, video_title, video_url, current_time=0):
         # =================================
@@ -61,7 +61,7 @@ class GeminiClient:
         global_cost_tracker.track_ai(f"Analyze request: {video_title}", is_input=True) # 📊 记录 AI 输入成本
 
         if not self.model: # 🛑 检查模型是否可用
-            return {"error": "缺少 Gemini API Key。大脑已离线。"} # ❌ 错误返回
+            return {"error": "Gemini API Key 未配置 (大脑离线)"} # ❌ 错误返回
 
         try:
             prompt = f'''

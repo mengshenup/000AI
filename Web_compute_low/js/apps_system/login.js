@@ -244,7 +244,28 @@ export const loginApp = {
                     msg.innerText = err.detail || "登录失败"; // 💖 显示错误信息
                 }
             } catch (e) {
-                msg.innerText = "连接服务器失败"; // 💖 显示网络错误
+                // =================================
+                //  🎉 离线登录 (Offline Login)
+                //
+                //  🎨 代码用途：
+                //     当登录服务器不可用时，允许用户以离线身份进入系统。
+                //
+                //  💡 易懂解释：
+                //     门卫大叔不在家？那就自己开门进去吧，反正家里也没别人！🏠
+                // =================================
+                console.warn("登录服务器不可用，进入离线模式", e);
+                // 离线模式逻辑
+                this.currentUser = {
+                    id: account || 'offline_user',
+                    name: account || 'Offline User',
+                    account: account || 'offline',
+                    avatar: 'assets/wp-0.avif',
+                    keys: []
+                };
+                this.close();
+                this.updateSystemUser();
+                // network.connect(); // 离线模式不连接网络
+                bus.emit('system:speak', `离线模式启动，欢迎 ${this.currentUser.name}`);
             }
         };
         

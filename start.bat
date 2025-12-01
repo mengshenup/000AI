@@ -1,126 +1,69 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0"
-title Angel System Launcher
-color 0f
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$Script = (Get-Content '%~f0' | Select-Object -Skip 5) -join [Environment]::NewLine; Invoke-Expression $Script"
+goto :eof
+REM ==========================================
+# 🚀 Angel 系统总启动器 (模块化版)
+# ==========================================
 
-:Start
-cls
-echo ========================================================
-echo  🚀 Angel System Launcher
-echo ========================================================
-echo.
-echo [信息] 正在检查端口占用情况...
+$ErrorActionPreference = "SilentlyContinue"
+$Host.UI.RawUI.WindowTitle = "Angel System Launcher"
+$root = $PWD.Path
 
-:: ==========================================
-:: 1. 清理端口 5500 (Web Low)
-:: ==========================================
-:Check5500
-netstat -aon | findstr ":5500" >nul
-if %errorlevel% equ 0 goto :Clean5500
-goto :Check9000
+Write-Host "🚀 正在启动模块化服务..." -ForegroundColor Cyan
 
-:Clean5500
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5500"') do (
-    echo [清理] 端口 5500 被占用，PID: %%a
-    tasklist /fi "pid eq %%a"
-    taskkill /f /pid %%a >nul 2>&1
-)
-timeout /t 1 >nul
-goto :Check5500
+# --- 1. 启动 Web_compute_low ---
+$lowScript = Join-Path $root "Web_compute_low\Web_compute_low_start.bat"
+if (Test-Path $lowScript) {
+    Write-Host "正在启动 Web_compute_low..." -ForegroundColor Green
+    # 移除 -WindowStyle Minimized 以保持窗口可见
+    Start-Process $lowScript
+} else {
+    Write-Host "❌ 缺失文件: $lowScript" -ForegroundColor Red
+}
 
-:: ==========================================
-:: 2. 清理端口 9000 (Web High)
-:: ==========================================
-:Check9000
-netstat -aon | findstr ":9000" >nul
-if %errorlevel% equ 0 goto :Clean9000
-goto :Check8000
+# --- 2. 启动 Web_compute_high ---
+$highScript = Join-Path $root "Web_compute_high\Web_compute_high_start.bat"
+if (Test-Path $highScript) {
+    Write-Host "正在启动 Web_compute_high..." -ForegroundColor Green
+    Start-Process $highScript
+} else {
+    Write-Host "❌ 缺失文件: $highScript" -ForegroundColor Red
+}
 
-:Clean9000
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":9000"') do (
-    echo [清理] 端口 9000 被占用，PID: %%a
-    tasklist /fi "pid eq %%a"
-    taskkill /f /pid %%a >nul 2>&1
-)
-timeout /t 1 >nul
-goto :Check9000
+# --- 3. 启动 Agent_angel_server ---
+$agentScript = Join-Path $root "Agent_angel_server\Agent_angel_server_start.bat"
+if (Test-Path $agentScript) {
+    Write-Host "正在启动 Agent_angel_server..." -ForegroundColor Green
+    Start-Process $agentScript
+} else {
+    Write-Host "❌ 缺失文件: $agentScript" -ForegroundColor Red
+}
 
-:: ==========================================
-:: 3. 清理端口 8000 (Agent)
-:: ==========================================
-:Check8000
-netstat -aon | findstr ":8000" >nul
-if %errorlevel% equ 0 goto :Clean8000
-goto :LaunchServices
+# --- 4. 打开浏览器 ---
+Write-Host "`n🌐 等待服务预热..." -ForegroundColor Yellow
+Start-Sleep -Seconds 5
 
-:Clean8000
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":8000"') do (
-    echo [清理] 端口 8000 被占用，PID: %%a
-    tasklist /fi "pid eq %%a"
-    taskkill /f /pid %%a >nul 2>&1
-)
-timeout /t 1 >nul
-goto :Check8000
+# --- 5. 检查服务状态 ---
+Write-Host "`n🔍 正在检查服务状态..." -ForegroundColor Cyan
 
-:LaunchServices
-echo.
-echo [信息] 端口清理完毕，开始启动服务...
-echo.
+function Check-Service ($port, $name) {
+    $tcp = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+    if ($tcp) {
+        Write-Host "✅ [成功] $name 已启动 (端口 $port)" -ForegroundColor Green
+    } else {
+        Write-Host "❌ [失败] $name 未启动 (端口 $port) - 请检查对应窗口报错" -ForegroundColor Red
+    }
+}
 
-:: 1. 启动 Web_compute_low
-echo [1/3] 正在启动 Web_compute_low (端口 5500)...
-start "Angel Web Low" /min cmd /k "Web_compute_low\Web_compute_low_start.bat"
+Check-Service 5500 "Web_compute_low"
+Check-Service 9000 "Web_compute_high"
+Check-Service 8000 "Agent_angel_server"
 
-:Wait5500
-timeout /t 2 >nul
-netstat -an | find "5500" >nul
-if %errorlevel% neq 0 (
-    echo    ...等待 Web_compute_low 就绪...
-    goto :Wait5500
-)
-echo [成功] Web_compute_low 已启动。
+Write-Host "`n✅ 正在打开浏览器: http://localhost:5500" -ForegroundColor Green
+Start-Process "http://localhost:5500"
 
-:: 2. 启动 Web_compute_high
-echo [2/3] 正在启动 Web_compute_high (端口 9000)...
-start "Angel Web High" /min cmd /k "Web_compute_high\Web_compute_high_start.bat"
+Write-Host "`n🎉 启动流程结束！" -ForegroundColor Magenta
+Write-Host "按任意键退出启动器..."
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
-:Wait9000
-timeout /t 2 >nul
-netstat -an | find "9000" >nul
-if %errorlevel% neq 0 (
-    echo    ...等待 Web_compute_high 就绪...
-    goto :Wait9000
-)
-echo [成功] Web_compute_high 已启动。
-
-:: 3. 启动 Agent_angel_server
-echo [3/3] 正在启动 Agent_angel_server (端口 8000)...
-start "Angel Agent Server" /min cmd /k "Agent_angel_server\Agent_angel_server_start.bat"
-
-:Wait8000
-timeout /t 2 >nul
-netstat -an | find "8000" >nul
-if %errorlevel% neq 0 (
-    echo    ...等待 Agent_angel_server 就绪...
-    goto :Wait8000
-)
-echo [成功] Agent_angel_server 已启动。
-
-echo.
-echo ========================================================
-echo  🎉 所有服务启动完成！
-echo ========================================================
-echo.
-echo [提示] 按回车键可以重新扫描并重启所有服务...
-pause
-goto :Start
-)
-echo [成功] Agent_angel_server 已启动。
-
-echo.
-echo [完成] 所有服务已启动。正在打开浏览器...
-start http://localhost:5500
-
-timeout /t 3 >nul
-exit

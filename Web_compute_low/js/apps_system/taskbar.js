@@ -111,12 +111,16 @@ function update() {
         }
         
         // 绑定点击事件 (恢复/最小化)
+        // 💖 修复：移除 onclick，改由 window_manager.js 的全局 mousedown 委托处理
+        // 防止 mousedown 和 click 双重触发导致 toggleApp 执行两次 (最小化后立即恢复)
+        /*
         div.onclick = () => {
             if (wm) {
                 // 使用 toggleApp 统一处理
                 wm.toggleApp(id); // 💖 切换应用的显示/隐藏状态
             }
         };
+        */
 
         container.appendChild(div); // 💖 将图标添加到任务栏
     });

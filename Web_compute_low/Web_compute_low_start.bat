@@ -1,79 +1,54 @@
 @echo off
-:: =================================
-::  🎉 启动服务器脚本 (Linux/WSL)
-::
-::  🎨 代码用途：
-::     通过 WSL 启动 Rust 编译的 Linux 二进制文件。
-::
-::  💡 易懂解释：
-::     启动引擎！🚀 在 Linux 世界里跑起来！
-:: =================================
-
-chcp 65001 >nul
 cd /d "%~dp0"
-title Angel Web Low (Linux/WSL)
-color 0a
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$Script = (Get-Content '%~f0' | Select-Object -Skip 5) -join [Environment]::NewLine; Invoke-Expression $Script"
+goto :eof
+REM ==========================================
+# 🚀 Angel Web Low 启动器 (PowerShell 版)
+# ==========================================
 
-:Start
-echo.
-echo [启动] 正在启动 Web_compute_low (端口 5500)...
+$ErrorActionPreference = "SilentlyContinue"
+$Host.UI.RawUI.WindowTitle = "Angel Web Low (5500)"
 
-:: 1. 清理 Windows 侧端口占用
-netstat -aon | findstr ":5500" >nul
-if %errorlevel% equ 0 (
-    for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":5500"') do (
-        echo [清理] Windows 端口 5500 被占用，PID: %%a
-        taskkill /f /pid %%a >nul 2>&1
-    )
-)
+function Kill-Port ($port) {
+    $tcp = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+    if ($tcp) {
+        Write-Host "正在清理端口 $port..." -ForegroundColor Yellow
+        $pids = $tcp.OwningProcess | Select-Object -Unique
+        foreach ($id in $pids) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }
+    }
+}
 
-:: 2. 智能判断启动模式
-:: 优先检查是否有 Windows 编译产物 (no_code/target/debug/server.exe)
-if exist "no_code\target\debug\server.exe" (
-    echo [模式] 检测到 Windows 原生程序，正在启动...
-    set CARGO_TARGET_DIR=no_code/target
-    cargo run --bin server
-    goto :EndLoop
-)
+Kill-Port 5500
 
-:: 否则尝试 WSL 模式
-echo [模式] 未检测到 Windows 程序，尝试 WSL 模式...
+Write-Host "🚀 正在启动 Web_compute_low..." -ForegroundColor Green
 
-:: [Portable Mode Support]
-:: 计算路径并设置环境变量，确保能找到我们刚安装的 Rust
-for /f "delims=" %%i in ('wsl wslpath -a .') do set "WSL_PWD=%%i"
-set "RUST_DIR=%WSL_PWD%/no_code/wsl_rust_env"
-set "RUSTUP_HOME=%RUST_DIR%/rustup"
-set "CARGO_HOME=%RUST_DIR%/cargo"
-:: [Bug Fix] 给路径加上单引号，防止路径中包含空格导致报错
-set "RUST_ENV=export RUSTUP_HOME='%RUSTUP_HOME%'; export CARGO_HOME='%CARGO_HOME%'; export PATH='%CARGO_HOME%/bin':$PATH;"
+# 尝试使用 Cargo 启动
+if (Get-Command cargo -ErrorAction SilentlyContinue) {
+    try {
+        Write-Host "尝试使用 Cargo 运行..." -ForegroundColor Cyan
+        # 检查 Cargo.toml 是否存在
+        if (Test-Path "Cargo.toml") {
+             cargo run --bin simple_server
+             # 如果 cargo run 正常退出（通常不会，除非出错），暂停
+             Write-Host "Cargo 运行结束。" -ForegroundColor Yellow
+             Read-Host "按回车键退出..."
+             exit
+        } else {
+            Write-Host "⚠️ [提示] 未找到 Cargo.toml，跳过 Rust 模式。" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "❌ Cargo 运行失败。" -ForegroundColor Red
+    }
+}
 
-:: 清理端口
-wsl bash -c "lsof -t -i:5500 | xargs -r kill -9" >nul 2>&1
-
-:: 启动服务器
-echo [启动] Running in WSL (Portable Env)...
-echo    Target: Debug/simple_server
-
-:: [Pre-flight Check] 检查文件是否存在
-wsl bash -c "[ -f ./Debug/simple_server ]"
-if %errorlevel% neq 0 (
-    echo.
-    echo ❌ 启动失败：找不到服务器程序。
-    echo    (Binary 'Debug/simple_server' not found)
-    echo.
-    echo    👉 请先运行 [Web_compute_low_build.bat] 进行编译！
-    echo       (Please run build script first!)
-    echo.
-    pause
-    goto :EndLoop
-)
-
-cmd /c "wsl bash -c '%RUST_ENV% ./Debug/simple_server'"
-
-:EndLoop
-echo.
-echo [警告] 程序已停止。
-echo [提示] 按回车键重启...
-pause
-goto :Start
+# 降级使用 Python 启动
+if (Get-Command python -ErrorAction SilentlyContinue) {
+    Write-Host "⚠️ 降级使用 Python HTTP Server..." -ForegroundColor Cyan
+    python -m http.server 5500
+    Write-Host "Python Server 已停止。" -ForegroundColor Yellow
+    Read-Host "按回车键退出..."
+} else {
+    Write-Host "❌ 严重错误：未找到 Python 环境，无法启动服务器！" -ForegroundColor Red
+    Write-Host "请安装 Python 或 Rust (Cargo)。"
+    Read-Host "按回车键退出..."
+}

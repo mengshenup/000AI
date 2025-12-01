@@ -5,7 +5,7 @@ try:
 except ImportError:
     # 🛡️ 如果未安装 stealth，提供一个空函数防止报错
     async def stealth_async(page): pass
-    print("⚠️ [警告] playwright-stealth 未安装，反爬虫功能已禁用。")
+    print("⚠️ [提示] playwright-stealth 未安装 (反爬虫功能受限)")
 
 from Memory.system_config import USER_DATA_DIR, VIEWPORT, BROWSER_CHANNEL # ⚙️ 导入系统配置
 from Energy.cost_tracker import global_cost_tracker # 💰 导入成本追踪器
