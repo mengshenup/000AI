@@ -68,8 +68,15 @@ function bindStartButton() {
     const btnStart = document.getElementById('btn-start'); // 💖 获取开始按钮元素
     if (btnStart) { // 💖 如果按钮存在
         btnStart.onclick = () => {
-            // 触发打开登录界面事件
-            bus.emit('system:open_login'); // 💖 发送打开登录界面的指令
+            // 💖 检查是否已登录 (通过 localStorage 或 store)
+            const userId = localStorage.getItem('current_user_id');
+            if (userId) {
+                // 已登录，打开 Key 管理器
+                bus.emit('system:open_key_mgr');
+            } else {
+                // 未登录，打开登录界面
+                bus.emit('system:open_login');
+            }
         };
     }
 }
@@ -97,7 +104,10 @@ function update() {
 
     Object.entries(store.apps).forEach(([id, app]) => { // 💖 遍历所有应用
         if (app.isSystem) return; // 💖 跳过系统应用
-        if (app.showTaskbarIcon === false) return; // 💖 跳过配置为不显示的应用
+
+        // 💖 核心逻辑：显示条件 = (已固定) OR (已打开)
+        // 如果既没有固定，也没有打开，就不显示在任务栏
+        if (!app.showTaskbarIcon && !app.isOpen) return;
 
         const win = document.getElementById(id); // 💖 尝试获取应用对应的窗口 DOM
         const div = document.createElement('div'); // 💖 创建任务栏图标容器
@@ -109,25 +119,34 @@ function update() {
 
         // 💖 修复：增加 store 状态检查，确保只有真正打开的应用才显示运行状态
         // 解决“关闭后仍显示横杠”的问题
-        if (app.isOpen && win && win.classList.contains('open')) { // 💖 如果窗口存在且已打开
+        // 💖 逻辑更新：显示条件 = (已固定) OR (已打开)
+        const isPinned = app.showTaskbarIcon !== false; // 默认为 true，除非显式设为 false
+        const isRunning = app.isOpen && win && win.classList.contains('open');
+
+        if (!isPinned && !isRunning) return; // 既没固定也没运行，不显示
+
+        if (isRunning) { // 💖 如果窗口存在且已打开
             div.classList.add('running'); // 💖 标记为运行中（显示下划线或高亮）
             if (wm && !win.classList.contains('minimized') && wm.activeWindowId === id) { // 💖 如果窗口未最小化且是当前活动窗口
                 div.classList.add('active'); // 💖 标记为活动状态（背景高亮）
             }
         }
         
-        // 🖱️ 绑定右键菜单：取消固定
+        // 🖱️ 绑定右键菜单：取消固定/固定
         div.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
             
-            contextMenuApp.show(e.clientX, e.clientY, [
+            const menuItems = [
                 {
                     label: '打开/最小化',
                     icon: '🔄',
                     action: () => window.wm.toggleApp(id)
-                },
-                {
+                }
+            ];
+
+            if (isPinned) {
+                menuItems.push({
                     label: '取消固定',
                     icon: '🗑️',
                     action: () => {
@@ -135,8 +154,20 @@ function update() {
                         update(); // 💖 立即刷新
                         bus.emit('system:speak', "已取消固定");
                     }
-                }
-            ]);
+                });
+            } else {
+                menuItems.push({
+                    label: '固定到任务栏',
+                    icon: '📌',
+                    action: () => {
+                        store.updateApp(id, { showTaskbarIcon: true });
+                        update(); // 💖 立即刷新
+                        bus.emit('system:speak', "已固定");
+                    }
+                });
+            }
+            
+            contextMenuApp.show(e.clientX, e.clientY, menuItems);
         });
 
         container.appendChild(div); // 💖 将图标添加到任务栏

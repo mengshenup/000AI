@@ -54,24 +54,6 @@ export const config = {
                 <button id="btn-custom-wp" style="padding:5px 10px;">应用</button>
             </div>
         </div>
-        <hr style="margin:20px 0; border:0; border-top:1px solid #eee;">
-        <h4>系统性能设置</h4>
-        <div style="margin-top:10px;">
-            <label style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                <input type="radio" name="perf-mode" value="high" checked>
-                <div>
-                    <b>🚀 高性能模式</b>
-                    <div style="font-size:0.8em; color:#666;">60 FPS，开启抗锯齿，画质优先</div>
-                </div>
-            </label>
-            <label style="display:flex; align-items:center; gap:10px;">
-                <input type="radio" name="perf-mode" value="low">
-                <div>
-                    <b>🍃 节能模式</b>
-                    <div style="font-size:0.8em; color:#666;">30 FPS，关闭特效，适合低配设备</div>
-                </div>
-            </label>
-        </div>
     `
 };
 
@@ -79,66 +61,6 @@ import { wm } from '../system/window_manager.js'; // 💖 导入窗口管理器
 import { bus } from '../system/event_bus.js'; // 💖 导入事件总线
 
 export const APP_NAME = 'Workshop'; // 💖 导出应用名称常量
-
-// =================================
-//  🎉 配置管理器类 (无参数)
-//
-//  🎨 代码用途：
-//     负责统一管理系统配置的读取与保存，确保设置持久化。
-//
-//  💡 易懂解释：
-//     这是小天使的“记事本”！她会把你的喜好（比如喜欢高性能模式）记在这里，
-//     下次见面时就不会忘啦！📒
-//
-//  ⚠️ 警告：
-//     目前主要管理性能模式，未来可扩展更多全局配置。
-// =================================
-class ConfigManager {
-    constructor() {
-        this.config = {
-            perfMode: localStorage.getItem('angel_performance_mode') || 'high' // ⚙️ 读取本地存储的性能模式
-        };
-    }
-
-    // =================================
-    //  🎉 设置配置项 (key, value)
-    //
-    //  🎨 代码用途：
-    //     更新配置项的值，并同步到 localStorage 和触发事件。
-    //
-    //  💡 易懂解释：
-    //     当你告诉小天使“我要这个！”，她就赶紧记下来，
-    //     并且大声告诉身体的其他部分：“主人改主意啦！”✍️
-    //
-    //  ⚠️ 警告：
-    //     key 必须是 config 对象中已存在的键，否则可能无法正确保存。
-    // =================================
-    set(key, value) {
-        this.config[key] = value; // 📝 更新内存中的配置
-        if (key === 'perfMode') {
-            localStorage.setItem('angel_performance_mode', value); // 💾 保存到本地存储
-            bus.emit('config:changed', { key, value }); // 📡 发送配置变更通知
-        }
-    }
-
-    // =================================
-    //  🎉 获取配置项 (key)
-    //
-    //  🎨 代码用途：
-    //     获取指定配置项的当前值。
-    //
-    //  💡 易懂解释：
-    //     查一下记事本，看看之前记的是什么。🔍
-    //
-    //  ⚠️ 警告：
-    //     如果 key 不存在，返回 undefined。
-    // =================================
-    get(key) {
-        return this.config[key]; // 📤 返回配置值
-    }
-}
-
-export const configManager = new ConfigManager();
 
 class SettingsApp {
     // =================================
@@ -173,36 +95,6 @@ class SettingsApp {
     init() {
         this.bindEvents(); // 💖 绑定事件
         this.initWallpaperGrid(); // 💖 初始化壁纸网格
-        this.initPerfSettings(); // 💖 初始化性能设置
-    }
-
-    // =================================
-    //  🎉 初始化性能设置 (无参数)
-    //
-    //  🎨 代码用途：
-    //     根据当前配置初始化性能模式单选框的状态，并绑定变更事件。
-    //
-    //  💡 易懂解释：
-    //     把界面上的“高性能”和“节能”按钮拨到正确的位置，
-    //     并且盯着它们，一旦你动了它们，就赶紧去改设置。👀
-    //
-    //  ⚠️ 警告：
-    //     依赖 DOM 中的 name="perf-mode" 的单选框元素。
-    // =================================
-    initPerfSettings() {
-        const currentMode = configManager.get('perfMode'); // ⚙️ 获取当前模式
-        const radios = document.getElementsByName('perf-mode'); // 🔘 获取所有单选框
-        
-        radios.forEach(radio => {
-            if (radio.value === currentMode) radio.checked = true; // ✅ 选中当前模式
-            
-            radio.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    configManager.set('perfMode', e.target.value); // 💾 保存新设置
-                    bus.emit('system:speak', `已切换至${e.target.value === 'high' ? '高性能' : '节能'}模式`); // 🗣️ 语音反馈
-                }
-            });
-        });
     }
 
     // =================================

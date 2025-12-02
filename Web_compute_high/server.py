@@ -2,6 +2,7 @@ import json # 📄 JSON 处理库
 import hmac # 🔐 HMAC 签名算法
 import hashlib # 🔐 哈希算法
 import time # ⏱️ 时间模块
+import platform # 🖥️ 系统信息
 from pathlib import Path # 🛣️ 面向对象的路径库
 from fastapi import FastAPI, HTTPException, Header # 🚀 FastAPI 框架
 from fastapi.middleware.cors import CORSMiddleware # 🛡️ CORS 中间件
@@ -279,6 +280,23 @@ async def root():
     #     此接口公开访问，不要返回敏感信息。
     # =================================
     return {"message": "Angel Web Compute High is running! 🎩"} # 👋 返回欢迎信息
+
+@app.get("/system_info")
+async def system_info():
+    # =================================
+    #  🎉 获取系统硬件信息 (无参数)
+    #
+    #  🎨 代码用途：
+    #     返回服务器的 CPU、系统架构等信息。
+    #
+    #  💡 易懂解释：
+    #     管家，报一下家里的电器型号！📺
+    # =================================
+    return {
+        "cpu_model": platform.processor() or "Unknown CPU",
+        "system": platform.system(),
+        "architecture": platform.machine()
+    }
 
 @app.post("/login")
 async def login(req: LoginRequest):

@@ -19,8 +19,9 @@ import { store } from './store.js'; // 💖 引入全局状态管理
 /**
  * 启用元素的拖拽功能 (水平方向)
  * @param {HTMLElement} capsule - 需要启用拖拽的 DOM 元素
+ * @param {number} initialOffset - 初始偏移量
  */
-function enableDrag(capsule) {
+function enableDrag(capsule, initialOffset = 0) {
     // =================================
     //  🎉 启用拖拽 (Enable Drag) (capsule)
     //
@@ -35,7 +36,7 @@ function enableDrag(capsule) {
     // =================================
     let isDragging = false; // 🖱️ 标记当前是否正在拖拽中
     let startX = 0; // 🏁 记录鼠标按下时的初始 X 坐标
-    let currentX = 0; // 📍 记录当前拖拽的实时 X 偏移量
+    let currentX = initialOffset; // 📍 记录当前拖拽的实时 X 偏移量 (初始化为已有的偏移)
 
     capsule.style.cursor = 'grab'; // 👆 设置鼠标样式为“抓取手势”
     capsule.style.position = 'relative'; // 🧩 设置定位方式，确保 transform 生效
@@ -43,7 +44,9 @@ function enableDrag(capsule) {
 
     capsule.addEventListener('mousedown', (e) => { // 👂 监听鼠标按下事件
         isDragging = true; // ✅ 激活拖拽状态
-        startX = e.clientX - currentX; // 🧮 计算拖拽起点的相对坐标
+        // 💖 修复：startX 应该是当前鼠标位置减去当前的偏移量
+        // 这样 currentX = e.clientX - startX 就会等于 (e.clientX - (e.clientX - currentX)) = currentX
+        startX = e.clientX - currentX; 
         capsule.style.cursor = 'grabbing'; // ✊ 鼠标变成“紧抓手势”
         capsule.style.transition = 'none'; // ⚡ 移除过渡，防止拖拽时的延迟感
         e.preventDefault(); // 🚫 阻止默认行为（如选中文本）
@@ -61,8 +64,18 @@ function enableDrag(capsule) {
             isDragging = false; // ❌ 结束拖拽状态
             capsule.style.cursor = 'grab'; // 👆 恢复鼠标为“抓取手势”
             capsule.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; // 🏀 添加弹性回弹动画
-            // 💖 修复：拖拽结束后恢复原位，或者保存位置？目前逻辑是恢复原位（因为没有保存逻辑）
-            capsule.style.transform = 'translateX(0px)'; // 🏠 让胶囊乖乖回到原位
+            
+            // 💖 修复：拖拽结束后保存位置，而不是恢复原位
+            // capsule.style.transform = 'translateX(0px)'; // 🏠 让胶囊乖乖回到原位 (已移除)
+            
+            // 💾 保存位置到 Store (需要 store.js 支持 updateApp)
+            // 注意：这里我们保存的是视觉偏移量，下次加载时需要恢复
+            // 获取应用 ID (从 capsule-ID 中提取)
+            const appId = capsule.id.replace('capsule-', '');
+            console.log(`[Capsule] 拖拽结束，保存位置: ${appId} -> ${currentX}px`); // 💖 添加调试日志
+            import('./store.js').then(({ store }) => {
+                store.updateApp(appId, { capsuleOffsetX: currentX });
+            });
         }
     });
 }
@@ -121,6 +134,11 @@ export function createCapsule(options) {
     const isOpen = appState ? appState.isOpen : serviceConfig.isOpen; // 👁️ 判断是否应该显示
     el.style.display = isOpen ? 'flex' : 'none'; // 🎭 设置显示或隐藏
 
+    // 💖 恢复保存的位置偏移
+    if (appState && appState.capsuleOffsetX) {
+        el.style.transform = `translateX(${appState.capsuleOffsetX}px)`;
+    }
+
     // 填充内容
     if (html) el.innerHTML = html; // 📝 填充胶囊内部的 HTML
 
@@ -133,7 +151,10 @@ export function createCapsule(options) {
     else container.appendChild(el); // 👉 否则直接追加到末尾
 
     // 3. 启用拖拽
-    enableDrag(el); // 🚗 赋予胶囊拖拽能力
+    // 💖 修复：从 inline style 中解析初始偏移量，防止拖拽跳变
+    const match = el.style.transform.match(/translateX\(([-0-9.]+)px\)/);
+    const initialOffset = match ? parseFloat(match[1]) : 0;
+    enableDrag(el, initialOffset); // 🚗 赋予胶囊拖拽能力
 
     // 4. 绑定点击事件
     el.addEventListener('click', (e) => { // 👂 监听点击事件

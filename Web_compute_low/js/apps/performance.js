@@ -21,6 +21,8 @@ export const config = {
     color: '#6c5ce7',
     pos: { x: 150, y: 150 },
     winPos: { x: 400, y: 200 },
+    width: 400, // 💖 缩小宽度
+    height: 500, // 💖 缩小高度
     content: `
         <div style="padding: 20px; display: flex; flex-direction: column; gap: 20px;">
             <!-- 🚀 性能模式 -->
@@ -225,8 +227,7 @@ export class PerformanceApp {
         `;
 
         // 🚀 异步获取后端详细硬件信息
-        // 💖 修复：后端暂无 /system_info 接口，暂时注释掉以避免 404 错误
-        /*
+        // 💖 修复：后端已添加 /system_info 接口
         fetch(`${WEB_API_URL}/system_info`)
             .then(res => res.json())
             .then(data => {
@@ -246,7 +247,6 @@ export class PerformanceApp {
                 console.warn("无法连接后端获取硬件信息", err);
                 // 失败时不更新，保持基础信息
             });
-        */
 
         // 先显示基础信息
         infoBox.innerHTML = htmlContent;

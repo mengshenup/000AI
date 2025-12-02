@@ -258,10 +258,16 @@ export class AngelApp {
                     failIfMajorPerformanceCaveat: true 
                 }); 
             } else {
-                throw new Error("Force CPU Mode");
+                // 💖 修改：不再抛出 Error 对象，而是抛出简单的字符串或对象，避免控制台显示红色的 Error Stack
+                throw "Force CPU Mode"; 
             }
         } catch (e1) {
-            console.warn("WebGL 标准模式启动失败或检测到 CPU 模式，尝试兼容模式...", e1);
+            // 💖 修改：仅在非预期错误时打印完整堆栈，预期内的降级只打印警告
+            if (e1 === "Force CPU Mode" || (e1.message && e1.message.includes("Force CPU Mode"))) {
+                console.warn("WebGL 标准模式启动失败或检测到 CPU 模式，尝试兼容模式...");
+            } else {
+                console.warn("WebGL 标准模式启动失败，尝试兼容模式...", e1);
+            }
             try {
                 // 第二次尝试：兼容模式 (CPU 友好型)
                 // 1. 关闭抗锯齿

@@ -102,7 +102,9 @@ export const loginApp = {
             bus.emit('system:speak', `欢迎回来，${cachedUser}`); // 💖 语音欢迎
         } else {
             // 2. 如果没有缓存，显示登录界面
-            this.open(); 
+            // 💖 修改：默认不自动弹出登录界面，等待用户点击开始按钮
+            // this.open(); 
+            console.log("未检测到登录状态，等待用户手动登录");
         }
     },
 
@@ -161,6 +163,7 @@ export const loginApp = {
         
         // 保存到本地缓存
         localStorage.setItem('current_user_id', this.currentUser.account); // 💖 缓存当前账号
+        localStorage.setItem('current_user_info', JSON.stringify(this.currentUser)); // 💖 🆕 缓存完整用户信息
         
         // 发送 Key 给服务器 (如果有选中的 Key)
         if (this.currentUser.keys.length > 0) { // 💖 如果用户有 API Key
@@ -171,7 +174,7 @@ export const loginApp = {
         }
         
         // 重新加载该用户的窗口布局
-        // store.syncFromClientDB(); // 需要 store 支持重载
+        store.syncFromClientDB(); // 💖 切换用户后重新加载布局
     },
 
     // =================================
@@ -206,18 +209,26 @@ export const loginApp = {
                 display: flex; flex-direction: column; gap: 15px;
             ">
                 <div style="text-align: center;">
-                    <img src="${user.avatar}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"> <!-- 💖 用户头像 -->
-                    <h2 style="margin: 10px 0; color: #333;">Login</h2> <!-- 💖 标题 -->
+                    <img id="login-avatar" src="${user.avatar}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"> <!-- 💖 用户头像 -->
+                    <h2 id="login-title" style="margin: 10px 0; color: #333;">Login</h2> <!-- 💖 标题 -->
                 </div>
 
-                <div class="form-group">
-                    <label>账号</label>
-                    <input type="text" id="login-account" value="${user.account}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;"> <!-- 💖 账号输入框 -->
+                <div id="login-form">
+                    <div class="form-group">
+                        <label>账号</label>
+                        <input type="text" id="login-account" value="${user.account}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;"> <!-- 💖 账号输入框 -->
+                    </div>
+
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" id="login-password" placeholder="默认为空" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;"> <!-- 💖 密码输入框 -->
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>密码</label>
-                    <input type="password" id="login-password" placeholder="默认为空" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;"> <!-- 💖 密码输入框 -->
+                <div id="key-selection" style="display:none;">
+                    <label>选择 API Key:</label>
+                    <select id="login-key-select" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; margin-top: 5px;">
+                    </select>
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
@@ -229,11 +240,36 @@ export const loginApp = {
 
         document.body.appendChild(overlay); // 💖 将遮罩层添加到页面
 
+        const btnLogin = document.getElementById('btn-login');
+        const keySelect = document.getElementById('login-key-select');
+        const keySection = document.getElementById('key-selection');
+        const formSection = document.getElementById('login-form');
+        const msg = document.getElementById('login-msg');
+
         // 绑定事件
-        document.getElementById('btn-login').onclick = async () => { // 💖 登录按钮点击事件
+        btnLogin.onclick = async () => { // 💖 登录按钮点击事件
+            // 阶段 2: 确认 Key 并进入系统
+            if (btnLogin.innerText === "进入系统") {
+                const selectedKey = keySelect.value;
+                if (selectedKey) {
+                    // 更新当前用户的 Key 列表顺序，把选中的放第一位
+                    const selectedKeyObj = this.currentUser.keys.find(k => k.value === selectedKey);
+                    if (selectedKeyObj) {
+                        this.currentUser.keys = [selectedKeyObj, ...this.currentUser.keys.filter(k => k.value !== selectedKey)];
+                    }
+                    this.close();
+                    this.updateSystemUser();
+                    network.connect();
+                    bus.emit('system:speak', `欢迎回来，${this.currentUser.name}`);
+                } else {
+                    msg.innerText = "请选择一个有效的 Key";
+                }
+                return;
+            }
+
+            // 阶段 1: 验证账号密码
             const account = document.getElementById('login-account').value; // 💖 获取账号
             const password = document.getElementById('login-password').value; // 💖 获取密码
-            const msg = document.getElementById('login-msg'); // 💖 获取消息显示元素
 
             try {
                 msg.innerText = "正在验证..."; // 💖 提示正在验证
@@ -258,10 +294,29 @@ export const loginApp = {
                         avatar: 'assets/wp-0.avif',
                         keys: data.keys // 💖 获取用户的 API Keys
                     };
-                    this.close(); // 💖 关闭登录界面
-                    this.updateSystemUser(); // 💖 更新系统用户状态
-                    network.connect(); // 🚀 连接网络
-                    bus.emit('system:speak', `欢迎回来，${account}`); // 💖 语音欢迎
+
+                    // 💖 切换 UI 到 Key 选择模式
+                    // 💖 修改：不再显示 Key 选择，直接进入系统，并弹出左下角 Key 管理器
+                    this.close();
+                    this.updateSystemUser();
+                    network.connect();
+                    bus.emit('system:speak', `欢迎回来，${account}`);
+                    
+                    // 延迟弹出 Key 管理器
+                    setTimeout(() => {
+                        bus.emit('system:open_key_mgr');
+                    }, 500);
+
+                    /* 
+                    // 旧逻辑：显示 Key 选择
+                    formSection.style.display = 'none'; // 隐藏表单
+                    keySection.style.display = 'block'; // 显示 Key 选择
+                    btnLogin.innerText = "进入系统"; // 更改按钮文本
+                    document.getElementById('login-title').innerText = `Hi, ${account}`; // 更改标题
+                    msg.innerText = ""; // 清空消息
+                    ...
+                    */
+
                 } else {
                     const err = await res.json(); // 💖 解析错误信息
                     msg.innerText = err.detail || "登录失败"; // 💖 显示错误信息
@@ -272,23 +327,48 @@ export const loginApp = {
                 //
                 //  🎨 代码用途：
                 //     当登录服务器不可用时，允许用户以离线身份进入系统。
+                //     💖 修改：即使离线也显示 Key 选择界面，提供“离线 Key”供用户体验流程。
                 //
                 //  💡 易懂解释：
                 //     门卫大叔不在家？那就自己开门进去吧，反正家里也没别人！🏠
                 // =================================
                 console.warn("登录服务器不可用，进入离线模式", e);
-                // 离线模式逻辑
+                
+                // 模拟成功登录的数据
                 this.currentUser = {
                     id: account || 'offline_user',
                     name: account || 'Offline User',
                     account: account || 'offline',
                     avatar: 'assets/wp-0.avif',
-                    keys: []
+                    keys: [{ name: 'Offline Key', value: 'offline-key-123456' }] // 💖 提供一个离线 Key
                 };
+
+                // 💖 切换 UI 到 Key 选择模式 (与在线模式一致)
+                // 💖 切换 UI 到 Key 选择模式 (与在线模式一致)
+                // 💖 修改：离线模式也直接进入系统
                 this.close();
                 this.updateSystemUser();
-                // network.connect(); // 离线模式不连接网络
                 bus.emit('system:speak', `离线模式启动，欢迎 ${this.currentUser.name}`);
+                
+                // 延迟弹出 Key 管理器
+                setTimeout(() => {
+                    bus.emit('system:open_key_mgr');
+                }, 500);
+
+                /*
+                formSection.style.display = 'none'; // 隐藏表单
+                keySection.style.display = 'block'; // 显示 Key 选择
+                btnLogin.innerText = "进入系统"; // 更改按钮文本
+                document.getElementById('login-title').innerText = `Hi, ${this.currentUser.name} (Offline)`; // 更改标题
+                msg.innerText = "⚠️ 离线模式: 仅本地功能可用"; // 提示离线
+
+                // 填充 Key 列表
+                keySelect.innerHTML = '';
+                const opt = document.createElement('option');
+                opt.value = "offline-key-123456";
+                opt.innerText = "🔑 本地离线 Key (无需联网)";
+                keySelect.appendChild(opt);
+                */
             }
         };
         
@@ -299,10 +379,9 @@ export const loginApp = {
     }
 };
 
-// 导出初始化函数供 loader.js 调用
+// =================================
+//  🎉 模块初始化 (Module Init)
+// =================================
 export function init() {
     loginApp.init();
-}
-
-// 自动初始化 (已移除，交由 loader.js 统一管理)
-// loginApp.init(); 
+} 

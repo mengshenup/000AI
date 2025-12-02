@@ -162,3 +162,12 @@
 
 
 
+[2025-12-03 10:00]  [Plan]: 接收新任务：使用 Playwright 搜索百度并朗读第一条结果。
+[2025-12-03 10:05]  [Plan]: 计划创建测试脚本 Agent_angel_server/Debug/test_code/test_baidu_search.py，执行搜索并打印标题。
+[2025-12-03 10:10]  [Plan]: 接收新任务：配置 Pylance MCP 并测试 Web_compute_low 前端代码。
+[2025-12-03 10:15]  [Test]: Web_compute_low 前端测试通过。Title: Angel Web Compute, Desktop: Found, Taskbar: Found。
+[2025-12-03 10:20]  [Test]: 登录流程测试通过。系统启动时显示登录界面，登录后桌面交互正常，开始按钮可重新唤起登录菜单。
+[2025-12-03 10:15] [Plan]: 修复 Web_compute_low 登录界面默认隐藏、登录流程完善、胶囊拖动记忆及热更新问题。
+[2025-12-03 10:30] [Code]: 完成 Login.js 离线模式优化、CapsuleManager.js 拖拽记忆修复、Loader.js 统计日志修正。后端服务已启动。
+[2025-12-03 10:35] [Plan]: 修复胶囊拖拽、任务栏固定功能，重构 Key 管理界面为左下角弹窗。
+[2025-12-03 10:45] [Code]: 完成 KeyManager 创建、Taskbar 固定逻辑修复、Capsule 拖拽修复、Login 流程重构。

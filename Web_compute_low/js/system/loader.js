@@ -125,6 +125,7 @@ window.onload = async () => {
                     { id: "sys-taskbar", filename: "taskbar.js", version: "1.0.0" },
                     { id: "sys-desktop", filename: "desktop.js", version: "1.0.0" },
                     { id: "sys-context-menu", filename: "context_menu.js", version: "1.0.0" },
+                    { id: "sys-keymgr", filename: "key_manager.js", version: "1.0.0" }, // 🆕 注册 Key 管理器
                     { id: "app-login", filename: "login.js", version: "1.0.0" },
                     { id: "win-companion", filename: "angel.js", version: "1.0.0" },
                     { id: "svc-billing", filename: "billing.js", version: "1.0.0" },
@@ -245,6 +246,11 @@ window.onload = async () => {
         console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${loadedUserModules.length} 个 (懒加载模式), 核心系统 ${system_core.length} 个`); // 📝 打印加载统计
         console.log(`📦 已注册安装应用: ${Object.keys(store.installedApps).length} 个 (准备就绪)`); // 💖 新增：明确显示已安装应用数量
         console.log(`[Loader] Installed Apps Keys:`, Object.keys(store.installedApps)); // 🐛 Debug Log
+        
+        // 💖 修正日志：显示实际可用的用户应用数量，避免误解
+        const userAppCount = Object.keys(store.installedApps).filter(id => !id.startsWith('sys-') && !id.startsWith('app-') && !id.startsWith('svc-')).length;
+        // 💖 统计修正数值填进核心系统 X 个
+        console.log(`📊 统计修正: 核心系统已加载 ${userAppCount} 个应用`);
 
         // 4. 注入元数据并初始化
         allModules.forEach((module) => { // 💖 遍历所有模块
