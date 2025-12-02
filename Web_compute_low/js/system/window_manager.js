@@ -401,6 +401,9 @@ export class WindowManager {
                 const icon = target.closest('.desktop-icon'); // 🔍 查找桌面图标
                 if (icon) { // ✅ 如果点到了图标
                     // 💖 改为双击打开，此处仅做选中处理
+                    // 🛑 仅阻止冒泡，不阻止默认行为 (防止影响双击)
+                    // e.preventDefault(); // ❌ 移除此行，否则双击事件无法触发
+                    e.stopPropagation(); // 阻止冒泡
                     return; // 🛑 结束处理
                 }
                 
@@ -423,7 +426,7 @@ export class WindowManager {
                 */
 
                 // 6. 🆕 点击空白处自动关闭胶囊窗口 (如流量、账单详情)
-                const capsuleWindows = ['win-traffic', 'win-billing']; // 📋 需要自动关闭的窗口列表
+                const capsuleWindows = ['win-traffic', 'win-billing', 'win-fps']; // 📋 需要自动关闭的窗口列表
                 capsuleWindows.forEach(id => { // 🔄 遍历列表
                     const win = document.getElementById(id); // 🪟 获取窗口 DOM
                     // 如果窗口存在且已打开
@@ -432,8 +435,11 @@ export class WindowManager {
                         if (win.contains(target)) return; // 🛑 如果点在窗口内，不关闭
                         
                         // 检查点击是否在对应的胶囊按钮上 (防止点击按钮时刚打开就被关闭)
-                        // 假设胶囊ID规则为 bar-xxx (win-traffic -> bar-traffic)
-                        const capsuleId = id.replace('win-', 'bar-'); // 🆔 计算胶囊 ID
+                        // 💖 修复：胶囊ID规则为 capsule-svc-xxx (win-traffic -> capsule-svc-traffic)
+                        // 映射规则：win-xxx -> capsule-svc-xxx
+                        const serviceId = id.replace('win-', 'svc-'); // win-traffic -> svc-traffic
+                        const capsuleId = `capsule-${serviceId}`; // -> capsule-svc-traffic
+                        
                         const capsule = document.getElementById(capsuleId); // 💊 获取胶囊 DOM
                         if (capsule && capsule.contains(target)) return; // 🛑 如果点在胶囊上，不关闭
 
@@ -773,8 +779,6 @@ export class WindowManager {
                     });
                     return; // 退出当前执行，等待异步加载完成
                 }
-            }
-
             if (appInfo) { // ✅ 如果找到了配置
                 // 💖 如果是服务类型，不需要创建窗口，直接标记为打开
                 if (appInfo.type === 'service') { // ⚙️ 如果是服务
@@ -787,6 +791,19 @@ export class WindowManager {
                 win = document.getElementById(id); // 🔍 重新获取窗口 DOM
             } else { // ❌ 如果还是找不到配置
                 console.error(`无法打开应用 ${id}: 配置不存在`); // ❌ 报错
+                // 💖 尝试重新注册懒加载 (针对 Intelligence 等可能丢失的情况)
+                const lazyPath = store.getLazyAppPath(id);
+                if (lazyPath) {
+                     console.log(`[WindowManager] 尝试紧急懒加载: ${id}`);
+                     import(lazyPath).then(m => {
+                         if (m.config) {
+                             store.setAppMetadata(m.config.id, m.config);
+                             this.openApp(id, speak);
+                         }
+                     });
+                }
+                return; // 🛑 结束
+            }   console.error(`无法打开应用 ${id}: 配置不存在`); // ❌ 报错
                 return; // 🛑 结束
             }
         }
@@ -858,6 +875,7 @@ export class WindowManager {
         // 📢 发送关闭信号 (给应用内部逻辑一个最后的通知，让它们有机会自己清理)
         // 💖 必须在 pm.kill 之前发送，否则监听器可能已经被清理了
         bus.emit(`app:closed:${id}`); // 📣 发送关闭事件
+        bus.emit('app:closed', { id }); // 💖 发送通用关闭事件，供任务栏等监听
         bus.emit('app:destroyed', id); // 兼容旧事件
 
         // 🛡️ 调用进程管理器，清理该应用名下的所有资源
@@ -890,6 +908,7 @@ export class WindowManager {
                 this.activeWindowId = null;
                 bus.emit('window:blur', { id }); // 📣 发送失焦事件 (如果有监听的话)
             }
+            bus.emit('app:minimized', { id }); // 💖 发送最小化事件
         }
         // this.updateTaskbar(); // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
     }

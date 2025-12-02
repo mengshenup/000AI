@@ -173,6 +173,9 @@ export function createCapsule(options) {
 
                         win.style.left = `${left}px`; // 📍 应用 Left 坐标
                         win.style.top = `${top}px`; // 📍 应用 Top 坐标
+                        
+                        // 💖 强制置顶
+                        wm.bringToFront(appId);
                     }
                 }, 0); // ⚡ 立即执行
             }

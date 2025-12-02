@@ -261,6 +261,7 @@ window.onload = async () => {
         // 7. 启动系统级应用 (强制启动，不依赖记忆)
         // 用户要求：系统apps应该是最优先加载的... 无需手动打开
         systemModules.forEach(({id}) => { // 💖 遍历系统应用
+            if (id === 'app-login') return; // 💖 跳过登录界面 (默认不显示)
             // 强制打开，不播放语音
             // 注意：openApp 内部会检查是否已打开
             wm.openApp(id, false); // 🚀 打开系统应用

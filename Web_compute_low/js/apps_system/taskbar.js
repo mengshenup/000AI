@@ -47,6 +47,8 @@ export function init() {
     bus.on('app:opened', () => update()); // 💖 应用打开时更新任务栏
     bus.on('app:closed', () => update()); // 💖 应用关闭时更新任务栏
     bus.on('window:focus', () => update()); // 💖 窗口聚焦时更新任务栏状态
+    bus.on('window:blur', () => update()); // 💖 窗口失焦时更新任务栏状态
+    bus.on('app:minimized', () => update()); // 💖 应用最小化时更新任务栏状态
     bus.on('app:updated', () => update()); // 💖 应用更新时(如固定/取消固定)更新任务栏
 }
 
@@ -105,7 +107,9 @@ function update() {
         const iconPath = app.icon || app.iconPath; // 💖 获取图标路径
         div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`; // 💖 渲染 SVG 图标
 
-        if (win && win.classList.contains('open')) { // 💖 如果窗口存在且已打开
+        // 💖 修复：增加 store 状态检查，确保只有真正打开的应用才显示运行状态
+        // 解决“关闭后仍显示横杠”的问题
+        if (app.isOpen && win && win.classList.contains('open')) { // 💖 如果窗口存在且已打开
             div.classList.add('running'); // 💖 标记为运行中（显示下划线或高亮）
             if (wm && !win.classList.contains('minimized') && wm.activeWindowId === id) { // 💖 如果窗口未最小化且是当前活动窗口
                 div.classList.add('active'); // 💖 标记为活动状态（背景高亮）
