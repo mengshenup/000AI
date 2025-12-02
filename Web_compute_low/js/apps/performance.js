@@ -225,6 +225,8 @@ export class PerformanceApp {
         `;
 
         // 🚀 异步获取后端详细硬件信息
+        // 💖 修复：后端暂无 /system_info 接口，暂时注释掉以避免 404 错误
+        /*
         fetch(`${WEB_API_URL}/system_info`)
             .then(res => res.json())
             .then(data => {
@@ -244,6 +246,7 @@ export class PerformanceApp {
                 console.warn("无法连接后端获取硬件信息", err);
                 // 失败时不更新，保持基础信息
             });
+        */
 
         // 先显示基础信息
         infoBox.innerHTML = htmlContent;

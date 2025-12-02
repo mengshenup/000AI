@@ -11,7 +11,7 @@ export const config = {
     //  ⚠️ 警告：
     //     数据现在存储在服务器端 (user_data/spots.json)，不再依赖 localStorage。
     // =================================
-    id: 'win-intel', // 💖 窗口的唯一标识符
+    id: 'win-intelligence', // 💖 窗口的唯一标识符
     name: '智慧锦囊', // 💖 窗口标题栏显示的名称
     version: '1.0.0', // 🆕 版本号
     description: '记录灵感与秘密的宝库', // 💖 功能描述

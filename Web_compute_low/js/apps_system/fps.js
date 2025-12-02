@@ -1,4 +1,4 @@
-import { createCapsule } from '../system/capsule_manager.js?v=1'; // 💖 引入胶囊管理器，用于在任务栏显示小组件
+import { createCapsule } from '../system/capsule_manager.js'; // 💖 引入胶囊管理器，用于在任务栏显示小组件
 
 export const VERSION = '1.0.0'; // 💖 版本号
 

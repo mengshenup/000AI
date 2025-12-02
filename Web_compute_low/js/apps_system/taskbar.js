@@ -1,5 +1,6 @@
 import { store } from '../system/store.js'; // 💖 引入全局状态管理
 import { bus } from '../system/event_bus.js'; // 💖 引入事件总线
+import { contextMenuApp } from './context_menu.js'; // 💖 引入右键菜单
 
 export const VERSION = '1.0.0'; // 💖 版本号
 
@@ -46,6 +47,7 @@ export function init() {
     bus.on('app:opened', () => update()); // 💖 应用打开时更新任务栏
     bus.on('app:closed', () => update()); // 💖 应用关闭时更新任务栏
     bus.on('window:focus', () => update()); // 💖 窗口聚焦时更新任务栏状态
+    bus.on('app:updated', () => update()); // 💖 应用更新时(如固定/取消固定)更新任务栏
 }
 
 // =================================
@@ -110,21 +112,33 @@ function update() {
             }
         }
         
-        // 绑定点击事件 (恢复/最小化)
-        // 💖 修复：移除 onclick，改由 window_manager.js 的全局 mousedown 委托处理
-        // 防止 mousedown 和 click 双重触发导致 toggleApp 执行两次 (最小化后立即恢复)
-        /*
-        div.onclick = () => {
-            if (wm) {
-                // 使用 toggleApp 统一处理
-                wm.toggleApp(id); // 💖 切换应用的显示/隐藏状态
-            }
-        };
-        */
+        // 🖱️ 绑定右键菜单：取消固定
+        div.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            contextMenuApp.show(e.clientX, e.clientY, [
+                {
+                    label: '打开/最小化',
+                    icon: '🔄',
+                    action: () => window.wm.toggleApp(id)
+                },
+                {
+                    label: '取消固定',
+                    icon: '🗑️',
+                    action: () => {
+                        store.updateApp(id, { showTaskbarIcon: false });
+                        update(); // 💖 立即刷新
+                        bus.emit('system:speak', "已取消固定");
+                    }
+                }
+            ]);
+        });
 
         container.appendChild(div); // 💖 将图标添加到任务栏
     });
 }
+
 
 // =================================
 //  🎉 渲染托盘图标 (无参数)
@@ -147,7 +161,10 @@ function renderTrayIcons() {
 
     Object.entries(store.apps).forEach(([id, app]) => { // 💖 遍历所有应用
         // 💖 只渲染标记为系统应用且未明确禁止显示的应用
-        if (app.system === true) {
+        // 💖 修复：过滤掉不需要显示在托盘的系统应用 (如桌面、任务栏本身、右键菜单等)
+        // 💖 新增：过滤掉胶囊服务 (svc-traffic, svc-billing, svc-fps)，它们只显示胶囊，不显示托盘图标
+        const hiddenSystemApps = ['sys-desktop', 'sys-taskbar', 'sys-context-menu', 'app-login', 'win-companion', 'svc-traffic', 'svc-billing', 'svc-fps'];
+        if (app.isSystem === true && !hiddenSystemApps.includes(id)) {
             const div = document.createElement('div'); // 💖 创建托盘图标容器
             div.className = 'tray-icon'; // 💖 添加 CSS 类名
             div.dataset.id = id; // 💖 存储应用 ID
@@ -161,6 +178,7 @@ function renderTrayIcons() {
             
             // 🎨 插入图标 SVG
             const iconPath = app.icon || app.iconPath; // 💖 获取图标路径
+            if (!iconPath) return; // 💖 如果没有图标则跳过
             div.innerHTML = `<svg style="width:16px; height:16px; fill:${app.color || '#ccc'}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`; // 💖 渲染 SVG 图标
             
             // 🖱️ 绑定点击事件

@@ -13,8 +13,12 @@ import os # 📂 操作系统接口
 #     BROWSER_CHANNEL 的选择会影响视频解码能力。内置 Chromium 可能无法播放 H.264 视频。
 # =================================
 
-# 📂 用户数据存储目录 (相对路径)
-USER_DATA_DIR = "./Memorybank/BrowserData" # 💾 浏览器缓存和数据存放处
+# 📂 用户数据存储目录 (绝对路径，确保在 Agent_angel_server/Memorybank 下)
+# 使用绝对路径防止在不同目录下启动时生成位置错误
+import pathlib
+CURRENT_DIR = pathlib.Path(__file__).parent.absolute() # Agent_angel_server/Memory
+PROJECT_ROOT = CURRENT_DIR.parent # Agent_angel_server
+USER_DATA_DIR = os.path.join(PROJECT_ROOT, "Memorybank", "BrowserData") # 💾 浏览器缓存和数据存放处
 
 # 🖥️ 浏览器视口大小
 VIEWPORT = {'width': 800, 'height': 600} # 🖼️ 虚拟显示器的分辨率

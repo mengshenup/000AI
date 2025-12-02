@@ -62,10 +62,6 @@ async def startup_event():
     # 🧠 启动认知循环
     await global_cognitive_system.start()
 
-# 🔍 Windows 事件循环策略
-if sys.platform.startswith("win"):
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy()) # 🪟 适配 Windows 异步 IO
-
 # 🚀 初始化 FastAPI 应用实例
 app = FastAPI(title="Angel System Backend", version="2.2.0") # 📱 创建应用
 app.add_event_handler("startup", startup_event) # 🔗 绑定启动事件

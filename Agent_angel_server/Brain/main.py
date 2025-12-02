@@ -1,6 +1,7 @@
 import uvicorn # 🦄 ASGI 服务器，用于运行 FastAPI 应用
 import os # 📂 操作系统接口，用于获取路径等
 import sys # 🖥️ 系统相关参数和函数，用于设置系统变量
+import asyncio # ⚡ 异步 I/O
 
 # =================================
 #  🎉 主程序入口 (无参数)
@@ -18,6 +19,10 @@ import sys # 🖥️ 系统相关参数和函数，用于设置系统变量
 sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 字节码文件，保持目录整洁
 
 if __name__ == "__main__": # 🏁 判断是否为主程序运行
+    # 🔍 Windows 事件循环策略 (必须在 uvicorn 启动前设置)
+    if sys.platform.startswith("win"):
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy()) # 🪟 适配 Windows 异步 IO
+
     # =================================
     #  🎉 启动服务器 (无参数)
     #
@@ -37,8 +42,8 @@ if __name__ == "__main__": # 🏁 判断是否为主程序运行
         "Nerve.fastapi_app:app", # 📦 指定 FastAPI 应用入口，格式为 "模块名:实例名"
         host="0.0.0.0", # 🌐 监听所有网络接口，允许局域网访问
         port=8000, # 🚪 服务端口号，默认为 8000
-        reload=True, # 🔄 开启热重载（开发模式），代码修改后自动重启
+        reload=False, # 🔄 开启热重载（开发模式），代码修改后自动重启
         reload_dirs=["."],  # 📂 监听当前目录下所有文件的变动
-        reload_excludes=["Memorybank", "Memorybank/*", "*.log", "*.tmp", ".git", "*.md", "*.bat", "*.txt"], # 🚫 排除频繁变动的目录和文档，防止死循环重启
+        reload_excludes=["Memorybank", "Memorybank/*", "*.log", "*.tmp", ".git", "*.md", "*.bat", "*.txt", "Debug/*"], # 🚫 排除频繁变动的目录和文档，防止死循环重启
         workers=1 # 👷 工作进程数量，开发模式下通常为 1
     ) # 🔚 Uvicorn 运行结束

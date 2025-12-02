@@ -2,11 +2,11 @@
     // ============================================
     // 🐍 核心环境与个人习惯
     // ============================================
-    "python.defaultInterpreterPath": "c:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+    "python.defaultInterpreterPath": "C:\\Users\\Administrator\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
     "git.enableSmartCommit": true,
     "explorer.confirmDelete": false,
     "security.workspace.trust.untrustedFiles": "open",
-    "powershell.promptToUpdatePowerShell": false,
+    "powershell.promptToUpdatePowerShell": true,
     "terminal.integrated.cwd": "${workspaceFolder}",
 
     // ============================================

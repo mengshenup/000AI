@@ -147,6 +147,9 @@ export function init() {
         if (now - lastStatsUpdate < 500) return; // 500ms 节流
         lastStatsUpdate = now;
 
+        // 🛡️ 安全检查：确保数据结构完整
+        if (!stats || !stats.cost) return;
+
         // 辅助函数：安全更新 DOM 文本
         const update = (id, val) => { 
             const els = document.querySelectorAll(`#${id}`);

@@ -22,6 +22,13 @@ Kill-Port 8000
 
 Write-Host "🚀 正在启动 Agent_angel_server..." -ForegroundColor Green
 
+# 尝试激活虚拟环境
+$VenvPath = Join-Path $PWD.Path "..\.venv\Scripts\Activate.ps1"
+if (Test-Path $VenvPath) {
+    Write-Host "🐍 正在激活虚拟环境..." -ForegroundColor Cyan
+    . $VenvPath
+}
+
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     Write-Host "❌ 严重错误：未找到 Python 环境！" -ForegroundColor Red
     Read-Host "按回车键退出..."

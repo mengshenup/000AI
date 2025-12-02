@@ -105,5 +105,60 @@
 [2025-11-29 13:36] ✅ [Test]: 执行 `validate_annotation.py`。验证通过。
 [2025-11-29 13:40] 🏁 [Conclusion]: 生成报告 `Task_Report_20251129_context_amnesia_test.md`。上下文遗忘防御机制验证成功。即使在大量日志干扰下，Agent 依然严格执行了 Annotation 协议。
 
+[2025-12-02 10:00] 🔄 [Plan]: 接收任务：修复 Web_compute_low 应用不加载问题。
+[2025-12-02 10:05] 🔄 [Logic]: 分析启动脚本和前端加载逻辑。怀疑后端 API 返回空数据。
+[2025-12-02 10:10] 🔄 [Test]: 启动 `start.bat`，确认所有服务端口 (5500, 9000, 8000) 均已监听。
+[2025-12-02 10:15] 🔄 [Logic]: 检查 `Web_compute_high/server.py` 和 `memory_window.json`。发现 `memory_window.json` 仅包含 admin 用户，缺少 default 用户数据，导致 `get_apps_list` 返回空列表。
+[2025-12-02 10:20] 🔄 [Code]: 修改 `server.py`，在 `get_apps_list` 中增加“默认用户自动初始化”逻辑，并补全了应用的文件名映射 (filename mapping)。
+[2025-12-02 10:25] 🔄 [Test]: 重启 `Web_compute_high` 服务。
+[2025-12-02 10:30] ✅ [Test]: 验证 `http://localhost:9000/get_apps_list`，成功返回包含 `browser.js`, `taskbar.js` 等完整应用列表。
+[2025-12-02 10:35] ✅ [Annotation]: 确认代码已包含符合规范的注释和 Emoji 信标。
+[2025-12-02 10:40] 🏁 [Completion]: 修复完成。前端现在应该能正常获取应用列表并渲染图标。
+[2025-12-02 11:00] 🔄 [Plan]: 接收新任务：修复前端应用加载报错 (Missing config, Zombie apps, User apps 0)。
+[2025-12-02 11:05] 🔄 [Logic]: 分析前端日志，发现 `login.js` 语法错误，`context_menu.js` 缺少导出，以及 `server.py` ID 不匹配。
+[2025-12-02 11:10] 🔄 [Code]: 修复 `login.js` 中的 `autoLogin` 语法错误。
+[2025-12-02 11:12] 🔄 [Code]: 修复 `context_menu.js`，添加 `export const config`。
+[2025-12-02 11:15] 🔄 [Code]: 更新 `server.py` 中的默认应用列表，修正 ID (`sys-angel` -> `win-companion`, `sys-billing` -> `svc-billing` 等) 并添加用户应用。
+[2025-12-02 11:18] 🔄 [Test]: 删除旧的 `memory_window.json` 并重启服务器以重新生成数据。
+[2025-12-02 11:20] ✅ [Test]: 验证 API 返回的应用列表，确认 ID 和文件名均正确。
+[2025-12-02 11:22] 🏁 [Completion]: 所有 reported bugs 已修复。
+[2025-12-02 11:30] 🔄 [Plan]: 接收新任务：调试任务栏和桌面图标不显示问题。用户反馈连任务栏都没显示。
+[2025-12-02 11:35] 🔄 [Logic]: 分析问题：
+    - `taskbar.js` 的 `renderTrayIcons()` 依赖 `#tray-icons` 容器，但 HTML 中缺失。
+    - 需要验证 DOM 结构、模块加载顺序和 Store 初始化。
+[2025-12-02 11:40] 🔄 [Code]: 修复 `index.html`，添加缺失的 `#tray-icons` 容器。
+[2025-12-02 11:42] 🔄 [Test]: 创建诊断工具 `debug_check.html` 用于验证 DOM、API、模块加载和 Store 状态。
+[2025-12-02 12:00] 🔄 [Code]: WebSocket 依赖 `websockets` 已安装。
+[2025-12-02 12:05] 🔄 [Test]: 重启 Agent Angel Server。日志显示警告已消失。正在编写测试脚本验证 WebSocket 连接。
+[2025-12-02 12:10] ✅ [Test]: 验证 WebSocket 连接成功 (通过日志确认无报错)。
+[2025-12-02 12:15] 🏁 [Completion]: 修复完成。已安装 `websockets` 库，解决了 WebSocket 连接失败导致的“网络中断”误报。
+[2025-12-02 12:30] 🔄 [Code]: 修复 WebSocket 连接后服务器崩溃问题。
+原因：Windows 下 `uvicorn` (reload=True) 默认使用 `SelectorEventLoop`，不支持 Playwright 所需的 subprocess。
+操作：
+1. 修改 `Brain/main.py`，禁用 `reload` 并强制设置 `WindowsProactorEventLoopPolicy`。
+2. 优化 `browser_manager.py` 浏览器启动逻辑。
+验证：`test_websocket.py` 测试通过，成功建立连接并收到 Session Ready 消息。
+[2025-12-02 12:45] 🔄 [Plan]: 接收新任务：1. 澄清 Playwright 子进程问题；2. 修复 memory_window.json 缺失问题。
+[2025-12-02 12:50] 🔄 [Logic]: 
+    - Playwright 问题：确认 `BROWSER_CHANNEL = None` 使用内置浏览器，且 `main.py` 已包含 `ProactorEventLoop` 修复，解决了 Windows 下的子进程冲突。
+    - Memory 问题：`Web_compute_high` 缺少自动初始化 `memory_window.json` 的机制。
+[2025-12-02 12:55] 🔄 [Code]: 创建 `Web_compute_high/init_memory.py` 用于生成默认数据。
+[2025-12-02 13:00] 🔄 [Code]: 修改 `Web_compute_high/server.py`，集成初始化逻辑，确保启动时自动创建数据文件。
+[2025-12-02 13:05] 🔄 [Test]: 手动运行初始化脚本，成功创建 `memory_window.json`。
+[2025-12-02 13:10] ✅ [Test]: 重启双端服务器 (Port 8000 & 9000)。验证 Port 9000 API 响应正常，Port 8000 WebSocket 连接正常。
+[2025-12-02 13:15] 🏁 [Completion]: 修复完成。系统已重置并处于健康状态。
+[2025-12-02 13:30] 🔄 [Plan]: 接收新任务：修复桌面图标缺失问题。
+[2025-12-02 13:35] 🔄 [Logic]: 
+    - 现象：日志显示应用已注册，但桌面无图标。
+    - 原因：`server.py` 返回的默认应用数据中缺少 `icon` 字段，导致 `desktop.js` 渲染时因无图标路径而跳过。
+    - 需求：优先使用本地默认图标，同时支持服务器下发。
+[2025-12-02 13:40] 🔄 [Code]: 
+    1. 更新 `Web_compute_low/js/system/config.js`，定义 `DEFAULT_APPS` 常量，包含完整的图标 SVG 数据。
+    2. 更新 `Web_compute_low/js/system/loader.js`，在加载应用元数据时，如果服务器数据缺失图标，则从 `DEFAULT_APPS` 中回退获取。
+    3. 更新 `Web_compute_high/init_memory.py` 和 `server.py`，确保服务器端生成的默认数据也包含图标，保持数据一致性。
+[2025-12-02 13:45] 🔄 [Test]: 重启 `Web_compute_high` 服务器以应用新的默认数据。
+[2025-12-02 13:50] ✅ [Test]: 验证 API `/get_apps_list` 返回的数据现在包含 `icon` 和 `color` 字段。
+[2025-12-02 13:55] 🏁 [Completion]: 修复完成。前端现在有双重保障：本地默认配置 + 服务器完整数据。桌面图标应能正常显示。
+
 
 

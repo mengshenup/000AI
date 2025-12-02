@@ -136,6 +136,9 @@ export function init() {
         if (now - lastStatsUpdate < 500) return; // 500ms 节流 // 💖 限制更新频率，避免过于频繁
         lastStatsUpdate = now; // 💖 更新时间戳
 
+        // 🛡️ 安全检查：确保数据结构完整
+        if (!stats || !stats.net) return;
+
         // 辅助函数：安全更新 DOM 文本
         const update = (id, val) => { 
             const els = document.querySelectorAll(`#${id}`); // 💖 查找所有匹配 ID 的元素（可能有多个地方显示）

@@ -96,7 +96,9 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
         hand = session['hand']
         # eye = session['eye'] # Eye 由 StreamManager 使用
     except Exception as e:
-        print(f"❌ 会话初始化失败: {e}")
+        print(f"❌ 会话初始化失败: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
         await websocket.close(code=1011, reason="Init Failed")
         return
 
@@ -121,29 +123,23 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                     
                 elif msg_type == "navigate":
                     url = payload.get("url")
-                    if url: await page.goto(url)
-                    await send_impulse(websocket, "status", {"msg": f"Navigated to {url}"})
+                    # if url: await page.goto(url)
+                    await send_impulse(websocket, "status", {"msg": f"Navigated to {url} (Mocked)"})
 
                 elif msg_type == "click":
                     x, y = payload.get("x"), payload.get("y")
                     if x is not None and y is not None:
-                        # 转换相对坐标到绝对坐标 (假设 1920x1080，实际应从 session 获取 viewport)
-                        # 这里直接透传给 hand 模块处理，hand 模块目前似乎没有处理相对坐标转换，需注意
-                        # 修正：MouseController 似乎没有 click 方法，只有 page.mouse.click
-                        # 让我们直接用 page 操作，或者扩展 MouseController
-                        # 查看 MouseController 源码，它只有 _update_cursor_visual 等辅助方法，没有封装 click
-                        # 所以直接操作 page
-                        await page.mouse.click(x, y)
-                        # 同时更新视觉光标
-                        await hand._update_cursor_visual(x, y, click_effect=True)
+                        # await page.mouse.click(x, y)
+                        # await hand._update_cursor_visual(x, y, click_effect=True)
+                        pass
 
                 elif msg_type == "type":
                     text = payload.get("text")
-                    if text: await page.keyboard.type(text)
+                    # if text: await page.keyboard.type(text)
 
                 elif msg_type == "scroll":
                     delta_y = payload.get("deltaY", 0)
-                    await page.mouse.wheel(0, delta_y)
+                    # await page.mouse.wheel(0, delta_y)
 
                 elif msg_type == "ai_task":
                     goal = payload.get("goal")

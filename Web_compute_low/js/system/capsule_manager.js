@@ -124,9 +124,12 @@ export function createCapsule(options) {
     // 填充内容
     if (html) el.innerHTML = html; // 📝 填充胶囊内部的 HTML
 
-    // 插入 DOM (默认插入到时钟之前)
+    // 插入 DOM (默认插入到托盘图标之前，如果没有托盘则插入到时钟之前)
+    const tray = document.getElementById('tray-icons'); // 💖 获取托盘容器
     const clock = document.getElementById('clock-time'); // ⏰ 获取时钟元素
-    if (clock) container.insertBefore(el, clock); // 👈 如果有时钟，插在时钟前面
+    const ref = tray || clock; // 💖 确定插入参考点 (优先插在托盘前)
+    
+    if (ref) container.insertBefore(el, ref); // 👈 插入到参考点之前
     else container.appendChild(el); // 👉 否则直接追加到末尾
 
     // 3. 启用拖拽

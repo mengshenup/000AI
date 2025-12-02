@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Header # 🚀 FastAPI 框架
 from fastapi.middleware.cors import CORSMiddleware # 🛡️ CORS 中间件
 from pydantic import BaseModel # 🏗️ 数据验证模型
 import uvicorn # 🦄 ASGI 服务器
+from init_memory import init_memory_window, get_default_data # 🛠️ 导入初始化工具
 
 # =================================
 #  🎉 Web Compute High Server (Web端高算力节点)
@@ -31,6 +32,9 @@ MEMORY_DIR = CURRENT_DIR / "Memorybank" # 📍 数据存储目录
 
 # 确保目录存在
 MEMORY_DIR.mkdir(exist_ok=True) # 📁 创建存储目录
+
+# 🛠️ 启动时检查并初始化数据文件
+init_memory_window(force=False)
 
 # 💾 数据文件路径
 DATA_FILE = MEMORY_DIR / "memory_window.json" # 💾 窗口状态数据
@@ -388,6 +392,14 @@ async def get_apps_list():
     
     # 读取默认用户的配置作为基准
     data = load_json(DATA_FILE, {}) # 📖 读取数据
+    
+    # 🛠️ 自动初始化默认用户 (如果不存在)
+    if "default" not in data:
+        default_data = get_default_data()
+        data["default"] = default_data["default"]
+        save_json(DATA_FILE, data) # 💾 保存初始化数据
+        print("🆕 已初始化默认应用列表")
+
     default_apps = data.get("default", {}).get("installedApps", {}) # 📂 获取默认应用列表
     
     apps = [] # 📦 普通应用列表
@@ -396,10 +408,13 @@ async def get_apps_list():
 
     for app_id, info in default_apps.items(): # 🔄 遍历应用
         item = {
-            "filename": f"{app_id}.js",
+            "id": app_id, # 🆔 补全 ID
+            "filename": info.get("filename", f"{app_id}.js"), # 📂 获取文件名 (优先使用配置，否则回退到 ID)
             "name": info.get("name", app_id),
             "version": info.get("version", "1.0.0"),
-            "line_count": 0 # 📏 无法统计远程文件行数
+            "line_count": 0, # 📏 无法统计远程文件行数
+            "icon": info.get("icon"), # 🖼️ 传递图标
+            "color": info.get("color") # 🎨 传递颜色
         } # 📝 构建应用信息
         
         if info.get("isSystem"): # 🧐 判断是否为系统应用

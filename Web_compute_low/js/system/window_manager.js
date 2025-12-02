@@ -400,9 +400,7 @@ export class WindowManager {
                 // 3. 处理图标点击 (使用 closest 查找父级)
                 const icon = target.closest('.desktop-icon'); // 🔍 查找桌面图标
                 if (icon) { // ✅ 如果点到了图标
-                    const id = icon.dataset.id; // 🆔 获取应用 ID
-                    // 💖 修改为单击打开应用
-                    this.openApp(id); // 🚀 打开应用
+                    // 💖 改为双击打开，此处仅做选中处理
                     return; // 🛑 结束处理
                 }
                 
@@ -446,8 +444,14 @@ export class WindowManager {
             }
         });
 
-        // 🖱️🖱️ 全局双击委托 (已废弃，改为单击打开)
-        // document.addEventListener('dblclick', (e) => { ... });
+        // 🖱️🖱️ 全局双击委托
+        document.addEventListener('dblclick', (e) => {
+            const icon = e.target.closest('.desktop-icon');
+            if (icon) {
+                const id = icon.dataset.id;
+                this.openApp(id);
+            }
+        });
 
         // 🖱️ 右键菜单委托
         document.addEventListener('contextmenu', (e) => { // 👂 监听右键菜单事件
@@ -737,20 +741,35 @@ export class WindowManager {
                 const lazyPath = store.getLazyAppPath(id); // 🔍 检查懒加载注册表
                 if (lazyPath) { // ✅ 如果是懒加载应用
                     console.log(`[WindowManager] 触发懒加载: ${id} -> ${lazyPath}`); // 📝 打印日志
+                    bus.emit('system:speak', "正在安装应用..."); // 💖 语音提示正在安装
+                    
                     // 动态加载模块
                     // 注意：这里需要异步处理，但 openApp 是同步的。
                     // 我们需要把 openApp 变成 async，或者在这里使用 .then
                     // 为了保持兼容性，我们使用 .then 并在加载完成后重新调用 openApp
                     import(lazyPath).then(m => { // 📦 动态导入模块
+                        console.log(`[WindowManager] 模块加载成功: ${id}`, m);
                         if (m.config) { // ✅ 如果模块有配置
                             // 注册元数据
                             store.setAppMetadata(m.config.id, m.config); // 💾 注册应用
                             if (typeof m.init === 'function') m.init(); // 🚀 初始化应用
+                            
+                            // 💖 修复无限循环：检查 ID 是否匹配
+                            if (m.config.id !== id) {
+                                console.warn(`[WindowManager] ID Mismatch: requested ${id}, loaded ${m.config.id}. Redirecting...`);
+                                this.openApp(m.config.id, speak); // 🔄 打开正确的 ID
+                                return;
+                            }
+
                             // 重新打开
+                            console.log(`[WindowManager] 重新打开应用: ${id}`);
                             this.openApp(id, speak); // 🔄 递归调用打开
+                        } else {
+                            console.error(`[WindowManager] 模块 ${id} 缺少 config 导出`);
                         }
                     }).catch(err => { // ❌ 加载失败
                         console.error(`无法懒加载应用 ${id}:`, err); // ❌ 打印错误
+                        bus.emit('system:speak', "应用安装失败");
                     });
                     return; // 退出当前执行，等待异步加载完成
                 }
@@ -865,6 +884,12 @@ export class WindowManager {
         if (win) { // ✅ 如果存在
             win.classList.add('minimized'); // 🔽 添加最小化类名 (CSS控制隐藏)
             store.updateApp(id, { isMinimized: true }); // 💾 保存状态
+            
+            // 💖 修复：最小化时清除激活状态，防止任务栏显示为激活
+            if (this.activeWindowId === id) {
+                this.activeWindowId = null;
+                bus.emit('window:blur', { id }); // 📣 发送失焦事件 (如果有监听的话)
+            }
         }
         // this.updateTaskbar(); // 📊 更新任务栏 (已移交 apps_system/taskbar.js)
     }

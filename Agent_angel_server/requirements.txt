@@ -1,8 +1,10 @@
 fastapi
 uvicorn
+websockets
 playwright
-google-genai
+google-generativeai
 python-dotenv
 watchfiles
 Pillow
 playwright-stealth
+pydantic

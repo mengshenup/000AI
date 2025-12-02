@@ -2,6 +2,14 @@ import { bus } from '../system/event_bus.js'; // 💖 导入事件总线，虽�
 
 export const VERSION = '1.0.0'; // 💖 版本号
 
+export const config = {
+    id: 'sys-context-menu',
+    name: '右键菜单',
+    version: '1.0.0',
+    type: 'service',
+    isSystem: true
+};
+
 export class ContextMenuApp {
     // =================================
     //  🎉 仪式菜单类 (无参数)

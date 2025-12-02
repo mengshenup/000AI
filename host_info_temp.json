@@ -1,8 +1,0 @@
-{
-  "RAM_GB": 4.0,
-  "Cores": 2,
-  "Processor": "Intel(R) Xeon(R) Platinum 8255C CPU @ 2.50GHz",
-  "Architecture": "64 位",
-  "Version": "10.0.20348",
-  "OS": "Microsoft Windows Server 2022 Datacenter"
-}

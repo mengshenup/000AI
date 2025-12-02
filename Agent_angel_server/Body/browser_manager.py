@@ -1,11 +1,16 @@
 import asyncio # ⚡ 异步 I/O 库
 from playwright.async_api import async_playwright # 🎭 Playwright 异步 API
 try:
-    from playwright_stealth import stealth_async # 🕵️‍♂️ 反爬虫隐身插件 (标准用法)
+    from playwright_stealth import Stealth # 🕵️‍♂️ 反爬虫隐身插件 (新版用法)
+    async def stealth_async(page):
+        await Stealth().apply_stealth_async(page)
 except ImportError:
-    # 🛡️ 如果未安装 stealth，提供一个空函数防止报错
-    async def stealth_async(page): pass
-    print("⚠️ [提示] playwright-stealth 未安装 (反爬虫功能受限)")
+    try:
+        from playwright_stealth import stealth_async # 🕵️‍♂️ 尝试旧版用法
+    except ImportError:
+        # 🛡️ 如果未安装 stealth，提供一个空函数防止报错
+        async def stealth_async(page): pass
+        print("⚠️ [提示] playwright-stealth 未安装 (反爬虫功能受限)")
 
 from Memory.system_config import USER_DATA_DIR, VIEWPORT, BROWSER_CHANNEL # ⚙️ 导入系统配置
 from Energy.cost_tracker import global_cost_tracker # 💰 导入成本追踪器
@@ -93,14 +98,17 @@ class BrowserManager:
 
             try:
                 # 尝试使用配置的通道 (如 chrome, msedge)
-                channel = BROWSER_CHANNEL if BROWSER_CHANNEL else "chrome"
-                print(f"🚀 [系统] 尝试启动 {channel}...")
-                self.browser = await self.playwright.chromium.launch(
-                    headless=True, # 👻 必须无头
-                    args=launch_args,
-                    channel=channel
-                )
-                print("✅ [系统] 全局浏览器启动成功！")
+                if BROWSER_CHANNEL:
+                    print(f"🚀 [系统] 尝试启动 {BROWSER_CHANNEL}...")
+                    self.browser = await self.playwright.chromium.launch(
+                        headless=True, # 👻 必须无头
+                        args=launch_args,
+                        channel=BROWSER_CHANNEL
+                    )
+                    print("✅ [系统] 全局浏览器启动成功！")
+                else:
+                    print("ℹ️ [系统] 未配置 BROWSER_CHANNEL，直接使用内置 Chromium")
+                    raise Exception("Use bundled")
             except Exception as e:
                 print(f"❌ [系统] 指定浏览器启动失败: {e}")
                 print("🔄 [系统] 尝试回退到内置 Chromium...")
@@ -143,7 +151,10 @@ class BrowserManager:
         page = await context.new_page()
 
         # 3. 注入反爬虫 (Anti-Anti-Bot)
-        await stealth_async(page)
+        try:
+            await stealth_async(page)
+        except Exception as e:
+            print(f"⚠️ [系统] 反爬虫注入失败: {e}")
 
         # 4. 性能优化：屏蔽不必要的资源 (可选)
         # await page.route("**/*.{font,woff,woff2}", lambda route: route.abort()) # 屏蔽字体

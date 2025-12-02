@@ -3,8 +3,7 @@ import { pm } from './process_manager.js'; // 🛡️ 导入进程管理器 (确
 import { network as net } from './network.js'; // 🌐 导入网络模块
 import { wm } from './window_manager.js'; // 🪟 导入窗口管理器
 import { store } from './store.js'; // 💾 导入状态存储
-import { loginApp } from '../apps_system/login.js'; // 🆕 导入登录应用
-import { WEB_API_URL } from './config.js'; // 🌐 导入 Web API 地址
+import { WEB_API_URL, DEFAULT_APPS } from './config.js'; // 🌐 导入配置和默认应用
 
 // 🗑️ 移除静态导入，改为动态加载
 // import './apps/browser.js'; 
@@ -111,28 +110,22 @@ window.onload = async () => {
             // =================================
             console.warn("无法连接应用服务器，使用本地离线模式", e);
             appsData = {
-                apps: [
-                    { id: "win-angel", filename: "browser.js", version: "1.0.0" },
-                    { id: "win-settings", filename: "personalization.js", version: "1.0.0" },
-                    { id: "win-taskmgr", filename: "task_manager.js", version: "1.0.0" },
-                    { id: "win-manual", filename: "manual.js", version: "1.0.0" },
-                    { id: "win-performance", filename: "performance.js", version: "1.0.0" },
-                    { id: "win-intelligence", filename: "intelligence.js", version: "1.0.0" }
-                ],
+                apps: Object.values(DEFAULT_APPS), // 💖 使用 config.js 中的默认应用
                 system_apps: [
                     { id: "sys-taskbar", filename: "taskbar.js", version: "1.0.0" },
                     { id: "sys-desktop", filename: "desktop.js", version: "1.0.0" },
                     { id: "sys-context-menu", filename: "context_menu.js", version: "1.0.0" },
                     { id: "app-login", filename: "login.js", version: "1.0.0" },
-                    { id: "sys-angel", filename: "angel.js", version: "1.0.0" },
-                    { id: "sys-billing", filename: "billing.js", version: "1.0.0" },
-                    { id: "sys-traffic", filename: "traffic.js", version: "1.0.0" },
-                    { id: "sys-fps", filename: "fps.js", version: "1.0.0" }
+                    { id: "win-companion", filename: "angel.js", version: "1.0.0" },
+                    { id: "svc-billing", filename: "billing.js", version: "1.0.0" },
+                    { id: "svc-traffic", filename: "traffic.js", version: "1.0.0" },
+                    { id: "svc-fps", filename: "fps.js", version: "1.0.0" }
                 ],
                 system_core: []
             };
         }
         const { apps, system_apps, system_core } = appsData;
+        console.log(`[Loader] Fetched apps: ${apps.length}, system_apps: ${system_apps.length}`); // 🐛 Debug Log
 
         // 辅助函数：检查是否需要更新 (优先对比行数)
         const checkUpdate = (serverApp, cachedApp) => {
@@ -155,16 +148,20 @@ window.onload = async () => {
         // 2. 动态导入应用辅助函数
         const loadApp = async (path, isSystem) => {
             try {
+                console.log(`⏳ 正在加载应用: ${path}`); // 📝 加载日志
                 // 添加版本号参数以破坏浏览器缓存 (如果需要)
                 // const url = `${path}?v=${Date.now()}`; 
                 const m = await import(path); // 💖 动态导入模块
                 // 只有导出了 config 的才被视为可注册的应用窗口
                 if (m.config) {
+                    console.log(`✅ 应用加载成功: ${m.config.id}`); // 📝 成功日志
                     // 💖 返回完整模块，以便后续调用 init
                     return { id: m.config.id, config: m.config, isSystem, init: m.init }; // 💖 返回应用对象
+                } else {
+                    console.warn(`⚠️ 应用 ${path} 缺少 config 导出`); // ⚠️ 警告日志
                 }
             } catch (e) {
-                console.error(`无法加载应用 ${path}:`, e); // ❌ 打印错误日志
+                console.error(`❌ 无法加载应用 ${path}:`, e); // ❌ 打印错误日志
             }
             return null; // 💖 加载失败返回 null
         };
@@ -172,18 +169,36 @@ window.onload = async () => {
         // 3. 并行加载所有应用
         // 优先加载系统应用
         // 💖 路径修正：因为 loader.js 在 system/ 下，所以要往上跳一级
-        const systemModules = (await Promise.all(system_apps.map(f => loadApp(`../apps_system/${f.filename}`, true)))).filter(Boolean); // 💖 加载系统应用
+        console.log("🔄 开始加载系统应用...");
+        const systemModules = (await Promise.all(system_apps.map(async f => {
+             console.log(`🔄 [System] Loading ${f.id}...`);
+             const mod = await loadApp(`../apps_system/${f.filename}`, true);
+             if(mod) console.log(`✅ [System] Loaded ${f.id}`);
+             return mod;
+        }))).filter(Boolean); // 💖 加载系统应用
         
-        // 💖 懒加载优化：不再一次性加载所有用户应用
-        // const userModules = (await Promise.all(apps.map(f => loadApp(`../apps/${f}`, false)))).filter(Boolean);
-        
+        // 💖 检测是否为首次运行 (本地没有已安装应用记录)
+        const isFirstRun = Object.keys(store.installedApps).length === 0;
+        if (isFirstRun) {
+            console.log("✨ 检测到首次运行，正在执行默认全安装...");
+        }
+
         // 注册用户应用到懒加载列表
         apps.forEach(app => {
             if (app.id && app.filename) {
+                // 💖 优先使用本地默认配置补全缺失的图标/颜色信息
+                const defaultApp = DEFAULT_APPS[app.id];
+                if (defaultApp) {
+                    if (!app.icon) app.icon = defaultApp.icon;
+                    if (!app.color) app.color = defaultApp.color;
+                    if (!app.name) app.name = defaultApp.name;
+                }
+
                 // 💖 检查版本号，决定是否更新元数据
                 const cached = store.installedApps[app.id]; // 💖 获取缓存的应用信息
-                if (checkUpdate(app, cached)) { // 💖 检查是否需要更新
-                    console.log(`[Loader] 更新应用元数据: ${app.id} (v${app.version}, lines:${app.line_count})`); // 📝 打印日志
+                // 💖 如果是首次运行，强制更新元数据以完成"默认全安装"
+                if (isFirstRun || checkUpdate(app, cached)) { // 💖 检查是否需要更新
+                    if (!isFirstRun) console.log(`[Loader] 更新应用元数据: ${app.id} (v${app.version}, lines:${app.line_count})`); // 📝 打印日志
                     store.registerLazyApp(app.id, `../apps/${app.filename}`, app); // 💖 注册并更新元数据
                 } else {
                     // 版本一致，仅注册路径，不更新元数据 (使用缓存)
@@ -217,7 +232,9 @@ window.onload = async () => {
         
         const allModules = [...systemModules, ...loadedUserModules]; // 💖 合并所有模块
 
-        console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${loadedUserModules.length} 个 (懒加载模式)`); // 📝 打印加载统计
+        console.log(`应用加载完成: 系统应用 ${systemModules.length} 个, 用户应用 ${loadedUserModules.length} 个 (懒加载模式), 核心系统 ${system_core.length} 个`); // 📝 打印加载统计
+        console.log(`📦 已注册安装应用: ${Object.keys(store.installedApps).length} 个 (准备就绪)`); // 💖 新增：明确显示已安装应用数量
+        console.log(`[Loader] Installed Apps Keys:`, Object.keys(store.installedApps)); // 🐛 Debug Log
 
         // 4. 注入元数据并初始化
         allModules.forEach((module) => { // 💖 遍历所有模块
@@ -294,4 +311,13 @@ window.onload = async () => {
     // }
 
     // (自定义壁纸按钮逻辑已移动到 apps/settings.js)
+
+    // 🛠️ 暴露重置函数到全局，方便 F12 调试
+    window.resetSystem = async () => {
+        if (confirm("⚠️ 确定要重置所有系统状态吗？这将清除所有应用数据和布局。")) {
+            await store.reset();
+            location.reload();
+        }
+    };
+    console.log("💡 提示: 在控制台输入 resetSystem() 可重置系统状态");
 };
