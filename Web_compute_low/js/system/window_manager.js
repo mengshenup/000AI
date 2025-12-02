@@ -755,15 +755,28 @@ export class WindowManager {
                     // 为了保持兼容性，我们使用 .then 并在加载完成后重新调用 openApp
                     import(lazyPath).then(m => { // 📦 动态导入模块
                         console.log(`[WindowManager] 模块加载成功: ${id}`, m);
-                        if (m.config) { // ✅ 如果模块有配置
+
+                        // 💖 兼容 default export 和直接 export
+                        const config = m.config || (m.default && m.default.config);
+
+                        if (config) { // ✅ 如果模块有配置
                             // 注册元数据
-                            store.setAppMetadata(m.config.id, m.config); // 💾 注册应用
-                            if (typeof m.init === 'function') m.init(); // 🚀 初始化应用
+                            store.setAppMetadata(config.id, config); // 💾 注册应用
+                            
+                            // 🛡️ 安全初始化：防止 init 报错阻断流程
+                            if (typeof m.init === 'function') {
+                                try {
+                                    console.log(`[WindowManager] 执行应用初始化: ${id}`);
+                                    m.init(); // 🚀 初始化应用
+                                } catch (e) {
+                                    console.error(`[WindowManager] 应用 ${id} 初始化失败 (非致命):`, e);
+                                }
+                            }
                             
                             // 💖 修复无限循环：检查 ID 是否匹配
-                            if (m.config.id !== id) {
-                                console.warn(`[WindowManager] ID Mismatch: requested ${id}, loaded ${m.config.id}. Redirecting...`);
-                                this.openApp(m.config.id, speak); // 🔄 打开正确的 ID
+                            if (config.id !== id) {
+                                console.warn(`[WindowManager] ID Mismatch: requested ${id}, loaded ${config.id}. Redirecting...`);
+                                this.openApp(config.id, speak); // 🔄 打开正确的 ID
                                 return;
                             }
 
@@ -772,6 +785,7 @@ export class WindowManager {
                             this.openApp(id, speak); // 🔄 递归调用打开
                         } else {
                             console.error(`[WindowManager] 模块 ${id} 缺少 config 导出`);
+                            bus.emit('system:speak', "应用文件损坏");
                         }
                     }).catch(err => { // ❌ 加载失败
                         console.error(`无法懒加载应用 ${id}:`, err); // ❌ 打印错误
@@ -779,6 +793,8 @@ export class WindowManager {
                     });
                     return; // 退出当前执行，等待异步加载完成
                 }
+            }
+
             if (appInfo) { // ✅ 如果找到了配置
                 // 💖 如果是服务类型，不需要创建窗口，直接标记为打开
                 if (appInfo.type === 'service') { // ⚙️ 如果是服务
@@ -802,8 +818,6 @@ export class WindowManager {
                          }
                      });
                 }
-                return; // 🛑 结束
-            }   console.error(`无法打开应用 ${id}: 配置不存在`); // ❌ 报错
                 return; // 🛑 结束
             }
         }
