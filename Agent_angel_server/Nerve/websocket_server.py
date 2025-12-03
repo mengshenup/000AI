@@ -207,7 +207,7 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                         global_stream_manager.stop_stream(user_id) # 🛑 停止直播
 
                 elif msg_type == "browser_kill_session": # 💀 强制销毁会话 (新增)
-                    print(f"💀 [指令] 收到用户 {user_id} 的会话销毁请求")
+                    print(f"⚗️ [指令] 收到用户 {user_id} 的会话销毁请求")
                     global_stream_manager.stop_stream(user_id) # 🛑 先停止流
                     await global_browser_manager.close_session(user_id) # 🛑 再关闭浏览器上下文
                     await send_impulse(websocket, "log", {"msg": "💀 浏览器会话已销毁"})
