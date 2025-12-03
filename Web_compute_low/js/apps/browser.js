@@ -1,3 +1,12 @@
+/* ==========================================================================
+   📃 文件功能 : 探索之窗 (浏览器) 应用逻辑
+   ⚡ 逻辑摘要 : 管理浏览器窗口的 UI、事件绑定、远程控制交互及视频流显示
+   💡 易懂解释 : 这是小天使的眼睛！👀 负责把服务器看到的画面展示给你，还把你的鼠标操作传回去。
+   🔋 未来扩展 : 支持多标签页，支持本地书签管理
+   📊 当前状态 : 活跃 (更新: 2025-12-03)
+   🧱 browser.js 踩坑记录 :
+      1. [2025-12-03] [已修复] 点击黑色区域不推流: init 和 mousedown 时强制发送 stream_control: start (Line 180, 280)
+   ========================================================================== */
 export const config = {
     // =================================
     //  🎉 浏览器配置 (Browser Config)
@@ -211,6 +220,10 @@ class BrowserApp {
     // =================================
     init() {
         this.isDestroyed = false; // 💖 重置销毁标志
+        
+        // 🆕 自动启动流
+        console.log("🚀 [Browser] Init: Requesting stream start...");
+        network.send({ type: 'stream_control', action: 'start' });
         
         // 🔑 检查 API Key 状态
         if (!localStorage.getItem('angel_api_key')) {
@@ -449,6 +462,10 @@ class BrowserApp {
             // 🖱️ 鼠标按下 (Drag Start)
             remoteScreen.addEventListener('mousedown', (e) => {
                 if (wm.activeWindowId !== config.id) return;
+                
+                // 🆕 点击画面时，确保流是开启的 (防止之前点击外部停止了)
+                network.send({ type: 'stream_control', action: 'start' });
+                
                 if (e.target.closest('#video-progress-bar')) return;
 
                 const img = document.getElementById('live-image');
