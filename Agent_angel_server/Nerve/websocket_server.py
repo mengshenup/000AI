@@ -10,6 +10,8 @@ from Online.stream_manager import global_stream_manager # 📺 导入流媒体�
 from Brain.gemini_client import global_gemini # 🧠 导入 Gemini 客户端
 from Brain.cognitive_system import global_cognitive_system # 🧠 导入认知系统
 
+from Memory.system_config import VIEWPORT # ⚙️ 导入视口配置
+
 router = APIRouter() # 🛣️ 创建 WebSocket 路由
 
 # 🔑 密钥配置 (必须与 Web_compute_high 保持一致)
@@ -110,7 +112,7 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
         return
 
     # 2. 启动视频流 (由 StreamManager 接管)
-    await global_stream_manager.start_stream(user_id, websocket)
+    # await global_stream_manager.start_stream(user_id, websocket)
     await send_impulse(websocket, "log", {"msg": f"✨ Session Ready for {user_id}!"})
 
     # 3. 指令处理循环
@@ -122,7 +124,13 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
             try:
                 message = json.loads(data)
                 msg_type = message.get("type")
-                payload = message.get("payload", {})
+                
+                # 🛠️ 兼容性修复：支持扁平结构和嵌套 payload 结构
+                # 前端 network.js 发送的是扁平结构 {type: '...', data: ...}
+                # 💡 易懂解释: 就像拆快递，有时候东西直接在箱子里，有时候在箱子里的盒子里。我们要都找找看！📦
+                payload = message.get("payload")
+                if not payload:
+                    payload = message # 📦 如果没有 payload 字段，则整个消息体就是 payload
 
                 # 🎮 控制指令分发
                 if msg_type == "heartbeat":
@@ -134,17 +142,56 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                         global_gemini.update_key(key) # 🧠 更新大脑密钥
                         await send_impulse(websocket, "log", {"msg": "🔑 API Key Updated via Discovery Window"}) # 📢 反馈更新成功
                     
-                elif msg_type == "navigate":
+                elif msg_type == "config_update": # ⚙️ 配置更新
+                    quality = payload.get("quality")
+                    fps = payload.get("fps")
+                    global_stream_manager.update_config(user_id, fps=fps, quality=quality)
+                    await send_impulse(websocket, "log", {"msg": f"⚙️ 画质已更新: {quality}, FPS: {fps}"})
+
+                elif msg_type == "browser_navigate": # 🌍 浏览器导航 (修正匹配前端)
                     url = payload.get("url")
-                    # if url: await page.goto(url)
-                    await send_impulse(websocket, "status", {"msg": f"Navigated to {url} (Mocked)"})
+                    print(f"🌍 [DEBUG] 收到导航请求: {url}") # 🛠️ DEBUG
+                    if url: 
+                        session = await global_browser_manager.get_or_create_session(user_id) # 🎫 获取会话
+                        page = session['page'] # 📄 获取页面对象
+                        
+                        # 🎬 导航时自动开启直播流，确保用户能看到画面
+                        # 检查是否已经有流在运行，如果有则不重复启动，避免中断
+                        if user_id not in global_stream_manager.active_streams:
+                            await global_stream_manager.start_stream(user_id, websocket)
+                        
+                        # 🚀 异步执行导航，防止阻塞 WebSocket 循环
+                        async def safe_navigate(p, u):
+                            try:
+                                print(f"🚀 [DEBUG] 正在前往 {u}...")
+                                await p.goto(u, timeout=30000)
+                                print(f"✅ [DEBUG] 导航成功")
+                                await send_impulse(websocket, "status", {"msg": f"已到达: {u}"})
+                            except Exception as e:
+                                print(f"⚠️ 导航失败: {e}")
+                                await send_impulse(websocket, "status", {"msg": f"导航失败: {str(e)}"})
+                        
+                        asyncio.create_task(safe_navigate(page, url))
+                        await send_impulse(websocket, "status", {"msg": f"正在前往 {url}..."})
+
+                elif msg_type == "stream_control": # 📺 流控制
+                    action = payload.get("action")
+                    if action == "start":
+                        await global_stream_manager.start_stream(user_id, websocket) # 🎬 开始直播
+                    elif action == "stop":
+                        global_stream_manager.stop_stream(user_id) # 🛑 停止直播
 
                 elif msg_type == "click":
                     x, y = payload.get("x"), payload.get("y")
                     if x is not None and y is not None:
-                        # await page.mouse.click(x, y)
-                        # await hand._update_cursor_visual(x, y, click_effect=True)
-                        pass
+                        session = await global_browser_manager.get_or_create_session(user_id)
+                        page = session['page']
+                        # 🖱️ 执行点击 (坐标转换: 相对 -> 绝对)
+                        # 注意：前端传来的 x, y 是 0-1 的相对坐标
+                        actual_x = x * VIEWPORT['width']
+                        actual_y = y * VIEWPORT['height']
+                        await page.mouse.click(actual_x, actual_y)
+                        await send_impulse(websocket, "log", {"msg": f"🖱️ 点击了 ({int(actual_x)}, {int(actual_y)})"})
 
                 elif msg_type == "type":
                     text = payload.get("text")

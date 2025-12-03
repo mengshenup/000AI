@@ -12,7 +12,7 @@ except ImportError:
         async def stealth_async(page): pass
         print("⚠️ [提示] playwright-stealth 未安装 (反爬虫功能受限)")
 
-from Memory.system_config import USER_DATA_DIR, VIEWPORT, BROWSER_CHANNEL # ⚙️ 导入系统配置
+from Memory.system_config import USER_DATA_DIR, VIEWPORT, BROWSER_CHANNEL, TARGET_SEARCH_URL # ⚙️ 导入系统配置
 from Energy.cost_tracker import global_cost_tracker # 💰 导入成本追踪器
 from Eye.screenshot_tool import ScreenshotTool # 👁️ 导入截图工具
 from Hand.mouse_controller import MouseController # ✋ 导入鼠标控制器
@@ -149,6 +149,13 @@ class BrowserManager:
 
         # 2. 创建页面
         page = await context.new_page()
+        
+        # 🚀 自动导航到默认页面，防止白屏
+        try:
+            print(f"🚀 [会话] 正在预加载默认页面: {TARGET_SEARCH_URL}")
+            await page.goto(TARGET_SEARCH_URL, timeout=15000)
+        except Exception as e:
+            print(f"⚠️ [会话] 默认页面加载超时: {e}")
 
         # 3. 注入反爬虫 (Anti-Anti-Bot)
         try:

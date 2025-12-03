@@ -182,6 +182,39 @@ class BrowserApp {
             }, 800);
         }
 
+        // 📺 监听视频帧更新
+        bus.on('net:frame', (base64Data) => {
+            const img = document.getElementById('live-image'); // 🔍 获取图片元素
+            if (img) {
+                img.src = 'data:image/jpeg;base64,' + base64Data; // 🖼️ 更新图片源
+                img.style.display = 'block'; // 👁️ 显示画面
+                // 隐藏等待提示
+                const overlay = document.getElementById('browser-status-overlay');
+                if (overlay) overlay.style.display = 'none'; // 🙈 隐藏遮罩
+            }
+        });
+
+        // 🖱️ 全局点击监听：点击外部停止传输
+        // 注意：这里可能会有内存泄漏，最好在 onDestroy 中移除，但 document 监听比较麻烦
+        // 简单起见，我们在回调里判断 isDestroyed
+        const stopStreamHandler = (e) => {
+            if (this.isDestroyed) { // 🛑 如果已销毁
+                document.removeEventListener('click', stopStreamHandler); // 🧹 移除监听
+                return;
+            }
+            // 如果点击的不是浏览器窗口内部，且窗口是打开的
+            const win = document.getElementById(config.id);
+            if (win && !win.contains(e.target)) { // 🎯 点击了窗口外部
+                 network.send({ type: 'stream_control', action: 'stop' }); // 🛑 发送停止指令
+                 // 恢复等待提示 (可选)
+                 const overlay = document.getElementById('browser-status-overlay');
+                 if (overlay) overlay.style.display = 'block'; // 👁️ 显示遮罩
+                 const img = document.getElementById('live-image');
+                 if (img) img.style.display = 'none'; // 🙈 隐藏画面
+            }
+        };
+        document.addEventListener('click', stopStreamHandler); // 👂 绑定全局点击
+
         this.bindEvents(); // 💖 绑定基础按钮事件（如前往、分析）
         this.setupRemoteControl(); // 💖 设置远程控制逻辑（如点击画面、拖动进度条）
         
@@ -374,6 +407,14 @@ class BrowserApp {
                 if (e.target.closest('#video-progress-bar')) return; // 💖 如果点击目标是进度条内部，直接返回
 
                 const img = document.getElementById('live-image'); // 💖 获取实时画面图片元素
+                
+                // 📺 新增逻辑：如果画面未显示（黑屏），点击则开始传输
+                if (!img || img.style.display === 'none' || img.src === '' || img.src.endsWith('undefined')) {
+                    network.send({ type: 'stream_control', action: 'start' });
+                    bus.emit('system:speak', "开始传输画面 📡");
+                    return;
+                }
+
                 if (!img) return; // 💖 如果没有图片，无法计算坐标，直接返回
                 const r = img.getBoundingClientRect(); // 💖 获取图片的尺寸和位置信息
                 // 计算相对坐标 (0.0 - 1.0)，发送给服务器

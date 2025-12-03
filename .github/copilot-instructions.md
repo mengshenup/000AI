@@ -34,6 +34,6 @@
 
 ## 👮 规范校验头
 在每次响应的开始，输出:
-`[Protocol: <Loaded_Protocol_Name>] [Role: <Current_Persona>] [State: <Current_XML_Tag>]`
+当前`[Protocol: <Loaded_Protocol_Name>] [Role: <Current_Persona>] [State: <Current_XML_Tag>]`
 
 **若未加载必需规范，停止操作并读取它。**

@@ -566,6 +566,25 @@ export class WindowManager {
             
             if (!win && !icon) return; // 🛑 如果都不是，忽略
 
+            // 💖 修复：窗口只能通过标题栏拖拽 (解决内容区域点击冲突和调整大小失效问题)
+            if (win) {
+                // 如果点击的不是标题栏，且不是无边框窗口(无边框可能需要特殊处理，暂且允许任意拖拽或指定区域)
+                // 这里假设无边框窗口 (如 Widget) 也可以通过任意位置拖拽，或者它们有自己的拖拽区
+                // 但为了解决浏览器拖拽冲突，必须限制
+                if (!target.closest('.title-bar') && !win.classList.contains('frameless')) {
+                    return; // 🛑 不是标题栏，不拖拽
+                }
+                // 如果是无边框窗口，可能需要允许拖拽，或者检查特定 class
+                // 目前 Widget 似乎没有 title-bar，所以可能需要保留原逻辑?
+                // 检查 Widget 结构: 胶囊窗口通常是 frameless
+                if (win.classList.contains('frameless')) {
+                    // 对于无边框窗口，如果点击的是交互元素(如按钮、输入框)，也不应该拖拽
+                    if (target.tagName === 'BUTTON' || target.tagName === 'INPUT' || target.closest('.interactive')) {
+                        return;
+                    }
+                }
+            }
+
             // 🛑 检查是否固定位置 (如 Widget)
             const id = (win || icon).id.replace('icon-', ''); // 🆔 获取 ID
             const app = store.getApp(id); // 📊 获取应用数据

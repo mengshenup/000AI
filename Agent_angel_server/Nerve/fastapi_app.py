@@ -31,6 +31,12 @@ sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 文件
 # load_dotenv(env_path) # 🔑 加载环境变量
 
 import asyncio # ⚡ 异步 I/O 库
+import sys # 🖥️ 系统模块
+
+# ⚠️ Windows 平台必须设置 ProactorEventLoopPolicy，否则 Playwright 会卡死
+if sys.platform == 'win32':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
 import warnings # ⚠️ 警告控制模块
 import uvicorn # 🦄 ASGI 服务器
 from fastapi import FastAPI # 🚀 FastAPI 框架

@@ -1,5 +1,6 @@
 import base64 # 📦 Base64 编码库
 import io # 📥 I/O 流处理库
+import os # 📂 操作系统
 from PIL import Image # 🖼️ 图像处理库 (Pillow)
 from Memory.system_config import VIEWPORT # ⚙️ 导入视口配置
 
@@ -28,13 +29,14 @@ class ScreenshotTool:
         # =================================
         self.page = page # 📄 绑定的页面实例
 
-    async def capture(self, quality_mode='high'):
+    async def capture(self, quality_mode='high', user_id='default_user'):
         # =================================
-        #  🎉 捕获视野 (画质模式)
+        #  🎉 捕获视野 (画质模式, 用户ID)
         #
         #  🎨 代码用途：
         #     截取当前页面屏幕，支持 'high', 'medium', 'low' 三种画质。
         #     低画质模式下会使用 PIL 进行降采样和压缩，以减少数据传输量。
+        #     同时将截图保存到 Memorybank/Screenshots/{user_id}/ 目录下。
         #
         #  💡 易懂解释：
         #     看这里！✌️ 拍张照！如果是为了省流量（low模式），我会把照片变小一点、模糊一点，但还是能看清大概的！
@@ -43,12 +45,29 @@ class ScreenshotTool:
         #     Image.Resampling.NEAREST 速度最快但画质最差。如果页面已关闭，此方法会捕获异常并返回空字符串。
         # =================================
         if not self.page:
+            print("⚠️ [Eye] Page object is None!")
             return "" # 🚫 页面不存在
+            
+        if self.page.is_closed():
+            print("⚠️ [Eye] Page is closed!")
+            return ""
 
         try:
             # 1. 获取原始截图 (JPEG)
+            # print("📸 [Eye] Taking screenshot...") # 🛠️ DEBUG: Uncommented
             screenshot_bytes = await self.page.screenshot(type='jpeg', quality=70) # 📸 原始截图
             
+            # 🛠️ 保存截图到 Memorybank
+            # 路径: Agent_angel_server/Memorybank/Screenshots/{user_id}/capture.jpg
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Agent_angel_server
+            save_dir = os.path.join(base_dir, "Memorybank", "Screenshots", user_id)
+            os.makedirs(save_dir, exist_ok=True)
+            
+            save_path = os.path.join(save_dir, "capture.jpg")
+            with open(save_path, "wb") as f:
+                f.write(screenshot_bytes)
+            # print(f"📸 [DEBUG] Screenshot saved to {save_path}")
+
             if quality_mode == 'high':
                 return base64.b64encode(screenshot_bytes).decode() # 💎 高画质直接返回
 
@@ -75,4 +94,6 @@ class ScreenshotTool:
 
         except Exception as e:
             print(f"👁️ Vision Error: {e}") # ❌ 视觉故障
+            import traceback
+            traceback.print_exc()
             return ""

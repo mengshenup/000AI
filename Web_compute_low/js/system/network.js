@@ -76,6 +76,7 @@ export class Network {
                 // 分发事件，不再直接操作 DOM，而是通过事件总线通知其他模块
                 if (d._stats) bus.emit('net:stats', d._stats); // 📊 更新网络统计
                 if (d.type === 'log') bus.emit('system:speak', d.msg); // 🗣️ 系统日志消息 -> 小天使说话
+                if (d.type === 'debug') console.log(`🔧 [Server]: ${d.msg}`); // 🛠️ 后端调试日志
                 if (d.type === 'vision') bus.emit('net:frame', d.frame); // 🖼️ 视频帧更新 (后端改为 vision + frame)
                 if (d.type === 'frame_update') bus.emit('net:frame', d.image); // 🖼️ 兼容旧协议
                 if (d.type === 'new_intel') bus.emit('net:intel', d.data); // 🧠 发现新情报
