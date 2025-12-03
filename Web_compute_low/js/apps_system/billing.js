@@ -6,6 +6,7 @@
    📊 当前状态 : 活跃 (更新: 2025-12-03)
    🧱 billing.js 踩坑记录 (累积，勿覆盖) :
       1. [2025-12-03] [已修复] [配置丢失]: 动态注册的子窗口 (win-billing) 被 loader.js 的 prune 逻辑误删 -> 在 config 中添加 relatedApps 字段并在 loader 中豁免 (Line 85)
+      2. [2025-12-03] [已更新] [UI汉化]: 全面汉化界面，并适配新的后端数据结构 (Line 45)
    ========================================================================== */
 
 import { createCapsule } from '../system/capsule_manager.js?v=1';
@@ -48,16 +49,16 @@ const detailConfig = {
     isOpen: false,
     content: `
         <div style="padding: 15px; background: rgba(45, 52, 54, 0.95); color: #dfe6e9; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column;">
-            <div style="font-size: 12px; color: #fdcb6e; margin-bottom: 10px; font-weight: bold;">BILLING DETAILS</div>
+            <div style="font-size: 12px; color: #fdcb6e; margin-bottom: 10px; font-weight: bold;">金色收获 (BILLING)</div>
             
             <div style="flex: 1; overflow-y: auto; margin-bottom: 10px;">
                 <div class="bill-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
-                    <span style="color: #b2bec3;">Network</span>
-                    <span id="pop-net" style="color: #fff;">¥0.00</span>
+                    <span style="color: #b2bec3;">网络传输 (Network)</span>
+                    <span id="pop-net" style="color: #fff;">$0.00</span>
                 </div>
                 <div class="bill-row" style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
-                    <span style="color: #b2bec3;">AI Compute</span>
-                    <span id="ai-cost" style="color: #fff;">¥0.00</span>
+                    <span style="color: #b2bec3;">AI 算力 (Compute)</span>
+                    <span id="ai-cost" style="color: #fff;">$0.00</span>
                 </div>
                 <div style="border-top: 1px solid #636e72; margin: 5px 0;"></div>
                 <div id="pop-models" style="font-size: 10px; color: #aaa;">
@@ -66,8 +67,8 @@ const detailConfig = {
             </div>
 
             <div style="border-top: 1px solid #636e72; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 12px;">TOTAL</span>
-                <span id="pop-total" style="color: #fdcb6e; font-weight: bold; font-size: 16px;">¥0.00</span>
+                <span style="font-size: 12px;">总计 (TOTAL)</span>
+                <span id="pop-total" style="color: #fdcb6e; font-weight: bold; font-size: 16px;">$0.00</span>
             </div>
         </div>
     `,
@@ -124,7 +125,7 @@ export function init() {
         serviceConfig: config,
         detailConfig: detailConfig,
         html: `
-            <span style="color: #fdcb6e; font-weight: bold;">¥</span>
+            <span style="color: #fdcb6e; font-weight: bold;">$</span>
             <span id="bar-total">0.00</span>
         `
     });
@@ -181,7 +182,7 @@ export function init() {
         const modelsDiv = document.getElementById('pop-models');
         if (modelsDiv && stats.cost.models) {
             modelsDiv.innerHTML = Object.entries(stats.cost.models)
-                .map(([m, c]) => `<div style="display:flex; justify-content:space-between;"><span>${m}</span><span>¥${c}</span></div>`)
+                .map(([m, c]) => `<div style="display:flex; justify-content:space-between;"><span>${m}</span><span>${c}</span></div>`)
                 .join('');
         }
     });

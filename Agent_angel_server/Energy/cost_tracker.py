@@ -1,4 +1,5 @@
 import json # 🧩 JSON 处理库
+import time # ⏱️ 时间库
 from Memory.system_config import PRICING_TABLE # 💰 导入定价表
 
 class CostTracker:
@@ -31,6 +32,12 @@ class CostTracker:
         self.input_tokens = 0 # 📝 AI 输入 Token 数
         self.output_tokens = 0 # 🗣️ AI 输出 Token 数
         self.ai_cost = 0.0 # 💸 总 AI 费用 (USD)
+        
+        # ⏱️ 速度计算相关
+        self.start_time = time.time() # 🏁 会话开始时间
+        self.last_check_time = time.time() # ⏱️ 上次检查时间
+        self.last_total_tx = 0 # 📤 上次总发送量
+        self.last_total_rx = 0 # 📥 上次总接收量
     
     def track_ws(self, tx=0, rx=0):
         # =================================
@@ -83,23 +90,89 @@ class CostTracker:
             self.output_tokens += est_tokens # 🗣️ 累加输出 Token
         self.ai_cost += cost # 💸 累加总费用
 
+    def _format_bytes(self, size):
+        # 🛠️ 辅助函数：格式化字节数
+        power = 2**10
+        n = 0
+        power_labels = {0 : '', 1: 'K', 2: 'M', 3: 'G', 4: 'T'}
+        while size > power:
+            size /= power
+            n += 1
+        return f"{size:.1f} {power_labels[n]}B"
+
+    def _format_time(self, seconds):
+        # 🛠️ 辅助函数：格式化时间
+        m, s = divmod(int(seconds), 60)
+        h, m = divmod(m, 60)
+        return f"{h:02d}:{m:02d}:{s:02d}"
+
     def get_report(self):
         # =================================
         #  🎉 获取财务报表 (无参数)
         #
         #  🎨 代码用途：
         #     打包当前的资源消耗数据，返回字典格式的报表。
+        #     包含实时速度计算和格式化输出。
         #
         #  💡 易懂解释：
         #     老板，这是今天的账单！🧾 请过目！
         # =================================
+        now = time.time()
+        delta_time = now - self.last_check_time
+        
+        # 计算总流量
+        total_tx = self.ws_tx + self.browser_tx
+        total_rx = self.ws_rx + self.browser_rx
+        
+        # 计算网络费用 (仅计算流出流量)
+        # $0.10 per GB -> $0.10 / 1024 / 1024 / 1024 per Byte
+        net_cost = (total_tx / (1024**3)) * PRICING_TABLE.get("network_egress", 0.1)
+        total_cost = self.ai_cost + net_cost
+
+        # 计算实时速度 (如果间隔太短则不更新速度，避免除零或波动)
+        if delta_time > 0.5:
+            tx_speed = (total_tx - self.last_total_tx) / delta_time
+            rx_speed = (total_rx - self.last_total_rx) / delta_time
+            
+            self.last_check_time = now
+            self.last_total_tx = total_tx
+            self.last_total_rx = total_rx
+            
+            self.current_tx_speed_str = f"{self._format_bytes(tx_speed)}/s"
+            self.current_rx_speed_str = f"{self._format_bytes(rx_speed)}/s"
+        else:
+            # 保持上次计算的速度
+            if not hasattr(self, 'current_tx_speed_str'):
+                self.current_tx_speed_str = "0.0 B/s"
+                self.current_rx_speed_str = "0.0 B/s"
+
         return {
-            "ws_traffic": {"tx": self.ws_tx, "rx": self.ws_rx},
-            "browser_traffic": {"tx": self.browser_tx, "rx": self.browser_rx},
-            "ai_usage": {
-                "input_tokens": int(self.input_tokens),
-                "output_tokens": int(self.output_tokens),
-                "cost_usd": round(self.ai_cost, 4)
+            "net": {
+                "up": self.current_tx_speed_str,
+                "down": self.current_rx_speed_str,
+                "total_tx": self._format_bytes(total_tx),
+                "total_rx": self._format_bytes(total_rx)
+            },
+            "cost": {
+                "total": f"${total_cost:.4f}",
+                "net": f"${net_cost:.6f}",
+                "ai": f"${self.ai_cost:.4f}",
+                "models": {
+                    "Gemini": f"${self.ai_cost:.4f}"
+                }
+            },
+            "session": {
+                "duration": self._format_time(now - self.start_time),
+                "cost": f"${total_cost:.4f}"
+            },
+            "raw": {
+                "ws_traffic": {"tx": self.ws_tx, "rx": self.ws_rx},
+                "browser_traffic": {"tx": self.browser_tx, "rx": self.browser_rx},
+                "ai_usage": {
+                    "input_tokens": int(self.input_tokens),
+                    "output_tokens": int(self.output_tokens),
+                    "cost_usd": round(self.ai_cost, 4)
+                }
             }
         }
 

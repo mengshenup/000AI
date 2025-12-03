@@ -93,6 +93,7 @@ class BrowserManager:
                 "--disable-accelerated-2d-canvas", # 🎨 禁用加速，节省显存
                 "--no-first-run",
                 "--no-zygote",
+                "--disable-blink-features=AutomationControlled", # 🕵️‍♂️ 关键：禁用自动化控制特征
                 # "--single-process", # ⚠️ 极度节省内存但不稳定，暂不开启
             ]
 
@@ -103,7 +104,8 @@ class BrowserManager:
                     self.browser = await self.playwright.chromium.launch(
                         headless=True, # 👻 必须无头
                         args=launch_args,
-                        channel=BROWSER_CHANNEL
+                        channel=BROWSER_CHANNEL,
+                        ignore_default_args=["--enable-automation"] # 🕵️‍♂️ 隐藏“正受到自动测试软件控制”的提示
                     )
                     print("✅ [系统] 全局浏览器启动成功！")
                 else:
@@ -114,7 +116,9 @@ class BrowserManager:
                 print("🔄 [系统] 尝试回退到内置 Chromium...")
                 # 尝试回退到默认 Chromium
                 self.browser = await self.playwright.chromium.launch(
-                    headless=True, args=launch_args
+                    headless=True, 
+                    args=launch_args,
+                    ignore_default_args=["--enable-automation"]
                 )
                 print("✅ [系统] 已回退到内置 Chromium 启动。")
 
@@ -139,16 +143,38 @@ class BrowserManager:
         print(f"🆕 [会话] 为用户 {user_id} 创建新环境...")
         
         # 1. 创建上下文 (隔离环境)
+        # 🛠️ 优化：使用持久化存储，避免每次都像新用户一样被检测
+        # 路径: Agent_angel_server/Memorybank/BrowserData/{user_id}
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        user_data_dir = os.path.join(base_dir, "Memorybank", "BrowserData", user_id)
+        os.makedirs(user_data_dir, exist_ok=True)
+
+        # 注意：new_context 不支持 userDataDir (那是 launch 的参数)，
+        # 但我们可以通过 storageState 来加载/保存 Cookies 和 LocalStorage。
+        # 或者，如果需要完全持久化，应该使用 launch_persistent_context，但这会破坏单浏览器多租户架构。
+        # 妥协方案：手动加载/保存 storageState。
+        
+        storage_state_path = os.path.join(user_data_dir, "state.json")
+        storage_state = storage_state_path if os.path.exists(storage_state_path) else None
+
         context = await self.browser.new_context(
             viewport=VIEWPORT,
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36", # 🕵️‍♂️ 更新 UA 到 Chrome 128
             locale="zh-CN",
             timezone_id="Asia/Shanghai",
             device_scale_factor=1, # 🖥️ 1倍缩放，节省渲染开销
+            storage_state=storage_state # 🍪 加载持久化状态 (Cookies/LS)
         )
 
         # 2. 创建页面
         page = await context.new_page()
+        
+        # 🕵️‍♂️ 额外注入：移除 webdriver 属性
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            });
+        """)
         
         # 🚀 自动导航到默认页面，防止白屏
         try:
@@ -162,9 +188,16 @@ class BrowserManager:
             await stealth_async(page)
         except Exception as e:
             print(f"⚠️ [系统] 反爬虫注入失败: {e}")
-
-        # 4. 性能优化：屏蔽不必要的资源 (可选)
-        # await page.route("**/*.{font,woff,woff2}", lambda route: route.abort()) # 屏蔽字体
+            
+        # 💾 自动保存状态钩子
+        async def save_storage_state():
+            try:
+                await context.storage_state(path=storage_state_path)
+            except: pass
+            
+        # 每当页面关闭或导航时尝试保存状态 (简单策略)
+        page.on("close", lambda: asyncio.create_task(save_storage_state()))
+        # page.on("load", lambda: asyncio.create_task(save_storage_state())) # 太频繁，暂不开启
 
         # 5. 挂载组件
         eye = ScreenshotTool(page)
@@ -179,7 +212,8 @@ class BrowserManager:
             "page": page,
             "eye": eye,
             "hand": hand,
-            "created_at": asyncio.get_event_loop().time()
+            "created_at": asyncio.get_event_loop().time(),
+            "save_state_func": save_storage_state # 暴露保存函数
         }
         
         self.sessions[user_id] = session
@@ -196,6 +230,11 @@ class BrowserManager:
         if user_id in self.sessions:
             print(f"👋 [会话] 用户 {user_id} 下线，清理资源。")
             session = self.sessions.pop(user_id) # 🗑️ 从池中移除
+            
+            # 💾 退出前保存状态
+            if "save_state_func" in session:
+                await session["save_state_func"]()
+                
             try:
                 await session['context'].close() # 🛑 关闭该用户的独立上下文
             except: pass

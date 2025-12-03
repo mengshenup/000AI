@@ -9,6 +9,7 @@ from Energy.cost_tracker import global_cost_tracker # 💰 成本追踪器
 from Online.stream_manager import global_stream_manager # 📺 导入流媒体管理器
 from Brain.gemini_client import global_gemini # 🧠 导入 Gemini 客户端
 from Brain.cognitive_system import global_cognitive_system # 🧠 导入认知系统
+from Brain.captcha_solver import global_captcha_solver # 🧩 导入验证码解决器
 
 from Memory.system_config import VIEWPORT # ⚙️ 导入视口配置
 
@@ -163,14 +164,22 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                         
                         # 🚀 异步执行导航，防止阻塞 WebSocket 循环
                         async def safe_navigate(p, u):
-                            try:
-                                print(f"🚀 [调试] 正在前往 {u}...")
-                                await p.goto(u, timeout=30000)
-                                print(f"✅ [调试] 导航成功")
-                                await send_impulse(websocket, "status", {"msg": f"已到达: {u}"})
-                            except Exception as e:
-                                print(f"⚠️ 导航失败: {e}")
-                                await send_impulse(websocket, "status", {"msg": f"导航失败: {str(e)}"})
+                            max_retries = 3
+                            for attempt in range(max_retries):
+                                try:
+                                    print(f"🚀 [调试] 正在前往 {u} (尝试 {attempt+1}/{max_retries})...")
+                                    # ⚡ 优化：使用 domcontentloaded 提升感知速度，超时设为 30s
+                                    await p.goto(u, timeout=30000, wait_until='domcontentloaded')
+                                    print(f"✅ [调试] 导航成功")
+                                    await send_impulse(websocket, "status", {"msg": f"已到达: {u}"})
+                                    return # 成功则退出
+                                except Exception as e:
+                                    print(f"⚠️ 导航失败 (尝试 {attempt+1}): {e}")
+                                    if attempt < max_retries - 1:
+                                        await send_impulse(websocket, "status", {"msg": f"导航超时，正在重试 ({attempt+1})..."})
+                                        await asyncio.sleep(2) # 冷却一下
+                                    else:
+                                        await send_impulse(websocket, "status", {"msg": f"导航最终失败: {str(e)}"})
                         
                         asyncio.create_task(safe_navigate(page, url))
                         await send_impulse(websocket, "status", {"msg": f"正在前往 {url}..."})
@@ -211,6 +220,50 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                     global_stream_manager.stop_stream(user_id) # 🛑 先停止流
                     await global_browser_manager.close_session(user_id) # 🛑 再关闭浏览器上下文
                     await send_impulse(websocket, "log", {"msg": "💀 浏览器会话已销毁"})
+
+                elif msg_type == "mouse_down":
+                    x, y = payload.get("x"), payload.get("y")
+                    if x is not None and y is not None:
+                        session = await global_browser_manager.get_or_create_session(user_id)
+                        hand = session['hand']
+                        await hand.mouse_down(x, y)
+
+                elif msg_type == "mouse_move":
+                    x, y = payload.get("x"), payload.get("y")
+                    if x is not None and y is not None:
+                        session = await global_browser_manager.get_or_create_session(user_id)
+                        hand = session['hand']
+                        await hand.mouse_move(x, y)
+
+                elif msg_type == "mouse_up":
+                    x, y = payload.get("x"), payload.get("y")
+                    if x is not None and y is not None:
+                        session = await global_browser_manager.get_or_create_session(user_id)
+                        hand = session['hand']
+                        await hand.mouse_up(x, y)
+
+                elif msg_type == "solve_captcha":
+                    print(f"🧩 [指令] 用户 {user_id} 请求解决验证码")
+                    session = await global_browser_manager.get_or_create_session(user_id)
+                    page = session['page']
+                    hand = session['hand']
+                    
+                    await send_impulse(websocket, "log", {"msg": "🧠 正在分析验证码..."})
+                    
+                    # 截图
+                    screenshot = await page.screenshot(format="jpeg", quality=80)
+                    
+                    # 求解
+                    result = await global_captcha_solver.solve_slider(page, screenshot)
+                    
+                    if result and result.get("action") == "drag":
+                        start = result["start"]
+                        end = result["end"]
+                        await send_impulse(websocket, "log", {"msg": "🧩 找到解决方案，正在执行..."})
+                        await hand.drag(start["x"], start["y"], end["x"], end["y"])
+                        await send_impulse(websocket, "log", {"msg": "✅ 验证码操作完成"})
+                    else:
+                        await send_impulse(websocket, "log", {"msg": "⚠️ 无法识别验证码或无需操作"})
 
                 elif msg_type == "click":
                     x, y = payload.get("x"), payload.get("y")

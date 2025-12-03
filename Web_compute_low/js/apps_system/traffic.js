@@ -46,16 +46,41 @@ const detailConfig = {
     isOpen: false, // 💖 默认关闭
     openMsg: "", // 💖 打开时的提示消息
     content: `
-        <div style="padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%;">
-            <div style="font-size: 12px; color: #00cec9; margin-bottom: 10px; font-weight: bold;">NETWORK MONITOR</div> <!-- 💖 标题 -->
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                <span style="color: #aaa; font-size: 11px;">UPLOAD</span> <!-- 💖 上传标签 -->
-                <span id="tx-stat" style="color: #74b9ff; font-family: monospace;">0 KB/s</span> <!-- 💖 上传速度显示区域 -->
+        <div style="padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="font-size: 12px; color: #00cec9; margin-bottom: 5px; font-weight: bold;">网络脉动监测 (NETWORK)</div> <!-- 💖 标题 -->
+            
+            <!-- 实时速率 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <span style="color: #aaa; font-size: 11px;">实时上传</span>
+                <span id="tx-stat" style="color: #74b9ff; font-family: monospace;">0 KB/s</span>
             </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span style="color: #aaa; font-size: 11px;">DOWNLOAD</span> <!-- 💖 下载标签 -->
-                <span id="rx-stat" style="color: #55efc4; font-family: monospace;">0 KB/s</span> <!-- 💖 下载速度显示区域 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="color: #aaa; font-size: 11px;">实时下载</span>
+                <span id="rx-stat" style="color: #55efc4; font-family: monospace;">0 KB/s</span>
             </div>
+
+            <!-- 总流量 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <span style="color: #aaa; font-size: 11px;">总发送量</span>
+                <span id="total-tx" style="color: #fff; font-family: monospace;">0 MB</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="color: #aaa; font-size: 11px;">总接收量</span>
+                <span id="total-rx" style="color: #fff; font-family: monospace;">0 MB</span>
+            </div>
+
+            <!-- 会话信息 -->
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; display: flex; justify-content: space-between;">
+                <div style="text-align: center;">
+                    <div style="color: #aaa; font-size: 10px;">会话时长</div>
+                    <div id="session-duration" style="color: #fab1a0; font-family: monospace;">00:00:00</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="color: #aaa; font-size: 10px;">预估成本</div>
+                    <div id="session-cost" style="color: #ffeaa7; font-family: monospace;">$0.0000</div>
+                </div>
+            </div>
+
             <div style="margin-top: 10px; height: 2px; background: #333; border-radius: 1px; overflow: hidden;">
                 <div style="width: 50%; height: 100%; background: #00cec9; animation: pulse 2s infinite;"></div> <!-- 💖 装饰性动画条 -->
             </div>
@@ -165,6 +190,12 @@ export function init() {
         // 更新详情窗口数据
         update('tx-stat', stats.net.up);    // ⬆️ 更新上传速度 // 💖 更新详情窗口上传速度
         update('rx-stat', stats.net.down);  // ⬇️ 更新下载速度 // 💖 更新详情窗口下载速度
+        
+        // 新增字段更新
+        if (stats.net.total_tx) update('total-tx', stats.net.total_tx);
+        if (stats.net.total_rx) update('total-rx', stats.net.total_rx);
+        if (stats.session && stats.session.duration) update('session-duration', stats.session.duration);
+        if (stats.session && stats.session.cost) update('session-cost', stats.session.cost);
     });
 
     // 监听服务开启/关闭事件，控制胶囊显示

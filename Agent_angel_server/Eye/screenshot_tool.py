@@ -64,11 +64,11 @@ class ScreenshotTool:
         try:
             # 1. 获取原始截图 (JPEG)
             # print("📸 [Eye] Taking screenshot...") # 🛠️ DEBUG: Uncommented
-            # 🛠️ 优化：设置超时时间为 2000ms (2秒)，禁用动画和光标，防止因页面卡顿导致长时间阻塞
+            # 🛠️ 优化：设置超时时间为 15000ms (15秒)，禁用动画和光标，防止因页面卡顿导致长时间阻塞
             screenshot_bytes = await self.page.screenshot(
                 type='jpeg', 
                 quality=70, 
-                timeout=2000, 
+                timeout=15000, 
                 animations="disabled", 
                 caret="hide"
             ) 

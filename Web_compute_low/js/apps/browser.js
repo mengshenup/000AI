@@ -39,6 +39,8 @@ export const config = {
                 <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
                 <!-- 💖 重连按钮 (新增) -->
                 <button id="btn-browser-reconnect" style="padding:4px 8px; cursor:pointer; color:red;" title="强制重连直播流">🔌</button>
+                <!-- 💖 验证码按钮 (新增) -->
+                <button id="btn-browser-captcha" style="padding:4px 8px; cursor:pointer; color:orange;" title="AI 解决验证码">🧩</button>
             </div>
             
             <!-- 💖 智能任务栏 (AI Task Bar) -->
@@ -134,6 +136,16 @@ class BrowserApp {
                 }, 500);
             };
         }
+
+        // 💖 监听验证码按钮点击
+        const btnCaptcha = document.getElementById('btn-browser-captcha');
+        if (btnCaptcha) {
+            btnCaptcha.onclick = () => {
+                console.log("🧩 用户请求解决验证码...");
+                bus.emit('system:speak', "正在尝试解决验证码... 🧩");
+                network.send({ type: 'solve_captcha' });
+            };
+        }
         
         // 监听状态更新
         bus.on('net:status', (msg) => { // 👂 监听网络状态
@@ -217,6 +229,18 @@ class BrowserApp {
                 // 隐藏等待提示
                 const overlay = document.getElementById('browser-status-overlay');
                 if (overlay) overlay.style.display = 'none'; // 🙈 隐藏遮罩
+                
+                // 🐶 看门狗：重置超时计时器
+                if (this.frameWatchdog) clearTimeout(this.frameWatchdog);
+                this.frameWatchdog = setTimeout(() => {
+                    if (this.isDestroyed) return;
+                    const overlay = document.getElementById('browser-status-overlay');
+                    if (overlay) {
+                        overlay.innerText = "⚠️ 网络中断 (无视频流)";
+                        overlay.style.background = 'rgba(231, 76, 60, 0.8)'; // 🔴 红色警告
+                        overlay.style.display = 'block';
+                    }
+                }, 5000); // 5秒无帧则报警
             }
         });
 
@@ -422,47 +446,85 @@ class BrowserApp {
 
         // === 远程点击逻辑 ===
         if (remoteScreen) { // 💖 确保遮罩层存在
-            remoteScreen.addEventListener('click', (e) => { // 🖱️ 绑定点击事件
-                console.log("🖱️ [Browser] Remote screen clicked"); // 🛠️ Debug Log
+            // 🖱️ 鼠标按下 (Drag Start)
+            remoteScreen.addEventListener('mousedown', (e) => {
+                if (wm.activeWindowId !== config.id) return;
+                if (e.target.closest('#video-progress-bar')) return;
 
-                // 🛠️ 优化：只有当窗口处于激活状态（最前端）时，才发送点击事件
-                // 防止用户在操作其他窗口时误触后台的浏览器画面，同时也节省带宽
-                if (wm.activeWindowId !== config.id) {
-                    console.log(`🛑 [Browser] Window not active (Active: ${wm.activeWindowId}, This: ${config.id})`);
-                    return; // 🛑 如果不是激活窗口，忽略
-                }
-
-                // 如果点击的是进度条，不触发远程点击（双重保险）
-                if (e.target.closest('#video-progress-bar')) return; // 💖 如果点击目标是进度条内部，直接返回
-
-                const img = document.getElementById('live-image'); // 💖 获取实时画面图片元素
+                const img = document.getElementById('live-image');
+                if (!img) return;
                 
-                // 📺 新增逻辑：如果画面未显示（黑屏），点击则开始传输
-                // 增加更宽松的判断条件，防止 img 元素存在但无内容
-                const isImageVisible = img && img.style.display !== 'none' && img.src && !img.src.endsWith('undefined') && img.src.length > 100;
+                const r = img.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width;
+                const y = (e.clientY - r.top) / r.height;
                 
-                if (!isImageVisible) {
-                    console.log("📺 [Browser] Image not visible, sending start stream command...");
-                    network.send({ type: 'stream_control', action: 'start' });
-                    bus.emit('system:speak', "开始传输画面 📡");
-                    
-                    // 强制显示 loading 状态
-                    const overlay = document.getElementById('browser-status-overlay');
-                    if (overlay) {
-                        overlay.style.display = 'block';
-                        overlay.innerText = "正在连接直播流...";
-                    }
+                this.isDragging = true;
+                network.send({ type: 'mouse_down', x, y });
+            });
+
+            // 🖱️ 鼠标移动 (Drag Move)
+            remoteScreen.addEventListener('mousemove', (e) => {
+                if (!this.isDragging) return;
+                
+                // 节流：避免发送过多请求
+                const now = Date.now();
+                if (now - (this.lastMoveTime || 0) < 50) return; // 50ms 间隔
+                this.lastMoveTime = now;
+
+                const img = document.getElementById('live-image');
+                if (!img) return;
+
+                const r = img.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width;
+                const y = (e.clientY - r.top) / r.height;
+
+                network.send({ type: 'mouse_move', x, y });
+            });
+
+            // 🖱️ 鼠标抬起 (Drag End)
+            const endDrag = (e) => {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+                
+                const img = document.getElementById('live-image');
+                if (!img) {
+                    network.send({ type: 'mouse_up', x: 0, y: 0 }); // 兜底
                     return;
                 }
 
-                if (!img) return; // 💖 如果没有图片，无法计算坐标，直接返回
-                const r = img.getBoundingClientRect(); // 💖 获取图片的尺寸和位置信息
-                // 计算相对坐标 (0.0 - 1.0)，发送给服务器
-                bus.emit('cmd:remote_click', { // 💖 触发远程点击事件
-                    x: (e.clientX - r.left) / r.width, // 💖 计算 X 轴相对坐标
-                    y: (e.clientY - r.top) / r.height // 💖 计算 Y 轴相对坐标
-                });
-            });
+                const r = img.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width;
+                const y = (e.clientY - r.top) / r.height;
+
+                network.send({ type: 'mouse_up', x, y });
+            };
+            
+            remoteScreen.addEventListener('mouseup', endDrag);
+            remoteScreen.addEventListener('mouseleave', endDrag); // 移出也算结束
+
+            // 保留原有 Click 逻辑作为备用? 
+            // 其实 mousedown + mouseup 已经涵盖了 click，但为了兼容旧逻辑或特定点击行为，
+            // 我们可以保留 click 事件，或者完全用 down/up 替代。
+            // 为了避免重复点击，如果实现了 down/up，通常不需要单独的 click，除非后端 click 有特殊处理（如拟人化）。
+            // 鉴于后端 click 有拟人化逻辑，我们保留 click 事件，但要注意冲突。
+            // 简单的做法：如果发生了 drag (move distance > threshold)，则不触发 click。
+            // 但这里我们简单地让 down/up 处理拖动，click 处理点击。
+            // 后端 mouse_down/up 是直接操作，click 是拟人化操作。
+            // 为了支持拖动，我们必须使用 down/move/up。
+            // 如果用户只是点击，会触发 down -> up。
+            // 我们可以修改前端逻辑：
+            // 如果是短时间的 down->up 且位移小 -> 发送 click (拟人化)
+            // 如果是长时间或位移大 -> 发送 down, move, up (直接控制)
+            
+            // 让我们采用混合模式：
+            // 始终发送 down/move/up。
+            // 后端 mouse_controller 需要支持这些原子操作。
+            // 原有的 click 事件监听器可以移除，或者改为只处理“非拖动”的点击。
+            
+            /* 移除旧的 click 监听，改用上面的 down/up 逻辑覆盖 */
+            /*
+            remoteScreen.addEventListener('click', (e) => { ... });
+            */
         }
     }
 }

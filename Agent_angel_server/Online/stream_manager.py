@@ -121,7 +121,11 @@ class StreamManager:
                 
                 # print(f"📸 [Stream] Capturing frame for {user_id}...") # 🛠️ DEBUG: Uncommented
                 # 🛠️ 优化：直播流不需要保存到磁盘，save_to_disk=False 以提高性能
-                screenshot_b64 = await eye.capture(quality_mode=current_quality, user_id=user_id, save_to_disk=False)
+                try:
+                    screenshot_b64 = await eye.capture(quality_mode=current_quality, user_id=user_id, save_to_disk=False)
+                except Exception as capture_err:
+                    print(f"⚠️ [Stream] Screenshot failed: {capture_err}")
+                    screenshot_b64 = "" # 失败则视为空帧
 
                 if screenshot_b64:
                     # 4. 发送数据 (通过 WebSocket)
@@ -130,13 +134,18 @@ class StreamManager:
                         "frame": screenshot_b64, # 修正：匹配 network.js 的 frame 字段
                         "_stats": global_cost_tracker.get_report()
                     }
-                    await websocket.send_text(json.dumps(payload))
-                    
-                    # 📊 记录流量
-                    global_cost_tracker.track_ws(tx=len(screenshot_b64))
+                    try:
+                        await websocket.send_text(json.dumps(payload))
+                        # 📊 记录流量
+                        global_cost_tracker.track_ws(tx=len(screenshot_b64))
+                    except Exception as ws_err:
+                        print(f"🔌 [直播] 发送失败 (用户可能已断开): {ws_err}")
+                        break # 退出循环，停止流
                 else:
                     print(f"⚠️ 截图为空 ({user_id})")
-                    await websocket.send_text(json.dumps({"type": "debug", "msg": "截图返回为空!"}))
+                    try:
+                        await websocket.send_text(json.dumps({"type": "debug", "msg": "截图返回为空!"}))
+                    except: pass
 
                 # 5. 控制帧率
                 await asyncio.sleep(1.0 / current_fps)

@@ -185,6 +185,79 @@ class MouseController:
         # 5. 恢复视觉特效
         await self._update_cursor_visual(target_x, target_y, click_effect=False)
 
+    async def mouse_down(self, x_ratio, y_ratio):
+        """按下鼠标"""
+        if not self.page: return
+        self._mark_active()
+        
+        target_x = x_ratio * VIEWPORT['width']
+        target_y = y_ratio * VIEWPORT['height']
+        
+        await self._ensure_cursor_visible()
+        await self.page.mouse.move(target_x, target_y) # 确保位置正确
+        await self._update_cursor_visual(target_x, target_y, click_effect=True) # 视觉反馈
+        await self.page.mouse.down()
+
+    async def mouse_move(self, x_ratio, y_ratio):
+        """移动鼠标"""
+        if not self.page: return
+        self._mark_active()
+        
+        target_x = x_ratio * VIEWPORT['width']
+        target_y = y_ratio * VIEWPORT['height']
+        
+        await self._ensure_cursor_visible()
+        # 移动时不带平滑步数，以保证实时性
+        await self.page.mouse.move(target_x, target_y)
+        # 保持点击特效（如果是拖拽中）- 这里简化为始终显示点击态可能不太好，
+        # 但为了拖拽时的视觉连贯性，我们可以假设 move 通常发生在 down 之后。
+        # 或者我们可以不传 click_effect，让它恢复默认，或者由调用者控制状态。
+        # 简单起见，move 时我们不强制改变 click_effect，但为了视觉跟手，我们更新位置。
+        # 如果是拖拽，通常希望保持“按下”的视觉状态。
+        # 由于 mouse_move 是无状态的，我们无法知道当前是否 down。
+        # 暂时不强制 click_effect=True，除非我们维护一个内部状态 self.is_pressed。
+        await self._update_cursor_visual(target_x, target_y, click_effect=True) 
+
+    async def mouse_up(self, x_ratio, y_ratio):
+        """抬起鼠标"""
+        if not self.page: return
+        self._mark_active()
+        
+        target_x = x_ratio * VIEWPORT['width']
+        target_y = y_ratio * VIEWPORT['height']
+        
+        await self._ensure_cursor_visible()
+        await self.page.mouse.move(target_x, target_y)
+        await self.page.mouse.up()
+        await self._update_cursor_visual(target_x, target_y, click_effect=False) # 恢复视觉
+
+    async def drag(self, start_x, start_y, end_x, end_y):
+        """执行完整的拖拽操作 (绝对坐标)"""
+        if not self.page: return
+        self._mark_active()
+        
+        await self._ensure_cursor_visible()
+        
+        # 1. 移动到起点
+        await self.page.mouse.move(start_x, start_y)
+        await self._update_cursor_visual(start_x, start_y, click_effect=False)
+        await asyncio.sleep(0.1)
+        
+        # 2. 按下
+        await self.page.mouse.down()
+        await self._update_cursor_visual(start_x, start_y, click_effect=True)
+        await asyncio.sleep(0.1)
+        
+        # 3. 移动到终点 (带步数平滑)
+        steps = 10
+        await self.page.mouse.move(end_x, end_y, steps=steps)
+        await self._update_cursor_visual(end_x, end_y, click_effect=True)
+        await asyncio.sleep(0.1)
+        
+        # 4. 抬起
+        await self.page.mouse.up()
+        await self._update_cursor_visual(end_x, end_y, click_effect=False)
+
     async def scroll(self, delta_y):
         # =================================
         #  🎉 页面滚动 (Y轴滚动量)
