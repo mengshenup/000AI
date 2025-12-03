@@ -113,7 +113,7 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
 
     # 2. 启动视频流 (由 StreamManager 接管)
     # await global_stream_manager.start_stream(user_id, websocket)
-    await send_impulse(websocket, "log", {"msg": f"✨ Session Ready for {user_id}!"})
+    await send_impulse(websocket, "log", {"msg": f"✨ 会话已就绪: {user_id}!"})
 
     # 3. 指令处理循环
     try:
@@ -140,17 +140,18 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                     key = message.get("key") # 📥 提取 API Key
                     if key: # ✅ 如果 Key 存在
                         global_gemini.update_key(key) # 🧠 更新大脑密钥
-                        await send_impulse(websocket, "log", {"msg": "🔑 API Key Updated via Discovery Window"}) # 📢 反馈更新成功
+                        await send_impulse(websocket, "log", {"msg": "🔑 API Key 已通过探索之窗更新"}) # 📢 反馈更新成功
                     
                 elif msg_type == "config_update": # ⚙️ 配置更新
                     quality = payload.get("quality")
                     fps = payload.get("fps")
                     global_stream_manager.update_config(user_id, fps=fps, quality=quality)
+                    print(f"服务器接收到{user_id}修改质量为{quality}、帧率为{fps}") # 📢 用户要求的特定日志格式
                     await send_impulse(websocket, "log", {"msg": f"⚙️ 画质已更新: {quality}, FPS: {fps}"})
 
                 elif msg_type == "browser_navigate": # 🌍 浏览器导航 (修正匹配前端)
                     url = payload.get("url")
-                    print(f"🌍 [DEBUG] 收到导航请求: {url}") # 🛠️ DEBUG
+                    print(f"🌍 [调试] 收到导航请求: {url}") # 🛠️ DEBUG
                     if url: 
                         session = await global_browser_manager.get_or_create_session(user_id) # 🎫 获取会话
                         page = session['page'] # 📄 获取页面对象
@@ -163,9 +164,9 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                         # 🚀 异步执行导航，防止阻塞 WebSocket 循环
                         async def safe_navigate(p, u):
                             try:
-                                print(f"🚀 [DEBUG] 正在前往 {u}...")
+                                print(f"🚀 [调试] 正在前往 {u}...")
                                 await p.goto(u, timeout=30000)
-                                print(f"✅ [DEBUG] 导航成功")
+                                print(f"✅ [调试] 导航成功")
                                 await send_impulse(websocket, "status", {"msg": f"已到达: {u}"})
                             except Exception as e:
                                 print(f"⚠️ 导航失败: {e}")
@@ -174,12 +175,42 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                         asyncio.create_task(safe_navigate(page, url))
                         await send_impulse(websocket, "status", {"msg": f"正在前往 {url}..."})
 
+                elif msg_type == "browser_back": # 🔙 后退
+                    session = await global_browser_manager.get_or_create_session(user_id)
+                    try:
+                        await session['page'].go_back()
+                        await send_impulse(websocket, "log", {"msg": "🔙 已后退"})
+                    except Exception as e:
+                        await send_impulse(websocket, "log", {"msg": f"⚠️ 后退失败: {e}"})
+
+                elif msg_type == "browser_forward": # 🔜 前进
+                    session = await global_browser_manager.get_or_create_session(user_id)
+                    try:
+                        await session['page'].go_forward()
+                        await send_impulse(websocket, "log", {"msg": "🔜 已前进"})
+                    except Exception as e:
+                        await send_impulse(websocket, "log", {"msg": f"⚠️ 前进失败: {e}"})
+
+                elif msg_type == "browser_refresh": # 🔄 刷新
+                    session = await global_browser_manager.get_or_create_session(user_id)
+                    try:
+                        await session['page'].reload()
+                        await send_impulse(websocket, "log", {"msg": "🔄 已刷新"})
+                    except Exception as e:
+                        await send_impulse(websocket, "log", {"msg": f"⚠️ 刷新失败: {e}"})
+
                 elif msg_type == "stream_control": # 📺 流控制
                     action = payload.get("action")
                     if action == "start":
                         await global_stream_manager.start_stream(user_id, websocket) # 🎬 开始直播
                     elif action == "stop":
                         global_stream_manager.stop_stream(user_id) # 🛑 停止直播
+
+                elif msg_type == "browser_kill_session": # 💀 强制销毁会话 (新增)
+                    print(f"💀 [指令] 收到用户 {user_id} 的会话销毁请求")
+                    global_stream_manager.stop_stream(user_id) # 🛑 先停止流
+                    await global_browser_manager.close_session(user_id) # 🛑 再关闭浏览器上下文
+                    await send_impulse(websocket, "log", {"msg": "💀 浏览器会话已销毁"})
 
                 elif msg_type == "click":
                     x, y = payload.get("x"), payload.get("y")

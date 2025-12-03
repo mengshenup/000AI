@@ -568,10 +568,19 @@ export class WindowManager {
 
             // 💖 修复：窗口只能通过标题栏拖拽 (解决内容区域点击冲突和调整大小失效问题)
             if (win) {
+                // 💖 特殊处理：小天使窗口 (win-companion) 允许任意位置拖拽
+                // 因为它没有标题栏，且需要支持拖拽移动
+                if (win.id === 'win-companion') {
+                    // 允许拖拽，除非点击的是交互元素 (如输入框、按钮)
+                    if (target.tagName === 'INPUT' || target.tagName === 'BUTTON' || target.closest('.angel-chat-box')) {
+                        return;
+                    }
+                    // 继续执行拖拽逻辑
+                }
                 // 如果点击的不是标题栏，且不是无边框窗口(无边框可能需要特殊处理，暂且允许任意拖拽或指定区域)
                 // 这里假设无边框窗口 (如 Widget) 也可以通过任意位置拖拽，或者它们有自己的拖拽区
                 // 但为了解决浏览器拖拽冲突，必须限制
-                if (!target.closest('.title-bar') && !win.classList.contains('frameless')) {
+                else if (!target.closest('.title-bar') && !win.classList.contains('frameless')) {
                     return; // 🛑 不是标题栏，不拖拽
                 }
                 // 如果是无边框窗口，可能需要允许拖拽，或者检查特定 class

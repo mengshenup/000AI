@@ -38,7 +38,7 @@ class StreamManager:
             if quality in ['high', 'medium', 'low']:
                 self.user_configs[user_id]['quality'] = quality
         
-        print(f"⚙️ [Stream] Config updated for {user_id}: {self.user_configs[user_id]}")
+        print(f"⚙️ [直播] 用户 {user_id} 配置已更新: {self.user_configs[user_id]}")
 
     async def start_stream(self, user_id: str, websocket: WebSocket):
         # =================================
@@ -78,10 +78,10 @@ class StreamManager:
         #     核心循环：获取 BrowserContext -> 获取 Page -> 截图 -> 发送。
         #     控制帧率以平衡性能。
         # =================================
-        print(f"📺 [Stream] Loop started for {user_id}")
+        print(f"📺 [直播] 用户 {user_id} 的循环已启动")
         try:
             # 发送调试消息给前端
-            await websocket.send_text(json.dumps({"type": "debug", "msg": f"Stream loop started for {user_id}"}))
+            await websocket.send_text(json.dumps({"type": "debug", "msg": f"直播流循环已启动: {user_id}"}))
             
             while True:
                 # 1. 获取用户的会话 (Session)
@@ -89,15 +89,15 @@ class StreamManager:
                 session = global_browser_manager.sessions.get(user_id)
                 if not session:
                     # print(f"⚠️ [Stream] No session for {user_id}")
-                    await websocket.send_text(json.dumps({"type": "debug", "msg": "Waiting for session..."}))
+                    await websocket.send_text(json.dumps({"type": "debug", "msg": "正在等待会话..."}))
                     await asyncio.sleep(1) # 😴 如果没有会话，等待
                     continue
 
                 # 2. 获取当前页面
                 page = session.get('page')
                 if not page:
-                    print(f"⚠️ [Stream] No page for {user_id}")
-                    await websocket.send_text(json.dumps({"type": "debug", "msg": "Session exists but no page!"}))
+                    print(f"⚠️ [直播] 用户 {user_id} 没有页面")
+                    await websocket.send_text(json.dumps({"type": "debug", "msg": "会话存在但无页面!"}))
                     await asyncio.sleep(0.5)
                     continue
 
@@ -126,20 +126,20 @@ class StreamManager:
                     global_cost_tracker.track_ws(tx=len(screenshot_b64))
                 else:
                     print(f"⚠️ 截图为空 ({user_id})")
-                    await websocket.send_text(json.dumps({"type": "debug", "msg": "Capture returned empty!"}))
+                    await websocket.send_text(json.dumps({"type": "debug", "msg": "截图返回为空!"}))
 
                 # 5. 控制帧率
                 await asyncio.sleep(1.0 / current_fps)
 
         except asyncio.CancelledError:
-            print(f"🛑 [Stream] Loop cancelled for {user_id}")
+            print(f"🛑 [直播] 用户 {user_id} 的循环已取消")
             pass # 🛑 任务被取消
         except Exception as e:
             print(f"⚠️ 直播流出错 ({user_id}): {e}")
             import traceback
             traceback.print_exc()
             try:
-                await websocket.send_text(json.dumps({"type": "debug", "msg": f"Stream Error: {str(e)}"}))
+                await websocket.send_text(json.dumps({"type": "debug", "msg": f"直播流错误: {str(e)}"}))
             except: pass
             self.stop_stream(user_id)
 

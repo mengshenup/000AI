@@ -593,20 +593,46 @@ export class AngelApp {
         // 阻止默认右键
         this.container.addEventListener('contextmenu', (e) => e.preventDefault()); // 💖 禁用默认右键菜单
 
+        // 💖 交互事件处理
+        // 1. 鼠标按下 (mousedown) - 只要按下去就触发气泡，保证"每次点击/拖动都有反馈"
         this.container.addEventListener('mousedown', (e) => {
-            if (e.button === 0) { // 💖 左键点击
-                // 🛑 如果点击的是聊天框内部，不要触发 toggleChat
+            if (e.button === 0) {
+                this.chat(); // 🗣️ 立即显示气泡 (满足"不管是拖动还是干嘛，都要弹出一条气泡")
+            } else if (e.button === 2) { 
+                this.handleRightClick(e); 
+            }
+        });
+
+        // 2. 左键点击 (click) - 触发聊天窗口
+        // 注意：WindowManager 在拖拽发生时会调用 e.preventDefault()，这会自动阻止 click 事件触发
+        // 所以这里不需要额外的 diff 计算或状态判断，浏览器和 WM 会帮我们处理好 "拖拽时不触发点击"
+        this.container.addEventListener('click', (e) => {
+            if (e.button === 0) { 
+                // 🛑 过滤聊天框内部点击
                 if (e.target.closest('#angel-chat')) return;
                 
-                this.toggleChat(); // 💖 切换聊天框显示
-                // 拖拽逻辑由 WindowManager 全局接管，无需手动调用
-            } else if (e.button === 2) { // 💖 右键点击
-                this.handleRightClick(e); // 💖 处理旋转逻辑
+                this.toggleChat(); // 💖 切换聊天窗口
             }
         });
 
         // 💖 绑定聊天框事件
         this.bindChatEvents();
+
+        // 3. 💖 全局点击监听：点击外部区域关闭聊天框
+        // 💡 体验优化：用户点击桌面或其他地方时，自动收起聊天框
+        document.addEventListener('mousedown', (e) => {
+            const chatBox = document.getElementById('angel-chat');
+            // 如果聊天框没打开，或者点击的是 Angel 内部元素，就忽略
+            if (!chatBox || !chatBox.classList.contains('active')) return;
+            
+            // 获取 Angel 的主容器 (包含 3D 场景、气泡和聊天框)
+            const angelContainer = document.getElementById('angel-container');
+            
+            // 如果点击目标不在 Angel 容器内，说明点到了外面 -> 关闭它！
+            if (angelContainer && !angelContainer.contains(e.target)) {
+                this.toggleChat(); 
+            }
+        });
     }
 
     // =================================

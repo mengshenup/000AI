@@ -18,11 +18,21 @@ import asyncio # ⚡ 异步 I/O
 
 sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 字节码文件，保持目录整洁
 
-if __name__ == "__main__": # 🏁 判断是否为主程序运行
-    # 🔍 Windows 事件循环策略 (必须在 uvicorn 启动前设置)
-    if sys.platform.startswith("win"):
-        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy()) # 🪟 适配 Windows 异步 IO
+# 🛡️ 关键修复：在模块级别设置事件循环策略
+# 这样当 Uvicorn 热重载子进程导入此模块时，策略会立即生效
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
+# 🔗 导入 app 对象 (供 uvicorn worker 使用)
+# 这样我们可以直接用 "Brain.main:app" 启动，确保 worker 进程也执行上面的策略设置
+try:
+    from Nerve.fastapi_app import app
+except ImportError:
+    # 容错：如果是直接运行此文件且路径未设置，可能找不到模块
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from Nerve.fastapi_app import app
+
+if __name__ == "__main__": # 🏁 判断是否为主程序运行
     # =================================
     #  🎉 启动服务器 (无参数)
     #
@@ -39,10 +49,10 @@ if __name__ == "__main__": # 🏁 判断是否为主程序运行
     print(f"📂 正在监听目录: {os.getcwd()}") # 📂 打印当前工作目录，方便确认路径
     
     uvicorn.run( # 🏃‍♂️ 运行 Uvicorn 服务器
-        "Nerve.fastapi_app:app", # 📦 指定 FastAPI 应用入口，格式为 "模块名:实例名"
+        "Brain.main:app", # 📦 修改为指向当前文件，确保 worker 进程加载此文件并执行策略设置
         host="0.0.0.0", # 🌐 监听所有网络接口，允许局域网访问
         port=8000, # 🚪 服务端口号，默认为 8000
-        reload=False, # 🔄 开启热重载（开发模式），代码修改后自动重启
+        reload=True, # 🔄 开启热重载（开发模式），代码修改后自动重启
         reload_dirs=["."],  # 📂 监听当前目录下所有文件的变动
         reload_excludes=["Memorybank", "Memorybank/*", "*.log", "*.tmp", ".git", "*.md", "*.bat", "*.txt", "Debug/*"], # 🚫 排除频繁变动的目录和文档，防止死循环重启
         workers=1 # 👷 工作进程数量，开发模式下通常为 1

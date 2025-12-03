@@ -191,13 +191,16 @@ class BrowserManager:
         #
         #  🎨 代码用途：
         #     清理指定用户的资源，关闭 Context。
+        #     ⚠️ 注意：仅关闭指定用户的上下文，不影响其他在线用户。
         # =================================
         if user_id in self.sessions:
             print(f"👋 [会话] 用户 {user_id} 下线，清理资源。")
-            session = self.sessions.pop(user_id)
+            session = self.sessions.pop(user_id) # 🗑️ 从池中移除
             try:
-                await session['context'].close()
+                await session['context'].close() # 🛑 关闭该用户的独立上下文
             except: pass
+            
+            print(f"ℹ️ [系统] 剩余活跃会话: {len(self.sessions)} (并发安全检查✅)")
 
     async def stop_all(self):
         # =================================

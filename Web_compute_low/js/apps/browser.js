@@ -3,7 +3,7 @@ export const config = {
     //  🎉 浏览器配置 (Browser Config)
     //
     //  🎨 代码用途：
-    //     定义“全视之眼”浏览器的基础元数据和界面结构。
+    //     定义“探索之窗”浏览器的基础元数据和界面结构。
     //
     //  💡 易懂解释：
     //     这是小天使的“望远镜”！通过它，你可以看到服务器那边的网页，还能远程操控哦~ 🔭
@@ -27,11 +27,18 @@ export const config = {
         <!-- 💖 浏览器地址栏容器 -->
         <div style="padding:8px; background:#f1f2f6; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #ddd;">
             <div style="display:flex; gap:8px;">
+                <!-- 💖 导航按钮 -->
+                <button id="btn-browser-back" style="padding:4px 8px; cursor:pointer;" title="后退">⬅️</button>
+                <button id="btn-browser-forward" style="padding:4px 8px; cursor:pointer;" title="前进">➡️</button>
+                <button id="btn-browser-refresh" style="padding:4px 8px; cursor:pointer;" title="刷新">🔄</button>
+                
                 <!-- 💖 网址输入框 -->
                 <input type="text" id="browser-url" placeholder="https://www.douyin.com/"
                     style="flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
                 <!-- 💖 前往按钮 -->
                 <button id="btn-browser-go" style="padding:4px 12px; cursor:pointer;">前往</button>
+                <!-- 💖 重连按钮 (新增) -->
+                <button id="btn-browser-reconnect" style="padding:4px 8px; cursor:pointer; color:red;" title="强制重连直播流">🔌</button>
             </div>
             
             <!-- 💖 智能任务栏 (AI Task Bar) -->
@@ -114,6 +121,19 @@ class BrowserApp {
             if (this.isDestroyed) return; // 💖 如果已销毁，不处理
             network.send('click', pos); // 💖 将点击坐标通过网络发送给服务器
         });
+
+        // 💖 监听重连按钮点击
+        const btnReconnect = document.getElementById('btn-browser-reconnect');
+        if (btnReconnect) {
+            btnReconnect.onclick = () => {
+                console.log("🔌 用户手动触发重连...");
+                bus.emit('system:speak', "正在尝试重连直播流... 🔄");
+                network.send({ type: 'stream_control', action: 'stop' }); // 先停止
+                setTimeout(() => {
+                    network.send({ type: 'stream_control', action: 'start' }); // 再启动
+                }, 500);
+            };
+        }
         
         // 监听状态更新
         bus.on('net:status', (msg) => { // 👂 监听网络状态
@@ -145,6 +165,12 @@ class BrowserApp {
     // =================================
     onDestroy() {
         this.isDestroyed = true; // 🚩 标记为已销毁
+        
+        // 🆕 新增：发送会话销毁指令，确保服务器端清理僵尸进程
+        // 这样下次打开时会创建一个全新的干净会话
+        console.log("👋 [Browser] Sending kill session command...");
+        network.send({ type: 'browser_kill_session' });
+
         // 💖 停止视频流更新 (如果 img 标签还在，将其 src 置空以断开连接)
         const img = document.getElementById('live-image'); // 🔍 获取图片元素
         if (img) { // ✅ 如果存在
@@ -302,6 +328,14 @@ class BrowserApp {
         // === 浏览器控制逻辑 ===
         const btnGo = document.getElementById('btn-browser-go'); // 💖 获取“前往”按钮 DOM 元素
         const inputUrl = document.getElementById('browser-url'); // 💖 获取地址输入框 DOM 元素
+        const btnBack = document.getElementById('btn-browser-back'); // 🔙 后退
+        const btnForward = document.getElementById('btn-browser-forward'); // 🔜 前进
+        const btnRefresh = document.getElementById('btn-browser-refresh'); // 🔄 刷新
+
+        // 绑定导航按钮事件
+        if (btnBack) btnBack.onclick = () => network.send({ type: 'browser_back' });
+        if (btnForward) btnForward.onclick = () => network.send({ type: 'browser_forward' });
+        if (btnRefresh) btnRefresh.onclick = () => network.send({ type: 'browser_refresh' });
         
         // 监听来自服务器的 URL 更新消息
         bus.on('net:url_update', (newUrl) => { // 👂 监听 URL 更新
@@ -383,25 +417,20 @@ class BrowserApp {
             // 鼠标悬停在屏幕上时显示进度条
             remoteScreen.addEventListener('mouseenter', () => progressBar.style.display = 'block'); // 💖 显示进度条
             // 鼠标离开屏幕时隐藏进度条
-            remoteScreen.addEventListener('mouseleave', () => progressBar.style.display = 'none'); // 💖 隐藏进度条
-
-            // 点击进度条跳转
-            progressBar.addEventListener('click', (e) => { // 🖱️ 绑定点击事件
-                e.stopPropagation(); // 💖 阻止事件冒泡，防止触发 remoteScreen 的点击事件
-                const rect = progressBar.getBoundingClientRect(); // 💖 获取进度条的尺寸和位置信息
-                // 计算点击位置在进度条上的百分比 (0-100)
-                const percent = ((e.clientX - rect.left) / rect.width) * 100; // 💖 计算百分比
-                network.send({ type: 'video_drag', progress: percent }); // 💖 发送拖拽指令给服务器
-                bus.emit('system:speak', `跳转到 ${Math.round(percent)}%`); // 💖 让小天使语音播报跳转进度
-            });
+            remoteScreen.addEventListener('mouseleave', () => progressBar.style.display = 'none');
         }
 
         // === 远程点击逻辑 ===
         if (remoteScreen) { // 💖 确保遮罩层存在
             remoteScreen.addEventListener('click', (e) => { // 🖱️ 绑定点击事件
+                console.log("🖱️ [Browser] Remote screen clicked"); // 🛠️ Debug Log
+
                 // 🛠️ 优化：只有当窗口处于激活状态（最前端）时，才发送点击事件
                 // 防止用户在操作其他窗口时误触后台的浏览器画面，同时也节省带宽
-                if (wm.activeWindowId !== config.id) return; // 🛑 如果不是激活窗口，忽略
+                if (wm.activeWindowId !== config.id) {
+                    console.log(`🛑 [Browser] Window not active (Active: ${wm.activeWindowId}, This: ${config.id})`);
+                    return; // 🛑 如果不是激活窗口，忽略
+                }
 
                 // 如果点击的是进度条，不触发远程点击（双重保险）
                 if (e.target.closest('#video-progress-bar')) return; // 💖 如果点击目标是进度条内部，直接返回
@@ -409,9 +438,20 @@ class BrowserApp {
                 const img = document.getElementById('live-image'); // 💖 获取实时画面图片元素
                 
                 // 📺 新增逻辑：如果画面未显示（黑屏），点击则开始传输
-                if (!img || img.style.display === 'none' || img.src === '' || img.src.endsWith('undefined')) {
+                // 增加更宽松的判断条件，防止 img 元素存在但无内容
+                const isImageVisible = img && img.style.display !== 'none' && img.src && !img.src.endsWith('undefined') && img.src.length > 100;
+                
+                if (!isImageVisible) {
+                    console.log("📺 [Browser] Image not visible, sending start stream command...");
                     network.send({ type: 'stream_control', action: 'start' });
                     bus.emit('system:speak', "开始传输画面 📡");
+                    
+                    // 强制显示 loading 状态
+                    const overlay = document.getElementById('browser-status-overlay');
+                    if (overlay) {
+                        overlay.style.display = 'block';
+                        overlay.innerText = "正在连接直播流...";
+                    }
                     return;
                 }
 
@@ -424,11 +464,6 @@ class BrowserApp {
                 });
             });
         }
-
-        // 监听“远程点击”命令 (从 main.js 移过来的逻辑，这里直接处理)
-        // bus.on('cmd:remote_click', (pos) => {
-        //    network.send('click', pos); // 💖 将点击坐标通过网络发送给服务器
-        // });
     }
 }
 

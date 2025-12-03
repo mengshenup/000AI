@@ -138,6 +138,6 @@ if __name__ == "__main__":
         app, # 📦 运行的应用实例
         host="0.0.0.0", # 🌐 监听地址
         port=8000,      # 🚪 监听端口
-        reload=False,   # 🚫 关闭热重载 (生产模式)
+        reload=True,    # 🔥 开启热重载 (开发模式)
         workers=1       # 👷 工作进程数
     )

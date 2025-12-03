@@ -64,6 +64,7 @@ Write-Host "`n✅ 正在打开浏览器: http://localhost:5500" -ForegroundColor
 Start-Process "http://localhost:5500"
 
 Write-Host "`n🎉 启动流程结束！" -ForegroundColor Magenta
+Write-Host "💡 提示: 各个服务窗口现已支持 [按回车键重启] 功能。" -ForegroundColor Yellow
 Write-Host "按任意键退出启动器..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
