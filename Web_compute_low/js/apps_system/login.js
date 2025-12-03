@@ -75,6 +75,12 @@ export const loginApp = {
         // 🆕 监听用户数据更新 (用于持久化本地 DB)
         bus.on('system:user_updated', (user) => this.saveLocalUser(user));
         
+        // 🆕 监听网络连接事件，重新发送认证信息
+        bus.on('network:connected', () => {
+            console.log("Login: Network connected, resyncing user state...");
+            if (this.currentUser) this.updateSystemUser();
+        });
+        
         // 尝试自动登录
         this.autoLogin();
     },
@@ -231,10 +237,20 @@ export const loginApp = {
         
         // 发送 Key 给服务器 (如果有选中的 Key)
         if (this.currentUser.keys.length > 0) { // 💖 如果用户有 API Key
-            // 默认使用第一个 Key
-            const activeKey = this.currentUser.keys[0].value; // 💖 获取第一个 Key
-            localStorage.setItem('angel_api_key', activeKey); // 缓存 Key // 💖 缓存 API Key
-            network.send({ type: 'auth', key: activeKey }); // 💖 发送认证请求
+            // 1. 尝试获取用户之前选择的 Key
+            let activeKey = localStorage.getItem('angel_api_key');
+            
+            // 2. 验证该 Key 是否属于当前用户 (防止切换用户后使用了上一个用户的 Key)
+            const isValidKey = activeKey && this.currentUser.keys.some(k => k.value === activeKey);
+            
+            // 3. 如果无效或未设置，不自动回退，而是清除状态
+            if (!isValidKey) {
+                console.log("Login: Cached key invalid for current user, clearing...");
+                localStorage.removeItem('angel_api_key');
+                network.send({ type: 'auth', key: '' }); // 🧹 清除后端 Key
+            } else {
+                network.send({ type: 'auth', key: activeKey }); // 💖 发送认证请求
+            }
         }
         
         // 重新加载该用户的窗口布局

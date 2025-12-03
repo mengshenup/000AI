@@ -173,6 +173,15 @@ class BrowserApp {
     // =================================
     init() {
         this.isDestroyed = false; // 💖 重置销毁标志
+        
+        // 🔑 检查 API Key 状态
+        if (!localStorage.getItem('angel_api_key')) {
+            setTimeout(() => {
+                bus.emit('system:speak', "探索功能需要 API Key，请在左下角设置 🔑");
+                bus.emit('system:open_key_mgr'); // 🔑 自动打开密钥管理器
+            }, 800);
+        }
+
         this.bindEvents(); // 💖 绑定基础按钮事件（如前往、分析）
         this.setupRemoteControl(); // 💖 设置远程控制逻辑（如点击画面、拖动进度条）
         
@@ -287,6 +296,13 @@ class BrowserApp {
         
         if (btnTask && inputTask) { // ✅ 如果元素存在
             btnTask.onclick = () => { // 🖱️ 绑定点击事件
+                // 🛡️ 再次检查 Key
+                if (!localStorage.getItem('angel_api_key')) {
+                    bus.emit('system:speak', "请先配置 API Key 才能执行任务哦 🛑");
+                    bus.emit('system:open_key_mgr');
+                    return;
+                }
+
                 const goal = inputTask.value; // 📝 获取任务目标
                 if (goal) { // ✅ 如果目标不为空
                     network.send({ type: 'task', goal: goal }); // 💖 发送任务指令

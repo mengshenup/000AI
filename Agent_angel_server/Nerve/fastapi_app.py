@@ -18,17 +18,17 @@ import subprocess
 
 sys.dont_write_bytecode = True # 🚫 禁止生成 .pyc 文件
 
-# 🔄 加载环境变量 (从 Web_compute_high/Memorybank/.env)
+# 🔄 加载环境变量 (已移除对 Web_compute_high 的依赖)
 # 修正路径：Agent_angel_server/Nerve/fastapi_app.py -> Agent_angel_server -> 000AI -> Web_compute_high -> Memorybank
-current_dir = os.path.dirname(os.path.abspath(__file__))
-workspace_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir))) # 假设结构为 Agent_angel_server/Nerve
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# workspace_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir))) # 假设结构为 Agent_angel_server/Nerve
 # 实际上: __file__ = .../Agent_angel_server/Nerve/fastapi_app.py
 # dirname -> .../Agent_angel_server/Nerve
 # dirname -> .../Agent_angel_server
 # dirname -> .../000AI
-workspace_dir = os.path.dirname(os.path.dirname(current_dir))
-env_path = os.path.join(workspace_dir, "Web_compute_high", "Memorybank", ".env") 
-load_dotenv(env_path) # 🔑 加载环境变量
+# workspace_dir = os.path.dirname(os.path.dirname(current_dir))
+# env_path = os.path.join(workspace_dir, "Web_compute_high", "Memorybank", ".env") 
+# load_dotenv(env_path) # 🔑 加载环境变量
 
 import asyncio # ⚡ 异步 I/O 库
 import warnings # ⚠️ 警告控制模块

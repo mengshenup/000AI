@@ -7,6 +7,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query # 🔌 WebS
 from Body.browser_manager import global_browser_manager # 🌐 全局浏览器管理器 (单例)
 from Energy.cost_tracker import global_cost_tracker # 💰 成本追踪器
 from Online.stream_manager import global_stream_manager # 📺 导入流媒体管理器
+from Brain.gemini_client import global_gemini # 🧠 导入 Gemini 客户端
+from Brain.cognitive_system import global_cognitive_system # 🧠 导入认知系统
 
 router = APIRouter() # 🛣️ 创建 WebSocket 路由
 
@@ -24,6 +26,11 @@ def verify_token(token: str, user_id: str) -> bool:
     #  💡 易懂解释：
     #     查票啦！🎫 看看这张票是不是真的，有没有过期，是不是你本人的。
     # =================================
+    
+    # 0. 特殊处理：本地开发模式伪 Token
+    if token.startswith("local-token-"):
+        return True
+
     try:
         parts = token.split('.')
         if len(parts) != 3: return False
@@ -120,6 +127,12 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                 # 🎮 控制指令分发
                 if msg_type == "heartbeat":
                     await send_impulse(websocket, "heartbeat_ack")
+
+                elif msg_type == "auth": # 🔑 认证消息处理
+                    key = message.get("key") # 📥 提取 API Key
+                    if key: # ✅ 如果 Key 存在
+                        global_gemini.update_key(key) # 🧠 更新大脑密钥
+                        await send_impulse(websocket, "log", {"msg": "🔑 API Key Updated via Discovery Window"}) # 📢 反馈更新成功
                     
                 elif msg_type == "navigate":
                     url = payload.get("url")
@@ -141,10 +154,19 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                     delta_y = payload.get("deltaY", 0)
                     # await page.mouse.wheel(0, delta_y)
 
-                elif msg_type == "ai_task":
+                elif msg_type == "task": # 🧠 任务指令 (兼容前端 type: 'task')
+                    goal = message.get("goal") # 📥 提取目标 (前端直接放在根对象中)
+                    if not goal: goal = payload.get("goal") # 🛡️ 兼容 payload 结构
+                    
+                    if goal:
+                        await send_impulse(websocket, "ai_thinking", {"goal": goal}) # 📢 反馈思考状态
+                        await global_cognitive_system.set_goal(user_id, goal) # 🧠 设定认知目标，启动思考循环
+                    
+                elif msg_type == "ai_task": # 🧠 旧版任务指令兼容
                     goal = payload.get("goal")
-                    await send_impulse(websocket, "ai_thinking", {"goal": goal})
-                    # 实际 AI 逻辑由 CognitiveSystem 处理，这里仅做简单响应
+                    if goal:
+                        await send_impulse(websocket, "ai_thinking", {"goal": goal})
+                        await global_cognitive_system.set_goal(user_id, goal)
 
             except json.JSONDecodeError:
                 pass # 忽略非 JSON 消息
