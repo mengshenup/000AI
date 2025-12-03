@@ -321,14 +321,24 @@ window.onload = async () => {
 
         // 5. 清理僵尸数据
         // 💖 收集所有有效的应用 ID，包括主应用 ID 和关联的子应用 ID (如 win-billing)
-        const validIds = allModules.flatMap(m => {
-            const ids = [m.id];
+        // 修复：必须包含所有已注册的应用 (apps)，而不仅仅是已加载的模块 (allModules)
+        // 否则会导致未打开的应用配置 (如桌面位置) 被误删
+        const validIds = new Set();
+        
+        // 1. 添加所有已加载模块的 ID (系统应用 + 已打开的用户应用)
+        allModules.forEach(m => {
+            validIds.add(m.id);
             if (m.config && m.config.relatedApps) {
-                ids.push(...m.config.relatedApps);
+                m.config.relatedApps.forEach(id => validIds.add(id));
             }
-            return ids;
         });
-        store.prune(validIds); // 💖 移除 Store 中多余的应用数据
+
+        // 2. 添加所有已注册的用户应用 ID (来自服务器列表)
+        apps.forEach(app => {
+            if (app.id) validIds.add(app.id);
+        });
+
+        store.prune(Array.from(validIds)); // 💖 移除 Store 中多余的应用数据
 
         // 6. 启动窗口管理器
         wm.init(); // 🚀 初始化窗口管理器

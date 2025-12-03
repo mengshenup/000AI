@@ -29,6 +29,7 @@ def get_default_data():
                 "sys-taskbar": { "name": "Taskbar", "version": "1.0.0", "isSystem": True, "filename": "taskbar.js" },
                 "sys-desktop": { "name": "Desktop", "version": "1.0.0", "isSystem": True, "filename": "desktop.js" },
                 "sys-context-menu": { "name": "Context Menu", "version": "1.0.0", "isSystem": True, "filename": "context_menu.js" },
+                "sys-keymgr": { "name": "Key Manager", "version": "1.0.0", "isSystem": True, "filename": "key_manager.js" },
                 "app-login": { "name": "Login", "version": "1.0.0", "isSystem": True, "filename": "login.js" },
                 "win-companion": { "name": "Angel System", "version": "1.0.0", "isSystem": True, "filename": "angel.js" },
                 "svc-billing": { "name": "Billing", "version": "1.0.0", "isSystem": True, "filename": "billing.js" },

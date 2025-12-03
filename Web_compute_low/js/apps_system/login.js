@@ -3,12 +3,16 @@
    ⚡ 逻辑摘要 : 管理用户认证、本地缓存自动登录及离线模式回退。
    💡 易懂解释 : 这是系统的门卫，负责检查你的通行证 (Token)！👮‍♂️
    🔋 未来扩展 : 支持多用户切换和生物识别登录。
-   📊 当前状态 : 活跃 (2025-12-02)
+   📊 当前状态 : 活跃 (2025-12-03)
+   🧱 login.js 踩坑记录 (累积，勿覆盖) :
+      1. [2025-12-03] [已修复] [引用错误]: 缺少 store 导入导致 updateSystemUser 报错 -> 添加 import { store } (Line 12)
+      2. [2025-12-03] [已修复] [连接失败]: 本地模式下缺少 Token 导致 WebSocket 拒绝连接 -> 注入伪 Token (Line 160, 350)
    ========================================================================== */
 
 import { bus } from '../system/event_bus.js'; // 💖 引入事件总线
 import { network } from '../system/network.js'; // 💖 引入网络模块
 import { WEB_API_URL } from '../system/config.js'; // 🌐 导入 Web API 地址
+import { store } from '../system/store.js'; // 💾 导入状态存储
 
 export const VERSION = '1.0.0'; // 💖 版本号
 
@@ -156,6 +160,12 @@ export const loginApp = {
             
             // 自动保存并登录
             this.saveLocalUser(this.currentUser); // 🆕 保存到 DB
+            
+            // 🆕 修复：本地模式下生成伪 Token，确保 network.js 允许连接
+            if (!localStorage.getItem('angel_auth_token')) {
+                localStorage.setItem('angel_auth_token', `local-token-${Date.now()}`);
+            }
+
             this.updateSystemUser();
             network.connect();
             bus.emit('system:speak', "默认本地账户已登录");
@@ -433,6 +443,13 @@ export const loginApp = {
 
             this.close();
             this.saveLocalUser(this.currentUser); // 🆕 立即保存初始状态到 DB
+            
+            // 🆕 修复：本地模式下生成伪 Token，确保 network.js 允许连接
+            // 只有当没有 Token 时才设置，避免覆盖可能存在的有效 Token
+            if (!localStorage.getItem('angel_auth_token')) {
+                localStorage.setItem('angel_auth_token', `local-token-${Date.now()}`);
+            }
+
             this.updateSystemUser();
             bus.emit('system:speak', `欢迎回来，${this.currentUser.name}`);
             

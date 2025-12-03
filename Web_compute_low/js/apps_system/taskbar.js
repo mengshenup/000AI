@@ -68,13 +68,17 @@ function bindStartButton() {
     const btnStart = document.getElementById('btn-start'); // 💖 获取开始按钮元素
     if (btnStart) { // 💖 如果按钮存在
         btnStart.onclick = () => {
+            console.log("[Taskbar] Start button clicked");
             // 💖 检查是否已登录 (通过 localStorage 或 store)
             const userId = localStorage.getItem('current_user_id');
+            console.log("[Taskbar] Current User ID:", userId);
             if (userId) {
                 // 已登录，打开 Key 管理器
+                console.log("[Taskbar] Emitting system:open_key_mgr");
                 bus.emit('system:open_key_mgr');
             } else {
                 // 未登录，打开登录界面
+                console.log("[Taskbar] Emitting system:open_login");
                 bus.emit('system:open_login');
             }
         };

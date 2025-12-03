@@ -1,4 +1,5 @@
 import { DEFAULT_APPS, WEB_API_URL } from './config.js'; // ⚙️ 导入默认配置
+import { bus } from './event_bus.js'; // 🚌 导入事件总线 (用于通知 UI 更新)
 
 export const VERSION = '1.0.0'; // 💖 系统核心模块版本号
 
@@ -126,16 +127,28 @@ class Store {
                 console.log("📂 从本地缓存加载 Memorybank");
                 this.apps = data.apps || {};
                 if (data.installedApps) this.installedApps = data.installedApps;
-                return; // ✅ 命中缓存，直接返回
+                
+                // 💖 即使有本地缓存，也可以选择是否后台同步 (目前策略：有缓存则不阻塞，但也不后台同步，节省流量)
+                // 如果需要"读取服务器里未同步的配置信息"，可以在这里加逻辑，但为了"节省服务器流量"，我们直接返回
+                
+                // 💖 2025-12-03 优化：本地优先，但后台静默同步 (Stale-While-Revalidate)
+                // 这样既能秒开，又能保证云端数据最终一致，不会"弃用云端"
+                this.syncFromServerBackground(userId); 
+                return; // ✅ 命中缓存，直接返回 (让 UI 先跑起来)
             } catch (e) {
                 console.warn("⚠️ 本地缓存数据损坏，尝试从服务器加载");
             }
         }
 
-        // 2. 尝试从服务器加载
+        // 2. 尝试从服务器加载 (带超时控制)
+        const controller = new AbortController(); // ⏱️ 创建控制器
+        const timeoutId = setTimeout(() => controller.abort(), 3000); // ⏳ 3秒超时
+
         try {
             // 修正：使用 memory_window.json 并传递 user_id
-            const res = await fetch(`${WEB_API_URL}/load_memory?user_id=${userId}`); // 📡 发起网络请求
+            const res = await fetch(`${WEB_API_URL}/load_memory?user_id=${userId}`, {
+                signal: controller.signal // 📶 绑定信号
+            }); 
             const data = await res.json(); // 📦 解析 JSON 响应
             if (data) { // ✅ 如果有数据
                 console.log("☁️ 从服务器加载 Memorybank");
@@ -149,9 +162,77 @@ class Store {
                 localStorage.setItem(cacheKey, JSON.stringify(data));
             }
         } catch (e) { // 🛡️ 捕获异常
-            console.error("无法加载布局 (服务器不可用):", e); // ❌ 打印错误
+            if (e.name === 'AbortError') {
+                console.warn("⏳ 加载布局超时 (服务器响应慢)，跳过");
+            } else {
+                console.error("无法加载布局 (服务器不可用):", e); // ❌ 打印错误
+            }
             // 3. 默认空状态 (构造函数中已初始化为空对象，此处无需操作)
             console.log("🆕 使用默认空 Memorybank");
+        } finally {
+            clearTimeout(timeoutId); // 🧹 清理定时器
+        }
+    }
+
+    // 💖 后台静默同步 (Background Sync)
+    async syncFromServerBackground(userId) {
+        console.log("☁️ [后台] 开始同步云端数据...");
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // ⏳ 10秒超时，后台可以宽容点
+
+        try {
+            const res = await fetch(`${WEB_API_URL}/load_memory?user_id=${userId}`, {
+                signal: controller.signal
+            });
+            const data = await res.json();
+            
+            if (data) {
+                console.log("☁️ [后台] 云端数据已获取，正在合并...");
+                let hasChanges = false;
+
+                // 1. 合并 installedApps (元数据，以服务器为准，补充本地缺失的)
+                if (data.installedApps) {
+                    // 遍历服务器的 installedApps
+                    Object.keys(data.installedApps).forEach(id => {
+                        // 如果本地没有，或者版本不同，则更新
+                        // 这里简单起见，只要服务器有，就合并进来 (Object.assign 浅拷贝)
+                        if (!this.installedApps[id]) {
+                            this.installedApps[id] = data.installedApps[id];
+                            hasChanges = true;
+                        }
+                    });
+                }
+
+                // 2. 合并 apps (状态，以本地为准，只补充缺失项)
+                // ⚠️ 关键策略：绝对不覆盖本地已存在的状态，防止用户操作时窗口跳变
+                if (data.apps) {
+                    Object.keys(data.apps).forEach(id => {
+                        if (!this.apps[id]) {
+                            // 本地没有，服务器有 -> 新增 (可能是其他设备安装的)
+                            this.apps[id] = data.apps[id];
+                            hasChanges = true;
+                            console.log(`☁️ [后台] 同步新增应用: ${id}`);
+                        }
+                    });
+                }
+
+                if (hasChanges) {
+                    this.save(); // 💾 保存合并后的结果到本地和服务器
+                    console.log("☁️ [后台] 数据合并完成，已保存");
+                    
+                    // 📢 通知 UI 更新 (例如桌面图标)
+                    // 只有当确实有新应用时才刷新，避免无意义的重绘
+                    bus.emit('system:apps_loaded'); 
+                } else {
+                    console.log("☁️ [后台] 本地已是最新，无需更新");
+                }
+            }
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                console.warn("☁️ [后台] 云端同步失败 (非致命):", e);
+            }
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 
@@ -323,13 +404,22 @@ class Store {
         //     data 参数应该是一个对象。如果传入 null 或非对象，可能会导致数据损坏。
         // =================================
 
-        if (this.apps[id]) { // ✅ 如果应用存在
+        if (!this.apps[id]) { // 🆕 如果应用在 apps 中不存在 (例如懒加载应用首次被拖拽)
+            // 尝试从 installedApps 获取元数据
+            const installed = this.installedApps[id];
+            if (installed) {
+                // 初始化应用状态，合并元数据和新数据
+                this.apps[id] = { ...installed, ...data };
+            } else {
+                // 兜底：如果连 installedApps 都没有，直接创建 (防止报错)
+                this.apps[id] = { ...data };
+            }
+        } else {
             // 使用展开运算符 ... 合并新旧数据
-            // 比如旧数据是 {x:1, y:1}, 新数据是 {x:2}, 合并后就是 {x:2, y:1}
             this.apps[id] = { ...this.apps[id], ...data }; // 🔄 合并数据
-            // 保存更改
-            this.save(); // 💾 保存到持久化存储
         }
+        // 保存更改
+        this.save(); // 💾 保存到持久化存储
     }
 
     setAppMetadata(id, metadata) {
