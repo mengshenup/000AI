@@ -16,9 +16,9 @@ class CaptchaSolver:
     #     Angel 遇到了拦路虎（验证码）！🐯 别怕，它会拍张照发给大脑，大脑会告诉它：“往右拉一点点，对，就是那里！”
     # =================================
 
-    async def solve_slider(self, page, screenshot_bytes):
+    async def solve_slider(self, page, screenshot_bytes, api_key=None):
         # =================================
-        #  🎉 解决滑块 (Playwright页面, 截图字节)
+        #  🎉 解决滑块 (Playwright页面, 截图字节, API Key)
         #
         #  🎨 代码用途：
         #     1. 调用 Gemini 识别滑块按钮中心和缺口中心。
@@ -29,13 +29,19 @@ class CaptchaSolver:
         #     看图 -> 找点 -> 拖动！一气呵成！✨
         # =================================
         
-        if not global_gemini.model:
-            print("🧠 [Captcha] Gemini not available.")
+        if not api_key:
+            print("🧠 [Captcha] No API Key provided.")
             return False
 
         print("🧠 [Captcha] Analyzing screenshot for slider...")
         
         try:
+            # 🆕 动态使用 GeminiClient 发现的最佳视觉模型
+            model_name = global_gemini.best_vision_model_name
+            if not model_name: model_name = 'gemini-1.5-flash'
+                
+            print(f"🧠 [Captcha] Using vision model: {model_name}")
+            
             image = PIL.Image.open(io.BytesIO(screenshot_bytes))
             
             # 1. 询问 Gemini 坐标
@@ -50,39 +56,59 @@ class CaptchaSolver:
                 "button": {"x": float, "y": float},
                 "target": {"x": float, "y": float}
             }
+            Example: {"button": {"x": 0.1, "y": 0.8}, "target": {"x": 0.6, "y": 0.4}}
             """
             
-            response = await global_gemini.model.generate_content_async([prompt, image])
-            text = response.text
+            # 🔄 调用 REST API (无状态)
+            import base64
+            image_b64 = base64.b64encode(screenshot_bytes).decode('utf-8')
+            
+            contents = [{
+                "parts": [
+                    {"text": prompt},
+                    {"inline_data": {"mime_type": "image/jpeg", "data": image_b64}}
+                ]
+            }]
+            
+            result = await global_gemini._call_gemini_rest(api_key, model_name, contents)
+            
+            if not result:
+                print(f"❌ [Captcha] API Call failed.")
+                return False
+
+            text = result.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
             global_cost_tracker.track_ai(text, is_input=False)
             
+            print(f"🧠 [Captcha] Raw AI Response: {text}") # 🛠️ Debug Log
+
             clean_text = text.replace("```json", "").replace("```", "").strip()
-            data = json.loads(clean_text)
+            try:
+                data = json.loads(clean_text)
+            except json.JSONDecodeError:
+                print(f"🧠 [Captcha] JSON Parse Error. Raw: {clean_text}")
+                return False
             
             button_pos = data.get("button")
             target_pos = data.get("target")
             
             if not button_pos or not target_pos:
-                print("🧠 [Captcha] Failed to identify coordinates.")
+                print("🧠 [Captcha] Failed to identify coordinates (missing keys).")
                 return False
                 
             print(f"🧠 [Captcha] Button: {button_pos}, Target: {target_pos}")
             
             # 2. 计算拖动操作
-            # 假设我们只需要水平拖动，或者直接从 button 拖到 target
             # 获取视口大小
             viewport = page.viewport_size
             if not viewport: viewport = {'width': 800, 'height': 600}
             
-            start_x = button_pos['x'] * viewport['width']
-            start_y = button_pos['y'] * viewport['height']
-            end_x = target_pos['x'] * viewport['width']
-            end_y = target_pos['y'] * viewport['height']
+            # 🛡️ 坐标边界检查
+            def clamp(val): return max(0.0, min(1.0, val))
             
-            # 3. 执行拖动
-            # 导入 MouseController (避免循环导入，这里局部导入或假设外部传入 hand)
-            # 由于 CaptchaSolver 可能被 websocket_server 调用，我们可以让 websocket_server 传入 hand
-            # 或者我们在这里临时创建一个 MouseController? 不，最好复用 session 中的 hand
+            start_x = clamp(button_pos['x']) * viewport['width']
+            start_y = clamp(button_pos['y']) * viewport['height']
+            end_x = clamp(target_pos['x']) * viewport['width']
+            end_y = clamp(target_pos['y']) * viewport['height']
             
             return {
                 "action": "drag",
@@ -92,6 +118,8 @@ class CaptchaSolver:
 
         except Exception as e:
             print(f"🧠 [Captcha] Error: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 global_captcha_solver = CaptchaSolver()

@@ -10,6 +10,7 @@
 import base64 # 📦 Base64 编码库
 import io # 📥 I/O 流处理库
 import os # 📂 操作系统
+import asyncio # ⚡ 异步 I/O
 from PIL import Image # 🖼️ 图像处理库 (Pillow)
 from Memory.system_config import VIEWPORT # ⚙️ 导入视口配置
 
@@ -38,6 +39,33 @@ class ScreenshotTool:
         # =================================
         self.page = page # 📄 绑定的页面实例
 
+    def _process_image(self, screenshot_bytes, quality_mode):
+        # =================================
+        #  🎉 图像处理 (内部同步方法)
+        #
+        #  🎨 代码用途：
+        #     使用 PIL 进行图像缩放和压缩。这是一个 CPU 密集型操作，应在线程池中运行。
+        # =================================
+        with io.BytesIO(screenshot_bytes) as input_io: # 📥 创建输入流
+            img = Image.open(input_io) # 🖼️ 打开图片
+            
+            if quality_mode == 'low':
+                target_width = int(VIEWPORT['width'] / 6) # 📉 宽度缩小到 1/6
+                target_height = int(VIEWPORT['height'] / 6) # 📉 高度缩小到 1/6
+                img = img.resize((target_width, target_height), Image.Resampling.NEAREST) # ⚡ 极速缩放
+                save_quality = 10 # 📉 极低质量
+            elif quality_mode == 'medium':
+                target_width = int(VIEWPORT['width'] / 2) # 📉 宽度缩小到 1/2
+                target_height = int(VIEWPORT['height'] / 2) # 📉 高度缩小到 1/2
+                img = img.resize((target_width, target_height), Image.Resampling.BILINEAR) # 🎨 双线性插值
+                save_quality = 40 # 📉 中等质量
+            else:
+                save_quality = 70 # 💎 默认质量
+
+            with io.BytesIO() as output_io: # 📤 创建输出流
+                img.save(output_io, format='JPEG', quality=save_quality) # 💾 保存压缩后的图片
+                return base64.b64encode(output_io.getvalue()).decode() # 📦 转为 Base64
+
     async def capture(self, quality_mode='high', user_id='default_user', save_to_disk=False):
         # =================================
         #  🎉 捕获视野 (画质模式, 用户ID, 是否保存到磁盘)
@@ -63,7 +91,6 @@ class ScreenshotTool:
 
         try:
             # 1. 获取原始截图 (JPEG)
-            # print("📸 [Eye] Taking screenshot...") # 🛠️ DEBUG: Uncommented
             # 🛠️ 优化：设置超时时间为 15000ms (15秒)，禁用动画和光标，防止因页面卡顿导致长时间阻塞
             screenshot_bytes = await self.page.screenshot(
                 type='jpeg', 
@@ -88,26 +115,8 @@ class ScreenshotTool:
             if quality_mode == 'high':
                 return base64.b64encode(screenshot_bytes).decode() # 💎 高画质直接返回
 
-            # 2. PIL 后处理 (缩放 & 压缩)
-            with io.BytesIO(screenshot_bytes) as input_io: # 📥 创建输入流
-                img = Image.open(input_io) # 🖼️ 打开图片
-                
-                if quality_mode == 'low':
-                    target_width = int(VIEWPORT['width'] / 6) # 📉 宽度缩小到 1/6
-                    target_height = int(VIEWPORT['height'] / 6) # 📉 高度缩小到 1/6
-                    img = img.resize((target_width, target_height), Image.Resampling.NEAREST) # ⚡ 极速缩放
-                    save_quality = 10 # 📉 极低质量
-                elif quality_mode == 'medium':
-                    target_width = int(VIEWPORT['width'] / 2) # 📉 宽度缩小到 1/2
-                    target_height = int(VIEWPORT['height'] / 2) # 📉 高度缩小到 1/2
-                    img = img.resize((target_width, target_height), Image.Resampling.BILINEAR) # 🎨 双线性插值
-                    save_quality = 40 # 📉 中等质量
-                else:
-                    save_quality = 70 # 💎 默认质量
-
-                with io.BytesIO() as output_io: # 📤 创建输出流
-                    img.save(output_io, format='JPEG', quality=save_quality) # 💾 保存压缩后的图片
-                    return base64.b64encode(output_io.getvalue()).decode() # 📦 转为 Base64
+            # 2. PIL 后处理 (缩放 & 压缩) - 移至线程池执行，避免阻塞事件循环
+            return await asyncio.to_thread(self._process_image, screenshot_bytes, quality_mode)
 
         except Exception as e:
             print(f"👁️ Vision Error: {e}") # ❌ 视觉故障

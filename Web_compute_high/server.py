@@ -311,6 +311,87 @@ async def system_info():
         "architecture": platform.machine()
     }
 
+@app.get("/internal/get_user_key")
+async def internal_get_user_key(user_id: str = "admin", x_angel_key: str = Header(None)):
+    # =================================
+    #  🎉 内部获取用户密钥 (用户ID, 鉴权Key)
+    #
+    #  🎨 代码用途：
+    #     供 Agent_angel_server 内部调用，获取指定用户的 API Key。
+    #     需要 SECRET_KEY 鉴权。
+    #
+    #  💡 易懂解释：
+    #     Agent 悄悄问管家：“那个谁的钥匙给我用一下，我要去干活了！”🔑
+    # =================================
+    
+    # 1. 验证权限
+    if x_angel_key != SECRET_KEY:
+        raise HTTPException(status_code=403, detail="🚫 权限不足")
+
+    users = load_json(KEY_FILE, {})
+    
+    # 2. 查找用户
+    if user_id not in users:
+        # 如果是 admin 且不存在，尝试查找第一个有 Key 的用户
+        if user_id == "admin":
+            for uid, udata in users.items():
+                if isinstance(udata, dict) and udata.get("keys"):
+                    return {"key": udata["keys"][0]["value"]}
+        return {"key": None}
+
+    user_data = users[user_id]
+    keys = user_data.get("keys", []) if isinstance(user_data, dict) else []
+    
+    # 3. 返回第一个有效的 Google Key (AIza...)
+    for k in keys:
+        if k["value"].startswith("AIza"):
+            return {"key": k["value"]}
+            
+    # 4. 如果没有 Google Key，返回第一个 Key
+    if keys:
+        return {"key": keys[0]["value"]}
+        
+    return {"key": None}
+
+@app.post("/internal/add_user_key")
+async def internal_add_user_key(req: UpdateKeysRequest, x_angel_key: str = Header(None)):
+    # =================================
+    #  🎉 内部添加用户密钥 (请求体, 鉴权Key)
+    #
+    #  🎨 代码用途：
+    #     供 Agent_angel_server 内部调用，向指定用户添加新的 API Key。
+    #     不会覆盖现有 Key，而是追加。
+    # =================================
+    
+    if x_angel_key != SECRET_KEY:
+        raise HTTPException(status_code=403, detail="🚫 权限不足")
+
+    users = load_json(KEY_FILE, {})
+    
+    if req.account not in users:
+        users[req.account] = {"password": "", "keys": []}
+    
+    user_data = users[req.account]
+    current_keys = user_data.get("keys", [])
+    
+    # 检查重复
+    new_keys = req.keys
+    for nk in new_keys:
+        exists = False
+        for ck in current_keys:
+            if ck["value"] == nk["value"]:
+                exists = True
+                break
+        if not exists:
+            current_keys.append(nk)
+            
+    user_data["keys"] = current_keys
+    
+    if save_json(KEY_FILE, users):
+        return {"status": "success", "msg": "密钥已追加"}
+    else:
+        raise HTTPException(status_code=500, detail="保存失败")
+
 @app.post("/login")
 async def login(req: LoginRequest):
     # =================================

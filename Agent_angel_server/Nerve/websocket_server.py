@@ -10,6 +10,7 @@ from Online.stream_manager import global_stream_manager # 📺 导入流媒体�
 from Brain.gemini_client import global_gemini # 🧠 导入 Gemini 客户端
 from Brain.cognitive_system import global_cognitive_system # 🧠 导入认知系统
 from Brain.captcha_solver import global_captcha_solver # 🧩 导入验证码解决器
+from Memory.database_manager import global_db_manager # 🗄️ 导入数据库管理器
 
 from Memory.system_config import VIEWPORT # ⚙️ 导入视口配置
 
@@ -17,6 +18,10 @@ router = APIRouter() # 🛣️ 创建 WebSocket 路由
 
 # 🔑 密钥配置 (必须与 Web_compute_high 保持一致)
 SECRET_KEY = "angel_secret_2025"
+
+# 🌍 全局连接状态管理
+# 结构: { websocket: { "user_id": str, "api_key": str } }
+connected_users = {}
 
 # 🛠️ 工具函数：Token 验证
 def verify_token(token: str, user_id: str) -> bool:
@@ -91,13 +96,23 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
     # =================================
     
     # 0. 握手与鉴权
-    await websocket.accept() # 🤝 接受连接
+    try:
+        await websocket.accept() # 🤝 接受连接
+    except Exception as e:
+        print(f"🔌 [握手] 用户 {user_id} 连接建立失败: {e}")
+        return
+
     if not token or not verify_token(token, user_id):
         print(f"🚫 用户 {user_id} 鉴权失败")
-        await websocket.close(code=4003, reason="Auth Failed")
+        try:
+            await websocket.close(code=4003, reason="Auth Failed")
+        except: pass
         return
 
     print(f"🔗 用户 {user_id} 已连接神经通路")
+    
+    # 🆕 注册连接状态 (初始化 auth_time 为 0)
+    connected_users[websocket] = {"user_id": user_id, "api_key": None, "auth_time": 0}
 
     # 1. 获取/创建浏览器会话
     try:
@@ -140,8 +155,21 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
                 elif msg_type == "auth": # 🔑 认证消息处理
                     key = message.get("key") # 📥 提取 API Key
                     if key: # ✅ 如果 Key 存在
-                        global_gemini.update_key(key) # 🧠 更新大脑密钥
-                        await send_impulse(websocket, "log", {"msg": "🔑 API Key 已通过探索之窗更新"}) # 📢 反馈更新成功
+                        # 🆕 更新当前连接的 Key 和时间戳
+                        if websocket in connected_users:
+                            connected_users[websocket]["api_key"] = key
+                            connected_users[websocket]["auth_time"] = time.time() # ⏱️ 记录认证时间
+                            print(f"🔑 用户 {user_id} 的 API Key 已更新 (会话级, Time: {connected_users[websocket]['auth_time']})")
+                        
+                        # 💾 持久化保存 Key 到本地 (SQLite)
+                        # 遵循“数据不离家”原则，只存本地，不发往 Web_compute_high
+                        try:
+                            await global_db_manager.save_user_key(user_id, key)
+                            print(f"💾 [系统] API Key 已保存到本地数据库")
+                        except Exception as e:
+                            print(f"⚠️ API Key 本地保存失败: {e}")
+
+                        await send_impulse(websocket, "log", {"msg": "🔑 API Key 已激活 (仅本地存储)"}) # 📢 反馈更新成功
                     
                 elif msg_type == "config_update": # ⚙️ 配置更新
                     quality = payload.get("quality")
@@ -244,26 +272,45 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
 
                 elif msg_type == "solve_captcha":
                     print(f"🧩 [指令] 用户 {user_id} 请求解决验证码")
-                    session = await global_browser_manager.get_or_create_session(user_id)
-                    page = session['page']
-                    hand = session['hand']
                     
-                    await send_impulse(websocket, "log", {"msg": "🧠 正在分析验证码..."})
+                    # 🛡️ 获取当前用户的 Key
+                    user_key = connected_users.get(websocket, {}).get("api_key")
+                    if not user_key:
+                        # 尝试从本地加载
+                        from Memory.file_manager import FileManager
+                        keys_data = FileManager.load("user_keys.json", default={})
+                        if user_id in keys_data and keys_data[user_id]:
+                            user_key = keys_data[user_id][0]
+                            connected_users[websocket]["api_key"] = user_key # 缓存到会话
                     
-                    # 截图
-                    screenshot = await page.screenshot(format="jpeg", quality=80)
+                    if not user_key:
+                    # 🛡️ 获取当前用户的 Key
+                    user_key = connected_users.get(websocket, {}).get("api_key")
+                    if not user_key:
+                        # 尝试从本地数据库加载
+                        user_key = await global_db_manager.get_user_key(user_id)
+                        if user_key:
+                            connected_users[websocket]["api_key"] = user_key # 缓存到会话
                     
-                    # 求解
-                    result = await global_captcha_solver.solve_slider(page, screenshot)
-                    
-                    if result and result.get("action") == "drag":
-                        start = result["start"]
-                        end = result["end"]
-                        await send_impulse(websocket, "log", {"msg": "🧩 找到解决方案，正在执行..."})
-                        await hand.drag(start["x"], start["y"], end["x"], end["y"])
-                        await send_impulse(websocket, "log", {"msg": "✅ 验证码操作完成"})
-                    else:
-                        await send_impulse(websocket, "log", {"msg": "⚠️ 无法识别验证码或无需操作"})
+                    if not user_key:
+                        await send_impulse(websocket, "log", {"msg": "⚠️ 请先提供 API Key (Auth)"})
+                        continue
+                        # 求解 (传入 user_key)
+                        result = await global_captcha_solver.solve_slider(page, screenshot, api_key=user_key)
+                        
+                        if result and result.get("action") == "drag":
+                            start = result["start"]
+                            end = result["end"]
+                            await send_impulse(websocket, "log", {"msg": "🧩 找到解决方案，正在执行..."})
+                            
+                            # ⚡ 慢速拖动以模拟人类
+                            await hand.drag(start["x"], start["y"], end["x"], end["y"])
+                            await send_impulse(websocket, "log", {"msg": "✅ 验证码操作完成"})
+                        else:
+                            await send_impulse(websocket, "log", {"msg": "⚠️ AI 未能识别验证码，请手动尝试"})
+                    except Exception as e:
+                        print(f"❌ 验证码解决出错: {e}")
+                        await send_impulse(websocket, "log", {"msg": f"❌ 发生错误: {str(e)}"})
 
                 elif msg_type == "click":
                     x, y = payload.get("x"), payload.get("y")
@@ -308,6 +355,37 @@ async def neural_pathway(websocket: WebSocket, user_id: str, token: str = Query(
         print(f"💥 神经通路异常: {e}")
     finally:
         # 4. 清理资源
+        if websocket in connected_users:
+            del connected_users[websocket] # 🗑️ 移除连接状态
         global_stream_manager.stop_stream(user_id)
         # 注意：不立即关闭浏览器会话，允许后台任务继续运行
         # await global_browser_manager.close_session(user_id)
+def get_active_user_key(user_id: str) -> str:
+    """
+    🔍 查找指定用户的活跃 API Key (MRU 策略)
+    遍历所有连接，找到属于该用户的连接，返回【最近一次认证】的 Key。
+    这解决了多标签页 Key 冲突问题，确保使用用户最新意图的 Key。
+    """
+    candidates = []
+    for ws, info in connected_users.items():
+        if info.get("user_id") == user_id:
+            key = info.get("api_key")
+            auth_time = info.get("auth_time", 0)
+            if key:
+                candidates.append((auth_time, key))
+    
+    if not candidates:
+        return None
+        
+    # 按时间倒序排列 (最新的在前面)
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    
+    best_key = candidates[0][1]
+    # if len(candidates) > 1:
+    #     print(f"⚖️ [Key仲裁] 用户 {user_id} 有 {len(candidates)} 个活跃Key，选择了最近的一个 (Time: {candidates[0][0]})")
+        
+    return best_key
+
+# 🔗 注册 Key 提供者给认知系统
+# 🔗 注册 Key 提供者给认知系统
+global_cognitive_system.set_key_provider(get_active_user_key)

@@ -44,6 +44,7 @@ from fastapi.middleware.cors import CORSMiddleware # 🛡️ CORS 中间件
 from Nerve.websocket_server import router as ws_router # 🔌 WebSocket 路由
 from Nerve.http_server import router as api_router # 🔌 HTTP API 路由
 from Brain.cognitive_system import global_cognitive_system # 🧠 导入认知系统
+from Memory.database_manager import global_db_manager # 🗄️ 导入数据库管理器
 
 warnings.filterwarnings("ignore", category=DeprecationWarning) # 🔇 忽略弃用警告
 
@@ -65,6 +66,10 @@ async def startup_event():
     print("✨ 模块化架构: Brain, Eye, Hand, Body, Nerve, Memory, Energy") # 📢 打印架构信息
     print("="*40 + "\n") # 📢 打印分隔线
     
+    # 🗄️ 初始化数据库
+    await global_db_manager.init_db()
+    await global_db_manager.migrate_from_json()
+
     # 🧠 启动认知循环
     await global_cognitive_system.start()
 

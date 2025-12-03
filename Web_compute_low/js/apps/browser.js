@@ -151,6 +151,16 @@ class BrowserApp {
         if (btnCaptcha) {
             btnCaptcha.onclick = () => {
                 console.log("🧩 用户请求解决验证码...");
+                
+                // 🆕 视觉反馈：让用户知道点击生效了
+                const originalText = btnCaptcha.innerText;
+                btnCaptcha.innerText = "⏳";
+                btnCaptcha.style.opacity = "0.5";
+                setTimeout(() => {
+                    btnCaptcha.innerText = originalText;
+                    btnCaptcha.style.opacity = "1";
+                }, 3000);
+
                 bus.emit('system:speak', "正在尝试解决验证码... 🧩");
                 network.send({ type: 'solve_captcha' });
             };
@@ -221,16 +231,26 @@ class BrowserApp {
     init() {
         this.isDestroyed = false; // 💖 重置销毁标志
         
-        // 🆕 自动启动流
-        console.log("🚀 [Browser] Init: Requesting stream start...");
-        network.send({ type: 'stream_control', action: 'start' });
+        // 🆕 初始状态：等待用户点击连接 (符合用户要求的“点击才推流”逻辑)
+        console.log("🚀 [Browser] Init: Waiting for user interaction to start stream...");
+        const overlay = document.getElementById('browser-status-overlay');
+        if (overlay) {
+            overlay.innerText = "🖱️ 点击屏幕开始连接";
+            overlay.style.display = 'block';
+            overlay.style.background = 'rgba(0,0,0,0.6)';
+        }
         
-        // 🔑 检查 API Key 状态
-        if (!localStorage.getItem('angel_api_key')) {
+        // 🔑 检查并同步 API Key
+        const savedKey = localStorage.getItem('angel_api_key');
+        if (!savedKey) {
             setTimeout(() => {
                 bus.emit('system:speak', "探索功能需要 API Key，请在左下角设置 🔑");
                 bus.emit('system:open_key_mgr'); // 🔑 自动打开密钥管理器
             }, 800);
+        } else {
+            // 🆕 自动同步 Key 到服务器，防止服务器重启后丢失 Key
+            console.log("🔑 [Browser] Syncing API Key to server...");
+            network.send({ type: 'auth', key: savedKey });
         }
 
         // 📺 监听视频帧更新
@@ -271,9 +291,12 @@ class BrowserApp {
                  network.send({ type: 'stream_control', action: 'stop' }); // 🛑 发送停止指令
                  // 恢复等待提示 (可选)
                  const overlay = document.getElementById('browser-status-overlay');
-                 if (overlay) overlay.style.display = 'block'; // 👁️ 显示遮罩
-                 const img = document.getElementById('live-image');
-                 if (img) img.style.display = 'none'; // 🙈 隐藏画面
+                 if (overlay) {
+                     overlay.innerText = "⏸️ 已暂停 (点击屏幕恢复)";
+                     overlay.style.display = 'block'; // 👁️ 显示遮罩
+                 }
+                 // const img = document.getElementById('live-image');
+                 // if (img) img.style.display = 'none'; // 🙈 隐藏画面 (可选：保留最后一帧体验更好)
             }
         };
         document.addEventListener('click', stopStreamHandler); // 👂 绑定全局点击
@@ -465,6 +488,10 @@ class BrowserApp {
                 
                 // 🆕 点击画面时，确保流是开启的 (防止之前点击外部停止了)
                 network.send({ type: 'stream_control', action: 'start' });
+                
+                // 🆕 隐藏暂停遮罩
+                const overlay = document.getElementById('browser-status-overlay');
+                if (overlay) overlay.style.display = 'none';
                 
                 if (e.target.closest('#video-progress-bar')) return;
 

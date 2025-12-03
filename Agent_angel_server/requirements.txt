@@ -8,3 +8,4 @@ watchfiles
 Pillow
 playwright-stealth
 pydantic
+requests

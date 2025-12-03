@@ -4,14 +4,10 @@ from pathlib import Path # 🛣️ 路径处理库
 from Memory.system_config import USER_DATA_DIR # ⚙️ 导入系统配置
 
 # 📂 定义数据存储目录
-# 💖 修正：定位到 Web_compute_high (原 Web_compute_low) 根目录
-# 策略：当前文件在 Agent_angel_server/Memory/file_manager.py
-# 向上 2 层即为 Agent_angel_server 根目录，再找同级的 Web_compute_high
-SERVER_ROOT = Path(os.path.dirname(os.path.dirname(__file__)))
-WORKSPACE_DIR = SERVER_ROOT.parent
-HIGH_COMPUTE_DIR = WORKSPACE_DIR / "Web_compute_high"
-
-DATA_DIR = HIGH_COMPUTE_DIR / "Memorybank" # 📍 客户端数据库目录
+# 💖 修正：定位到 Agent_angel_server 本地目录
+# 遵循三层架构，Agent 的数据应存储在本地，或通过 API 存入 High Compute
+SERVER_ROOT = Path(os.path.dirname(os.path.dirname(__file__))) # Agent_angel_server
+DATA_DIR = SERVER_ROOT / "Memorybank" / "LocalData" # 📍 本地数据目录
 DATA_DIR.mkdir(parents=True, exist_ok=True) # 📁 确保目录存在
 
 class FileManager:

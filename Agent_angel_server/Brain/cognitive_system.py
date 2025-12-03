@@ -61,7 +61,19 @@ class CognitiveSystem:
         self.initialized = True # ✅ 标记为已初始化
         self.running = False # 🛑 初始状态为停止
         self.user_goals = {} # 🎯 用户目标字典 {user_id: "当前任务描述"}
+        self.key_provider = None # 🔑 Key 提供者函数 (依赖注入)
         self._load_state() # 📂 从磁盘加载状态
+
+    def set_key_provider(self, provider_func):
+        # =================================
+        #  🎉 设置 Key 提供者 (函数)
+        #
+        #  🎨 代码用途：
+        #     允许外部模块注入一个获取用户 Key 的函数。
+        #     这解决了循环依赖问题，并允许认知系统优先使用内存中的活跃 Key。
+        # =================================
+        self.key_provider = provider_func
+        print("🔑 [认知] Key 提供者已注册")
 
     def _load_state(self):
         # 📂 加载任务队列
@@ -178,10 +190,31 @@ class CognitiveSystem:
                         continue # ⏭️ 跳过本次循环
 
                     # 3. 调用大脑 (Gemini)
+                    # 🆕 获取用户 Key (优先内存，后备磁盘)
+                    user_key = None
+                    
+                    # 3.1 尝试从活跃连接获取 (内存) - 🚀 性能优化
+                    if self.key_provider:
+                        user_key = self.key_provider(user_id)
+                        # if user_key: print(f"⚡ [认知] 使用活跃会话 Key") # 调试日志
+
+                    # 3.2 如果内存没有，尝试从磁盘加载 (后备) - 🐢 仅在必要时读取
+                    if not user_key:
+                        from Memory.database_manager import global_db_manager
+                        user_key = await global_db_manager.get_user_key(user_id)
+                        if user_key:
+                             print(f"💾 [认知] 使用本地存储 Key (用户离线或未认证)")
+                    
+                    if not user_key:
+                        print(f"⚠️ [认知] 用户 {user_id} 未配置 API Key，跳过思考")
+                        await asyncio.sleep(5)
+                        continue
+
                     plan = await global_gemini.plan_next_action( # 🧠 调用 Gemini 规划下一步
                         screenshot_bytes, # 🖼️ 传入截图数据
                         goal['description'], # 📋 传入任务描述
-                        current_url # 🌐 传入当前 URL
+                        current_url, # 🌐 传入当前 URL
+                        api_key=user_key # 🔑 传入用户 Key
                     )
                     
                     if not plan: # 🛑 如果没有返回计划

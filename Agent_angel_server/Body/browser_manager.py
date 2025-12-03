@@ -191,7 +191,7 @@ class BrowserManager:
             print(f"🚀 [会话] 正在预加载默认页面: {TARGET_SEARCH_URL}")
             await page.goto(TARGET_SEARCH_URL, timeout=15000)
         except Exception as e:
-            print(f"⚠️ [会话] 默认页面加载超时: {e}")
+            print(f"⚠️ [会话] 默认页面加载超时 (已忽略): {e}")
 
         # 3. 注入反爬虫 (Anti-Anti-Bot)
         try:

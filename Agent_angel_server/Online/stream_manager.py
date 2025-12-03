@@ -6,12 +6,14 @@
 #  📊 当前状态 : 活跃 (更新: 2025-12-03)
 #  🧱 stream_manager.py 踩坑记录 :
 #     1. [2025-12-03] [已修复] [性能]: 直播流卡顿 -> 禁用截图保存到磁盘 (Line 115)
+#     2. [2025-12-03] [已修复] [配置]: FPS 切换不灵敏 -> 增加 int 类型强制转换 (Line 35)
 # ==========================================================================
 import asyncio # ⚡ 异步 I/O
 import base64 # 🧬 Base64 编码
 import json # 📄 JSON 处理
 from fastapi import WebSocket # 🔌 WebSocket 组件
 from Eye.screenshot_tool import ScreenshotTool # 👁️ 截图工具
+from Online.cdp_streamer import CDPStreamer # 🚀 CDP 高速推流器
 from Body.browser_manager import global_browser_manager # 🌐 全局浏览器管理器
 from Energy.cost_tracker import global_cost_tracker # 💰 成本追踪器
 
@@ -22,14 +24,16 @@ class StreamManager:
     #  🎨 代码用途：
     #     负责管理向用户传输实时画面（截图流）。
     #     它从 Eye (ScreenshotTool) 获取图像，通过 Nerve (WebSocket) 发送给用户。
+    #     v2.0: 支持 CDP 高速推流模式。
     #
     #  💡 易懂解释：
     #     这是 Angel 的直播间！🎥 它负责把眼睛看到的东西，实时直播给主人看！
     # =================================
     
     def __init__(self):
-        self.active_streams = {} # 📺 存储活跃的流会话 {user_id: task}
+        self.active_streams = {} # 📺 存储活跃的流会话 {user_id: task/streamer}
         self.user_configs = {} # ⚙️ 存储用户配置 {user_id: {'fps': 15, 'quality': 'medium'}}
+        self.use_cdp = True # 🚀 开关：是否启用 CDP 高速模式
 
     def update_config(self, user_id: str, fps: int = None, quality: str = None):
         # =================================
@@ -42,12 +46,29 @@ class StreamManager:
             self.user_configs[user_id] = {'fps': 15, 'quality': 'medium'}
         
         if fps is not None:
-            self.user_configs[user_id]['fps'] = max(1, min(60, fps)) # 限制 1-60 FPS
+            try:
+                fps_val = int(fps) # 🛡️ 强制类型转换，防止字符串传入
+                self.user_configs[user_id]['fps'] = max(1, min(60, fps_val)) # 限制 1-60 FPS
+            except ValueError:
+                print(f"⚠️ [直播] 无效的 FPS 值: {fps}")
+
         if quality is not None:
             if quality in ['high', 'medium', 'low']:
                 self.user_configs[user_id]['quality'] = quality
         
         print(f"⚙️ [直播] 用户 {user_id} 配置已更新: {self.user_configs[user_id]}")
+        
+        # 🚀 CDP 模式热更新支持
+        if self.use_cdp and user_id in self.active_streams:
+            streamer = self.active_streams[user_id]
+            if isinstance(streamer, CDPStreamer):
+                # 映射画质字符串到数值
+                q_map = {'high': 80, 'medium': 60, 'low': 30}
+                quality_val = q_map.get(self.user_configs[user_id]['quality'], 60)
+                fps_val = self.user_configs[user_id]['fps']
+                
+                # 异步调用更新
+                asyncio.create_task(streamer.update_config(quality=quality_val, fps=fps_val))
 
     async def start_stream(self, user_id: str, websocket: WebSocket):
         # =================================
@@ -62,10 +83,26 @@ class StreamManager:
         if user_id in self.active_streams:
             self.stop_stream(user_id) # 🛑 停止旧流
 
-        # 创建新的流任务
-        task = asyncio.create_task(self._stream_loop(user_id, websocket))
-        self.active_streams[user_id] = task
-        print(f"📺 用户 {user_id} 的直播流已启动")
+        if self.use_cdp:
+            # 🚀 CDP 模式
+            session = global_browser_manager.sessions.get(user_id)
+            if session and session.get('page'):
+                streamer = CDPStreamer(session['page'])
+                
+                # 获取配置
+                config = self.user_configs.get(user_id, {'fps': 30, 'quality': 'medium'})
+                q_map = {'high': 80, 'medium': 60, 'low': 30}
+                quality_val = q_map.get(config['quality'], 60)
+                
+                await streamer.start(websocket, user_id, quality=quality_val)
+                self.active_streams[user_id] = streamer # 存储 Streamer 实例
+            else:
+                print(f"⚠️ [直播] 无法启动 CDP 流: 会话或页面不存在")
+        else:
+            # 🐢 传统轮询模式
+            task = asyncio.create_task(self._stream_loop(user_id, websocket))
+            self.active_streams[user_id] = task
+            print(f"📺 用户 {user_id} 的直播流已启动 (Legacy Mode)")
 
     def stop_stream(self, user_id: str):
         # =================================
@@ -75,7 +112,12 @@ class StreamManager:
         #     取消并移除指定用户的流任务。
         # =================================
         if user_id in self.active_streams:
-            self.active_streams[user_id].cancel()
+            obj = self.active_streams[user_id]
+            if isinstance(obj, asyncio.Task):
+                obj.cancel() # 停止 Task
+            elif isinstance(obj, CDPStreamer):
+                asyncio.create_task(obj.stop()) # 停止 CDP
+            
             del self.active_streams[user_id]
             print(f"🛑 用户 {user_id} 的直播流已停止")
 

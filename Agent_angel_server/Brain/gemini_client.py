@@ -2,9 +2,11 @@ import os # 📂 操作系统接口，用于读取环境变量
 import json # 🧩 JSON 处理库，用于解析 AI 返回的数据
 import PIL.Image # 🖼️ 图像处理库，用于处理截图
 import io # 📥 IO 流处理，用于处理二进制图像数据
+import requests # 🌐 HTTP 请求库 (用于 REST API)
+import asyncio # ⚡ 异步库
 from Energy.cost_tracker import global_cost_tracker # 💰 导入成本追踪器，记录 Token 消耗
 
-# 📦 尝试导入 google.generativeai
+# 📦 尝试导入 google.generativeai (仅用于模型列表发现，不用于生成)
 try:
     import google.generativeai as genai # 🧠 导入 Gemini SDK
 except ImportError:
@@ -15,137 +17,170 @@ class GeminiClient:
     #  🎉 Gemini 客户端 (无参数)
     #
     #  🎨 代码用途：
-    #     作为 Angel 的“大脑”接口，封装了与 Google Gemini API 的交互逻辑，负责处理复杂的思考、分析和决策任务。
+    #     作为 Angel 的“大脑”接口，封装了与 Google Gemini API 的交互逻辑。
+    #     🆕 重构：无状态设计，支持多用户并发，使用 REST API 直接调用。
     #
     #  💡 易懂解释：
-    #     这是 Angel 的脑细胞！🧠 它连接着超级聪明的 Gemini AI，帮助 Angel 理解视频内容、寻找游戏攻略，甚至思考人生（如果需要的话）！
-    #
-    #  ⚠️ 警告：
-    #     严重依赖网络连接和 API Key 的有效性。如果 Key 无效或配额耗尽，大脑将无法工作。
+    #     这是 Angel 的脑细胞！🧠 它现在更聪明了，可以同时处理好几个人的请求，而且不会搞混大家的钥匙！🔑
     # =================================
     def __init__(self):
         # =================================
         #  🎉 初始化大脑 (无参数)
         #
         #  🎨 代码用途：
-        #     加载环境变量中的 API Key，配置 Gemini 客户端，并初始化生成模型。
-        #
-        #  💡 易懂解释：
-        #     大脑启动中... 正在寻找密钥（API Key）来解锁智慧之门！🔑 如果找不到，Angel 就会变得笨笨的哦。
-        #
-        #  ⚠️ 警告：
-        #     如果未安装 `google.generativeai` 库或未设置 `GEMINI_API_KEY`，模型将初始化为 None，导致后续调用失败。
+        #     初始化基础配置。不再持有 api_key 状态。
         # =================================
-        self.api_key = os.getenv("GEMINI_API_KEY", "") # 🔑 获取 API 密钥
-        if self.api_key and genai: # ✅ 检查 Key 和库是否都存在
-            genai.configure(api_key=self.api_key) # ⚙️ 配置 Gemini
-            self.model = genai.GenerativeModel('gemini-1.5-flash') # 🧠 加载 Flash 模型（速度快，适合实时任务）
-        else:
-            self.model = None # 🚫 模型不可用
-            print("⚠️ [提示] Gemini API Key 未配置或库缺失 (大脑功能受限)") # ⚠️ 打印警告信息
+        # 初始化模型选择变量
+        self.available_models = []
+        self.best_model_name = 'gemini-1.5-flash' # 默认兜底
+        self.best_vision_model_name = 'gemini-1.5-flash' # 默认兜底
+
+        # 尝试发现模型 (使用环境变量中的 Key 作为基准，如果没有则跳过)
+        env_key = os.getenv("GEMINI_API_KEY", "")
+        if env_key and genai:
+            try:
+                genai.configure(api_key=env_key)
+                self._discover_best_models()
+            except:
+                pass
+
+    def _discover_best_models(self):
+        """
+        🔍 自动发现可用模型并选择最佳方案
+        """
+        print("🧠 [系统] 正在扫描可用模型列表...")
+        try:
+            self.available_models = []
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    self.available_models.append(m.name)
+            
+            print(f"📋 [系统] 发现 {len(self.available_models)} 个可用模型")
+            
+            # 策略 1: 选择最佳通用模型 (Thinking)
+            thinking_candidates = [
+                'models/gemini-2.0-pro-exp',
+                'models/gemini-2.0-flash-exp',
+                'models/gemini-1.5-pro',
+                'models/gemini-1.5-flash'
+            ]
+            
+            for candidate in thinking_candidates:
+                if any(candidate in m or m in candidate for m in self.available_models):
+                    self.best_model_name = candidate.replace('models/', '')
+                    break
+            
+            # 策略 2: 选择最佳视觉模型 (Vision)
+            vision_candidates = [
+                'models/gemini-2.0-pro-exp',
+                'models/gemini-1.5-pro',
+                'models/gemini-2.0-flash-exp'
+            ]
+            
+            for candidate in vision_candidates:
+                if any(candidate in m or m in candidate for m in self.available_models):
+                    self.best_vision_model_name = candidate.replace('models/', '')
+                    break
+
+            print(f"🧠 [系统] 已选定大脑: {self.best_model_name}")
+            print(f"👁️ [系统] 已选定视觉: {self.best_vision_model_name}")
+
+        except Exception as e:
+            print(f"❌ [系统] 模型发现失败: {e}")
+            self.best_model_name = 'gemini-1.5-flash'
+            self.best_vision_model_name = 'gemini-1.5-flash'
 
     def update_key(self, new_key):
-        # =============================================================================
-        #  🎉 更新密钥 (new_key)
-        #
-        #  🎨 用途:
-        #      运行时动态更新 Gemini API Key，并重新初始化生成模型。
-        #
-        #  💡 易懂解释:
-        #      换把新钥匙！🔑 旧的钥匙可能生锈了，或者我们换了把新锁。
-        #
-        #  ⚠️ 警告:
-        #      无特殊风险。如果 Key 无效，模型将不可用。
-        #
-        #  ⚙️ 触发源:
-        #      Nerve/websocket_server.py -> auth 消息 -> update_key
-        # =============================================================================
-        self.api_key = new_key # 🔑 更新内部 Key 存储
-        if self.api_key and genai: # ✅ 检查 Key 和库状态
-            genai.configure(api_key=self.api_key) # ⚙️ 重新配置 SDK
-            self.model = genai.GenerativeModel('gemini-1.5-flash') # 🧠 重建模型实例
-            print(f"🔑 Gemini API Key 已更新: {new_key[:5]}***") # 📢 打印脱敏日志
-        else:
-            self.model = None # 🚫 模型置空
-            print("⚠️ [提示] Gemini API Key 更新失败或库缺失") # ⚠️ 打印失败警告
-
-    async def analyze_video(self, video_title, video_url, current_time=0):
-        # =================================
-        #  🎉 分析视频内容 (视频标题，视频链接，当前时间)
-        #
-        #  🎨 代码用途：
-        #     构造 Prompt 提示词，调用 Gemini API 分析视频元数据，尝试提取游戏攻略（如老六点位）并返回结构化 JSON 数据。
-        #
-        #  💡 易懂解释：
-        #     Angel 正在看视频！👀 它会问 Gemini：“嘿，这个视频里有没有教怎么当‘老六’呀？” 然后把找到的秘密点位都记下来！
-        #
-        #  ⚠️ 警告：
-        #     AI 的回复可能不稳定，需要进行 JSON 解析异常处理。Prompt 的质量直接影响结果的准确性。
-        # =================================
-        print(f"🧠 Gemini 正在分析: {video_title} (时间点: {current_time}s)") # 📢 打印分析日志
-        global_cost_tracker.track_ai(f"Analyze request: {video_title}", is_input=True) # 📊 记录 AI 输入成本
-
-        if not self.model: # 🛑 检查模型是否可用
-            return {"error": "Gemini API Key 未配置 (大脑离线)"} # ❌ 错误返回
-
-        try:
-            prompt = f'''
-            You are a tactical analyst for the game 'Delta Force'. 
-            Analyze the following video context for 'Zero Dam' (零号大坝) map camper spots (老六点位).
-            Video Title: {video_title}
-            Video URL: {video_url}
-            
-            If this sounds like a guide for camper spots, list them with estimated timestamps and descriptions.
-            Format as JSON: {{ "spots": [ {{ "timestamp": int, "description": string }} ] }}
-            ''' # 📝 构造 Prompt 提示词
-            
-            response = await self.model.generate_content_async(prompt) # ☁️ 发送请求给 Gemini
-            text = response.text # 📝 获取文本回复
-            global_cost_tracker.track_ai(text, is_input=False) # 📊 记录 AI 输出成本
-            
+        # 🗑️ 废弃：不再维护全局 Key
+        # 仅用于触发一次模型发现 (如果之前没发现过)
+        if genai and not self.available_models:
             try:
-                # 🧹 清理 Markdown 代码块标记
-                clean_text = text.replace("```json", "").replace("```", "").strip() # 🧹 移除 Markdown 格式
-                data = json.loads(clean_text) # 🧩 解析 JSON
-                spots = data.get("spots", []) # 📍 获取点位列表
-                
-                if spots: # ✅ 如果找到了点位
-                    return {
-                        "found": True, 
-                        "summary": f"Found {len(spots)} spots", 
-                        "spots": spots
-                    } # ✅ 成功返回
-                else:
-                    return {"found": False, "summary": "No spots identified"} # 🤷‍♀️ 未找到点位
-            except json.JSONDecodeError: # 😵 JSON 解析失败
-                return {"found": False, "summary": "Failed to parse AI response", "raw": text} # ❌ 返回原始文本
-                
-        except Exception as e: # 💥 其他异常
-            return {"error": str(e)} # ❌ 返回错误信息
+                genai.configure(api_key=new_key)
+                self._discover_best_models()
+            except: pass
 
-    async def plan_next_action(self, screenshot_bytes, goal, page_url=""):
+    async def _call_gemini_rest(self, api_key, model_name, contents):
+        """
+        🌐 内部方法：调用 Gemini REST API
+        """
+        if not api_key: return None
+        
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+        headers = {"Content-Type": "application/json"}
+        payload = {"contents": contents}
+        
+        try:
+            # 使用 run_in_executor 避免阻塞
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, lambda: requests.post(url, json=payload, headers=headers, timeout=30))
+            
+            if response.status_code != 200:
+                print(f"⚠️ [Gemini REST] Error {response.status_code}: {response.text}")
+                return None
+                
+            return response.json()
+        except Exception as e:
+            print(f"⚠️ [Gemini REST] Exception: {e}")
+            return None
+
+    async def analyze_video(self, video_title, video_url, current_time=0, api_key=None):
         # =================================
-        #  🎉 规划下一步行动 (截图数据, 目标描述, 当前URL)
-        #
-        #  🎨 代码用途：
-        #     将当前屏幕截图和用户目标发送给 Gemini Pro Vision，请求下一步的操作指令。
-        #     返回格式必须是严格的 JSON。
-        #
-        #  💡 易懂解释：
-        #     Angel 把看到的画面发给大脑，问：“我要做这个任务，下一步该点哪里？”
-        #     大脑看了一眼，说：“点那个红色的按钮！” 👈
-        #
-        #  ⚠️ 警告：
-        #     图像处理需要消耗较多 Token。必须确保返回的是 JSON 格式，否则无法解析。
+        #  🎉 分析视频内容 (支持多用户 Key)
         # =================================
-        if not self.model: return None # 🛑 模型不可用则返回 None
+        print(f"🧠 Gemini 正在分析: {video_title} (时间点: {current_time}s)")
+        global_cost_tracker.track_ai(f"Analyze request: {video_title}", is_input=True)
+
+        if not api_key:
+            return {"error": "Missing API Key"}
+
+        prompt_text = f'''
+        You are a tactical analyst for the game 'Delta Force'. 
+        Analyze the following video context for 'Zero Dam' (零号大坝) map camper spots (老六点位).
+        Video Title: {video_title}
+        Video URL: {video_url}
+        
+        If this sounds like a guide for camper spots, list them with estimated timestamps and descriptions.
+        Format as JSON: {{ "spots": [ {{ "timestamp": int, "description": string }} ] }}
+        '''
+        
+        contents = [{"parts": [{"text": prompt_text}]}]
+        
+        # 调用 REST API
+        result = await self._call_gemini_rest(api_key, self.best_model_name, contents)
+        
+        if not result:
+            return {"error": "API Call Failed"}
 
         try:
-            # 1. 准备图像数据
-            image = PIL.Image.open(io.BytesIO(screenshot_bytes)) # 🖼️ 将二进制数据转换为 PIL 图像对象
+            # 解析 REST API 响应结构
+            # { "candidates": [ { "content": { "parts": [ { "text": "..." } ] } } ] }
+            text = result.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
+            global_cost_tracker.track_ai(text, is_input=False)
+            
+            clean_text = text.replace("```json", "").replace("```", "").strip()
+            data = json.loads(clean_text)
+            spots = data.get("spots", [])
+            
+            if spots:
+                return {"found": True, "summary": f"Found {len(spots)} spots", "spots": spots}
+            else:
+                return {"found": False, "summary": "No spots identified"}
+        except Exception as e:
+            return {"error": f"Parse Error: {str(e)}"}
+
+    async def plan_next_action(self, screenshot_bytes, goal, page_url="", api_key=None):
+        # =================================
+        #  🎉 规划下一步行动 (支持多用户 Key)
+        # =================================
+        if not api_key: return None
+
+        try:
+            # 1. 准备图像数据 (转为 base64)
+            import base64
+            image_b64 = base64.b64encode(screenshot_bytes).decode('utf-8')
 
             # 2. 构造 Prompt
-            prompt = f'''
+            prompt_text = f'''
             You are an intelligent web browsing agent.
             User Goal: "{goal}"
             Current URL: "{page_url}"
@@ -164,23 +199,30 @@ class GeminiClient:
                     "delta_y": int (for scroll)
                 }}
             }}
+            '''
             
-            If the goal is achieved, return action "done".
-            If the page is loading or you need to wait, return action "wait".
-            ''' # 📝 构造多模态 Prompt
+            contents = [{
+                "parts": [
+                    {"text": prompt_text},
+                    {"inline_data": {"mime_type": "image/jpeg", "data": image_b64}}
+                ]
+            }]
             
-            # 3. 调用多模态模型
-            response = await self.model.generate_content_async([prompt, image]) # ☁️ 发送图片和文本给 Gemini
-            text = response.text # 📝 获取回复文本
-            global_cost_tracker.track_ai(text, is_input=False) # 📊 记录成本
+            # 3. 调用 REST API (使用 Vision 模型)
+            result = await self._call_gemini_rest(api_key, self.best_vision_model_name, contents)
             
+            if not result: return None
+
             # 4. 解析结果
-            clean_text = text.replace("```json", "").replace("```", "").strip() # 🧹 清理 Markdown 标记
-            return json.loads(clean_text) # 🧩 解析并返回 JSON 对象
+            text = result.get("candidates", [])[0].get("content", {}).get("parts", [])[0].get("text", "")
+            global_cost_tracker.track_ai(text, is_input=False)
             
-        except Exception as e: # 💥 异常处理
-            print(f"🧠 [大脑] 思考失败: {e}") # 📢 打印错误日志
-            return None # ❌ 返回 None
+            clean_text = text.replace("```json", "").replace("```", "").strip()
+            return json.loads(clean_text)
+            
+        except Exception as e:
+            print(f"🧠 [大脑] 思考失败: {e}")
+            return None
 
 # 🌍 全局大脑实例
 global_gemini = GeminiClient() # 🧠 创建全局单例
