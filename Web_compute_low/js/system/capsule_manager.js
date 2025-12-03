@@ -114,6 +114,14 @@ export function createCapsule(options) {
 
     // 1. 注册详情窗口 (如果有)
     if (detailConfig) { // 🔍 如果有详情窗口配置
+        // 💖 强制设置：胶囊本身即为任务栏入口，详情窗口无需显示任务栏图标
+        detailConfig.showTaskbarIcon = false;
+        // 💖 新增：即使运行中也不显示在任务栏 (配合 taskbar.js 的 skipTaskbar 逻辑)
+        detailConfig.skipTaskbar = true;
+        // 💖 新增：不显示在系统托盘 (配合 taskbar.js 的 showTrayIcon 逻辑)
+        detailConfig.showTrayIcon = false;
+        // 💖 同时也隐藏于任务管理器 (配合 task_manager.js 的过滤逻辑)
+        detailConfig.hideInTaskMgr = true;
         store.setAppMetadata(detailConfig.id, detailConfig); // 📝 在 Store 中注册这个应用
     }
 

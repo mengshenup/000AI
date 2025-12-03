@@ -36,6 +36,8 @@ const detailConfig = {
     system: true, // 💖 系统级应用
     showDesktopIcon: false, // 💖 不显示桌面图标
     showTaskbarIcon: false, // 💖 不显示任务栏图标
+    skipTaskbar: true, // 💖 即使运行中也不显示在任务栏
+    showTrayIcon: false, // 💖 不显示在系统托盘
     frameless: true, // 💖 无边框模式
     fixed: false, // 💖 不固定位置
     width: 200, // 💖 窗口宽度

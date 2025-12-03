@@ -38,6 +38,8 @@ const detailConfig = {
     system: true,
     showDesktopIcon: false,
     showTaskbarIcon: false,
+    skipTaskbar: true, // 💖 即使运行中也不显示在任务栏
+    showTrayIcon: false, // 💖 不显示在系统托盘
     frameless: true, // 💖 无边框模式
     fixed: false,
     width: 200,

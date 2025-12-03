@@ -66,45 +66,99 @@ export const loginApp = {
         });
 
         // 监听打开登录界面的事件
-        bus.on('system:open_login', () => this.open()); // 💖 收到打开登录界面指令时执行
+        bus.on('system:open_login', () => this.open());
+        
+        // 🆕 监听用户数据更新 (用于持久化本地 DB)
+        bus.on('system:user_updated', (user) => this.saveLocalUser(user));
         
         // 尝试自动登录
-        this.autoLogin(); // 💖 尝试自动登录
+        this.autoLogin();
+    },
+
+    // =================================
+    //  🎉 本地用户数据库 (Local User DB)
+    //  🎨 功能：实现 "Local First" 策略，确保离线可用
+    // =================================
+    saveLocalUser(user) {
+        if (!user || !user.account) return;
+        let db = {};
+        try { db = JSON.parse(localStorage.getItem('angel_users_v2') || '{}'); } catch(e) {}
+        
+        // 更新用户数据 (保留原有字段，覆盖新字段)
+        db[user.account] = {
+            ...db[user.account],
+            ...user,
+            lastLogin: Date.now()
+        };
+        
+        localStorage.setItem('angel_users_v2', JSON.stringify(db));
+        
+        // 同步更新历史列表 (用于 UI 显示)
+        this.saveKnownUser(user);
+    },
+    
+    loadLocalUser(account) {
+        try {
+            const db = JSON.parse(localStorage.getItem('angel_users_v2') || '{}');
+            return db[account] || null;
+        } catch(e) { return null; }
     },
 
     // =================================
     //  🎉 自动登录 (无参数)
-    //
-    //  🎨 代码用途：
-    //     检查本地缓存中是否有有效的 API Key 和用户信息，如果有则直接登录。
-    //
-    //  💡 易懂解释：
-    //     “咦，这张脸我认识！” 如果你之前来过，门卫大叔会直接给你开门哦~ 👋
-    //
-    //  ⚠️ 警告：
-    //     依赖 localStorage 中的 'angel_api_key' 和 'current_user_id'。
     // =================================
     async autoLogin() {
         // 1. 尝试从浏览器缓存读取 Key
-        const cachedKey = localStorage.getItem('angel_api_key'); // 💖 获取缓存的 API Key
-        const cachedUser = localStorage.getItem('current_user_id'); // 💖 获取缓存的用户 ID
-        const cachedToken = localStorage.getItem('angel_auth_token'); // 💖 获取缓存的 Token
+        const cachedKey = localStorage.getItem('angel_api_key');
+        const cachedUser = localStorage.getItem('current_user_id');
+        const cachedToken = localStorage.getItem('angel_auth_token');
         
-        if (cachedKey && cachedUser && cachedToken) { // 💖 如果三者都存在
-            this.currentUser = { 
-                id: cachedUser, 
-                name: cachedUser, 
-                account: cachedUser, 
-                keys: [{ name: 'Cached Key', value: cachedKey }] 
-            }; // 💖 构造当前用户对象
-            this.updateSystemUser(); // 💖 更新系统用户状态
-            network.connect(); // 🚀 连接网络
-            bus.emit('system:speak', `欢迎回来，${cachedUser}`); // 💖 语音欢迎
+        if (cachedUser) {
+            // 🆕 优先从本地 DB 加载完整数据
+            const localData = this.loadLocalUser(cachedUser);
+            
+            if (localData) {
+                this.currentUser = localData;
+                console.log("Login: Loaded user from local DB", this.currentUser.account);
+            } else {
+                // 降级方案：尝试从 current_user_info 加载
+                try {
+                    const fullInfo = JSON.parse(localStorage.getItem('current_user_info'));
+                    if (fullInfo && fullInfo.account === cachedUser) {
+                        this.currentUser = fullInfo;
+                    } else {
+                        // 只有 ID 没有数据的情况
+                        this.currentUser = { 
+                            id: cachedUser, 
+                            name: cachedUser, 
+                            account: cachedUser, 
+                            keys: cachedKey ? [{ name: 'Cached Key', value: cachedKey }] : [] 
+                        };
+                    }
+                } catch(e) {}
+            }
+
+            this.updateSystemUser();
+            network.connect();
+            bus.emit('system:speak', `欢迎回来，${cachedUser}`);
         } else {
-            // 2. 如果没有缓存，显示登录界面
-            // 💖 修改：默认不自动弹出登录界面，等待用户点击开始按钮
-            // this.open(); 
-            console.log("未检测到登录状态，等待用户手动登录");
+            // 2. 如果没有缓存，创建默认本地账户
+            console.log("未检测到登录状态，初始化默认本地账户");
+
+            this.currentUser = { 
+                id: 'local_admin', 
+                name: 'Local Admin', 
+                account: 'admin', 
+                avatar: 'assets/wp-0.avif',
+                isLocal: true,
+                keys: [{ name: 'Default Key', value: 'sk-local-default-key' }] 
+            };
+            
+            // 自动保存并登录
+            this.saveLocalUser(this.currentUser); // 🆕 保存到 DB
+            this.updateSystemUser();
+            network.connect();
+            bus.emit('system:speak', "默认本地账户已登录");
         }
     },
 
@@ -179,203 +233,305 @@ export const loginApp = {
 
     // =================================
     //  🎉 渲染登录界面 (无参数)
-    //
-    //  🎨 代码用途：
-    //     动态创建登录界面的 HTML 结构，包括头像、输入框和按钮，并绑定事件。
-    //
-    //  💡 易懂解释：
-    //     画出门的样子：要有放照片的地方，填名字的地方，还有一个大大的“登录”按钮！🎨
-    //
-    //  ⚠️ 警告：
-    //     直接操作 DOM，创建 id="login-overlay" 的元素。
     // =================================
     render() {
-        const overlay = document.createElement('div'); // 💖 创建遮罩层容器
-        overlay.id = 'login-overlay'; // 💖 设置 ID
+        const overlay = document.createElement('div');
+        overlay.id = 'login-overlay';
         overlay.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px);
             z-index: 9999; display: flex; justify-content: center; align-items: center;
-        `; // 💖 设置样式：全屏、半透明黑背景、毛玻璃效果、居中对齐
+            font-family: 'Segoe UI', sans-serif;
+        `;
 
-        // 默认显示 admin
-        const defaultUser = { name: 'Admin', account: 'admin', avatar: 'assets/wp-0.avif', keys: [] }; // 💖 默认显示的用户信息
-        const user = this.currentUser || defaultUser; // 💖 如果没有当前用户，使用默认用户
+        // 🆕 自动迁移：如果历史列表为空，尝试从上次登录信息恢复
+        if (!localStorage.getItem('angel_known_users')) {
+            try {
+                const lastUser = JSON.parse(localStorage.getItem('current_user_info'));
+                if (lastUser && lastUser.account) {
+                    const list = [{
+                        account: lastUser.account,
+                        name: lastUser.name || lastUser.account,
+                        avatar: lastUser.avatar || 'assets/wp-0.avif'
+                    }];
+                    localStorage.setItem('angel_known_users', JSON.stringify(list));
+                }
+            } catch (e) {}
+        }
+
+        // 读取历史用户
+        let knownUsers = [];
+        try {
+            knownUsers = JSON.parse(localStorage.getItem('angel_known_users') || '[]');
+        } catch (e) {}
+
+        // 🛡️ 保底策略：如果还是空的，显示默认本地管理员
+        if (knownUsers.length === 0) {
+            knownUsers.push({
+                account: 'admin',
+                name: 'Local Admin',
+                avatar: 'assets/wp-0.avif'
+            });
+        }
+
+        // 历史用户列表 HTML
+        let usersHtml = '';
+        if (knownUsers.length > 0) {
+            usersHtml = `
+                <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap;">
+                    ${knownUsers.map(u => `
+                        <div class="user-card" data-account="${u.account}" style="
+                            display: flex; flex-direction: column; align-items: center; gap: 5px;
+                            cursor: pointer; transition: transform 0.2s; width: 70px;
+                        " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            <img src="${u.avatar || 'assets/wp-0.avif'}" style="
+                                width: 50px; height: 50px; border-radius: 50%; object-fit: cover;
+                                border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                            ">
+                            <div style="font-size: 12px; color: #555; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; text-align: center;">${u.name}</div>
+                        </div>
+                    `).join('')}
+                    <div class="user-card" id="btn-new-user" style="
+                        display: flex; flex-direction: column; align-items: center; gap: 5px;
+                        cursor: pointer; transition: transform 0.2s; width: 70px;
+                    " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                        <div style="
+                            width: 50px; height: 50px; border-radius: 50%; background: #f0f0f0;
+                            display: flex; justify-content: center; align-items: center;
+                            border: 2px dashed #ccc; color: #999; font-size: 20px;
+                        ">+</div>
+                        <div style="font-size: 12px; color: #999;">新账户</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const defaultUser = this.currentUser || { name: 'Admin', account: 'admin', avatar: 'assets/wp-0.avif' };
+        
+        // 默认是否显示表单：如果有用户列表，则隐藏表单；否则显示
+        // 但由于我们加了保底策略，knownUsers 几乎总是有值，所以默认隐藏表单，显示列表
+        const showForm = false; 
 
         overlay.innerHTML = `
             <div class="login-card" style="
-                background: rgba(255, 255, 255, 0.9); padding: 30px; border-radius: 20px;
-                width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                display: flex; flex-direction: column; gap: 15px;
+                background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 24px;
+                width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+                display: flex; flex-direction: column; gap: 20px;
             ">
                 <div style="text-align: center;">
-                    <img id="login-avatar" src="${user.avatar}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"> <!-- 💖 用户头像 -->
-                    <h2 id="login-title" style="margin: 10px 0; color: #333;">Login</h2> <!-- 💖 标题 -->
+                    <h2 style="margin: 0 0 5px 0; color: #333; font-size: 24px;">欢迎回来</h2>
+                    <p style="margin: 0; color: #999; font-size: 13px;">请点击头像登录，或使用新账户</p>
                 </div>
 
-                <div id="login-form">
-                    <div class="form-group">
-                        <label>账号</label>
-                        <input type="text" id="login-account" value="${user.account}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;"> <!-- 💖 账号输入框 -->
+                ${usersHtml}
+
+                <div id="login-form" style="${showForm ? '' : 'display:none;'}">
+                    <div style="display: flex; flex-direction: column; gap: 15px;">
+                        <div class="form-group">
+                            <label style="font-size: 12px; color: #666; font-weight: 600; margin-bottom: 5px; display: block;">账号</label>
+                            <input type="text" id="login-account" value="${knownUsers.length === 0 ? defaultUser.account : ''}" placeholder="请输入账号" style="
+                                width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px;
+                                font-size: 14px; outline: none; transition: border-color 0.2s;
+                            " onfocus="this.style.borderColor='var(--primary-color)'" onblur="this.style.borderColor='#eee'">
+                        </div>
+
+                        <div class="form-group">
+                            <label style="font-size: 12px; color: #666; font-weight: 600; margin-bottom: 5px; display: block;">密码</label>
+                            <input type="password" id="login-password" placeholder="默认为空" style="
+                                width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px;
+                                font-size: 14px; outline: none; transition: border-color 0.2s;
+                            " onfocus="this.style.borderColor='var(--primary-color)'" onblur="this.style.borderColor='#eee'">
+                        </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>密码</label>
-                        <input type="password" id="login-password" placeholder="默认为空" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px;"> <!-- 💖 密码输入框 -->
+                    <div style="margin-top: 20px;">
+                        <button id="btn-login" style="
+                            width: 100%; padding: 12px; background: var(--primary-color); color: white; 
+                            border: none; border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 15px;
+                            box-shadow: 0 5px 15px rgba(0,0,0,0.1); transition: transform 0.1s;
+                        " onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'">
+                            立即登录
+                        </button>
+                        <div id="btn-back-list" style="
+                            text-align: center; margin-top: 15px; color: #999; font-size: 12px; cursor: pointer;
+                            display: ${knownUsers.length > 0 ? 'block' : 'none'};
+                        ">返回账户列表</div>
                     </div>
                 </div>
-
-                <div id="key-selection" style="display:none;">
-                    <label>选择 API Key:</label>
-                    <select id="login-key-select" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 8px; margin-top: 5px;">
-                    </select>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button id="btn-login" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">登录</button> <!-- 💖 登录按钮 -->
-                </div>
-                <div id="login-msg" style="color: red; text-align: center; font-size: 12px;"></div> <!-- 💖 错误信息显示区域 -->
             </div>
         `;
 
-        document.body.appendChild(overlay); // 💖 将遮罩层添加到页面
+        document.body.appendChild(overlay);
 
+        const formDiv = document.getElementById('login-form');
+        const accountInput = document.getElementById('login-account');
         const btnLogin = document.getElementById('btn-login');
-        const keySelect = document.getElementById('login-key-select');
-        const keySection = document.getElementById('key-selection');
-        const formSection = document.getElementById('login-form');
-        const msg = document.getElementById('login-msg');
+        const btnBack = document.getElementById('btn-back-list');
 
-        // 绑定事件
-        btnLogin.onclick = async () => { // 💖 登录按钮点击事件
-            // 阶段 2: 确认 Key 并进入系统
-            if (btnLogin.innerText === "进入系统") {
-                const selectedKey = keySelect.value;
-                if (selectedKey) {
-                    // 更新当前用户的 Key 列表顺序，把选中的放第一位
-                    const selectedKeyObj = this.currentUser.keys.find(k => k.value === selectedKey);
-                    if (selectedKeyObj) {
-                        this.currentUser.keys = [selectedKeyObj, ...this.currentUser.keys.filter(k => k.value !== selectedKey)];
-                    }
-                    this.close();
-                    this.updateSystemUser();
-                    network.connect();
-                    bus.emit('system:speak', `欢迎回来，${this.currentUser.name}`);
-                } else {
-                    msg.innerText = "请选择一个有效的 Key";
-                }
-                return;
-            }
-
-            // 阶段 1: 验证账号密码
-            const account = document.getElementById('login-account').value; // 💖 获取账号
-            const password = document.getElementById('login-password').value; // 💖 获取密码
-
-            try {
-                msg.innerText = "正在验证..."; // 💖 提示正在验证
-                const res = await fetch(`${WEB_API_URL}/login`, { // 💖 发送登录请求
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ account, password }) // 💖 发送账号密码
-                });
-
-                if (res.ok) { // 💖 如果登录成功
-                    const data = await res.json(); // 💖 解析响应数据
-                    
-                    // 💾 保存 Token
-                    if (data.token) {
-                        localStorage.setItem('angel_auth_token', data.token); // 💖 缓存 Token
-                    }
-
-                    this.currentUser = {
-                        id: account,
-                        name: account,
-                        account: account,
-                        avatar: 'assets/wp-0.avif',
-                        keys: data.keys // 💖 获取用户的 API Keys
-                    };
-
-                    // 💖 切换 UI 到 Key 选择模式
-                    // 💖 修改：不再显示 Key 选择，直接进入系统，并弹出左下角 Key 管理器
-                    this.close();
-                    this.updateSystemUser();
-                    network.connect();
-                    bus.emit('system:speak', `欢迎回来，${account}`);
-                    
-                    // 延迟弹出 Key 管理器
-                    setTimeout(() => {
-                        bus.emit('system:open_key_mgr');
-                    }, 500);
-
-                    /* 
-                    // 旧逻辑：显示 Key 选择
-                    formSection.style.display = 'none'; // 隐藏表单
-                    keySection.style.display = 'block'; // 显示 Key 选择
-                    btnLogin.innerText = "进入系统"; // 更改按钮文本
-                    document.getElementById('login-title').innerText = `Hi, ${account}`; // 更改标题
-                    msg.innerText = ""; // 清空消息
-                    ...
-                    */
-
-                } else {
-                    const err = await res.json(); // 💖 解析错误信息
-                    msg.innerText = err.detail || "登录失败"; // 💖 显示错误信息
-                }
-            } catch (e) {
-                // =================================
-                //  🎉 离线登录 (Offline Login)
-                //
-                //  🎨 代码用途：
-                //     当登录服务器不可用时，允许用户以离线身份进入系统。
-                //     💖 修改：即使离线也显示 Key 选择界面，提供“离线 Key”供用户体验流程。
-                //
-                //  💡 易懂解释：
-                //     门卫大叔不在家？那就自己开门进去吧，反正家里也没别人！🏠
-                // =================================
-                console.warn("登录服务器不可用，进入离线模式", e);
-                
-                // 模拟成功登录的数据
-                this.currentUser = {
-                    id: account || 'offline_user',
-                    name: account || 'Offline User',
-                    account: account || 'offline',
-                    avatar: 'assets/wp-0.avif',
-                    keys: [{ name: 'Offline Key', value: 'offline-key-123456' }] // 💖 提供一个离线 Key
+        // 绑定用户列表点击
+        overlay.querySelectorAll('.user-card').forEach(card => {
+            if (card.id === 'btn-new-user') {
+                card.onclick = () => {
+                    formDiv.style.display = 'block';
+                    accountInput.value = '';
+                    accountInput.focus();
                 };
-
-                // 💖 切换 UI 到 Key 选择模式 (与在线模式一致)
-                // 💖 切换 UI 到 Key 选择模式 (与在线模式一致)
-                // 💖 修改：离线模式也直接进入系统
-                this.close();
-                this.updateSystemUser();
-                bus.emit('system:speak', `离线模式启动，欢迎 ${this.currentUser.name}`);
-                
-                // 延迟弹出 Key 管理器
-                setTimeout(() => {
-                    bus.emit('system:open_key_mgr');
-                }, 500);
-
-                /*
-                formSection.style.display = 'none'; // 隐藏表单
-                keySection.style.display = 'block'; // 显示 Key 选择
-                btnLogin.innerText = "进入系统"; // 更改按钮文本
-                document.getElementById('login-title').innerText = `Hi, ${this.currentUser.name} (Offline)`; // 更改标题
-                msg.innerText = "⚠️ 离线模式: 仅本地功能可用"; // 提示离线
-
-                // 填充 Key 列表
-                keySelect.innerHTML = '';
-                const opt = document.createElement('option');
-                opt.value = "offline-key-123456";
-                opt.innerText = "🔑 本地离线 Key (无需联网)";
-                keySelect.appendChild(opt);
-                */
+            } else {
+                card.onclick = () => {
+                    const acc = card.dataset.account;
+                    accountInput.value = acc;
+                    // 自动触发登录
+                    btnLogin.click();
+                };
             }
+        });
+
+        if (btnBack) {
+            btnBack.onclick = () => {
+                formDiv.style.display = 'none';
+            };
+        }
+
+        // 登录逻辑 (乐观更新)
+        btnLogin.onclick = () => {
+            const account = accountInput.value.trim();
+            const password = document.getElementById('login-password').value;
+
+            if (!account) return;
+
+            // 1. ⚡ 立即进入系统 (乐观 UI)
+            
+            // 🆕 尝试从本地 DB 加载完整用户数据 (包含 Keys)
+            const localData = this.loadLocalUser(account);
+            
+            // 构造临时用户状态 (优先使用本地 DB 数据)
+            this.currentUser = {
+                id: account,
+                name: localData ? localData.name : (account === 'admin' ? 'Administrator' : account), // 优化默认名
+                account: account,
+                avatar: localData ? localData.avatar : 'assets/wp-0.avif',
+                keys: localData ? (localData.keys || []) : [], 
+                isLocal: true,
+                isSyncing: true 
+            };
+
+            // 如果是新初始化的 admin 且没有 Key，尝试注入默认 Key 或迁移旧缓存
+            if (account === 'admin' && this.currentUser.keys.length === 0) {
+                const oldCachedKey = localStorage.getItem('angel_api_key');
+                if (oldCachedKey) {
+                    this.currentUser.keys.push({ name: 'Legacy Key', value: oldCachedKey });
+                } else {
+                    this.currentUser.keys.push({ name: 'Default', value: 'sk-local-admin-key' });
+                }
+            }
+
+            // 尝试从历史记录恢复头像 (如果本地 DB 没有)
+            if (!localData) {
+                const known = knownUsers.find(u => u.account === account);
+                if (known) this.currentUser.avatar = known.avatar;
+            }
+
+            this.close();
+            this.saveLocalUser(this.currentUser); // 🆕 立即保存初始状态到 DB
+            this.updateSystemUser();
+            bus.emit('system:speak', `欢迎回来，${this.currentUser.name}`);
+            
+            // 延迟弹出 Key 管理器 (让用户看到连接状态)
+            setTimeout(() => bus.emit('system:open_key_mgr'), 600);
+
+            // 2. ☁️ 后台尝试连接服务器
+            fetch(`${WEB_API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ account, password })
+            })
+            .then(async res => {
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.token) localStorage.setItem('angel_auth_token', data.token);
+                    
+                    // 🔄 智能合并 Keys (优先保留本地，合并服务器新增)
+                    const serverKeys = data.keys || [];
+                    const localKeys = this.currentUser.keys || [];
+                    
+                    // 创建一个 Map 来去重，以 Key Value 为准
+                    const mergedMap = new Map();
+                    
+                    // 1. 先放入本地 Keys (优先级高)
+                    localKeys.forEach(k => mergedMap.set(k.value, k));
+                    
+                    // 2. 再放入服务器 Keys (如果不存在则添加)
+                    serverKeys.forEach(k => {
+                        if (!mergedMap.has(k.value)) {
+                            mergedMap.set(k.value, k);
+                        }
+                    });
+                    
+                    // 3. 转换回数组
+                    this.currentUser.keys = Array.from(mergedMap.values());
+                    
+                    // 更新为云端状态
+                    this.currentUser.isLocal = false;
+                    this.currentUser.isSyncing = false; // ✅ 同步完成
+                    
+                    // 保存到本地 DB 和历史列表
+                    this.saveLocalUser(this.currentUser);
+                    
+                    this.updateSystemUser();
+                    bus.emit('system:speak', "云端账户连接成功");
+                    
+                    // 📤 同步合并后的 Keys 回服务器
+                    fetch(`${WEB_API_URL}/update_user_keys`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            account: this.currentUser.account,
+                            keys: this.currentUser.keys
+                        })
+                    }).catch(e => console.warn("同步 Keys 失败", e));
+                    
+                } else {
+                    throw new Error("Login failed");
+                }
+            })
+            .catch(e => {
+                console.warn("后台登录失败，保持本地模式", e);
+                this.currentUser.isSyncing = false; // ❌ 同步结束 (失败)
+                this.currentUser.isLocal = true;
+                
+                // 即使失败也保存到本地 DB
+                this.saveLocalUser(this.currentUser);
+                
+                this.updateSystemUser();
+                // 不打扰用户，Key Manager 会显示状态
+            });
         };
         
-        // 点击背景关闭
-        overlay.onclick = (e) => {
-            if (e.target === overlay) this.close(); // 💖 点击遮罩层背景时关闭
+        // ⚡ 交互优化：双击背景关闭 (防止误触)
+        overlay.ondblclick = (e) => {
+            if (e.target === overlay) this.close();
         };
+    },
+
+    // 保存用户到历史列表
+    saveKnownUser(user) {
+        let list = [];
+        try { list = JSON.parse(localStorage.getItem('angel_known_users') || '[]'); } catch(e) {}
+        
+        // 移除旧的同名记录
+        list = list.filter(u => u.account !== user.account);
+        
+        // 添加新的
+        list.unshift({
+            account: user.account,
+            name: user.name,
+            avatar: user.avatar
+        });
+        
+        // 最多存 5 个
+        if (list.length > 5) list.pop();
+        
+        localStorage.setItem('angel_known_users', JSON.stringify(list));
     }
 };
 

@@ -88,6 +88,19 @@ class LoginRequest(BaseModel):
     account: str # 👤 账号
     password: str # 🔑 密码
 
+class UpdateKeysRequest(BaseModel):
+    # =================================
+    #  🎉 更新密钥请求 (无参数)
+    #
+    #  🎨 代码用途：
+    #     定义更新用户密钥时的请求体结构。
+    #
+    #  💡 易懂解释：
+    #     这是“配钥匙申请单”！🔑 告诉管家我要加几把新钥匙。
+    # =================================
+    account: str # 👤 账号
+    keys: list # 🗝️ 新的密钥列表
+
 class SyncBatchRequest(BaseModel):
     # =================================
     #  🎉 批量同步请求 (无参数)
@@ -316,15 +329,13 @@ async def login(req: LoginRequest):
     # =================================
     users = load_json(KEY_FILE, {}) # 📖 读取用户库
     
-    # 自动注册逻辑 (简化版 - 默认使用新格式)
-    if req.account not in users: # 🧐 检查用户是否存在
-        users[req.account] = {
-            "password": req.password,
-            "keys": []
-        } # 📝 记录新用户 (新格式)
-        save_json(KEY_FILE, users) # 💾 保存
-        print(f"🆕 新用户注册: {req.account}") # 🖨️ 打印日志
-    
+    # 检查用户是否存在
+    if req.account not in users:
+        # 🆕 自动注册新用户
+        print(f"🆕 自动注册新用户: {req.account}")
+        users[req.account] = {"password": req.password, "keys": []}
+        save_json(KEY_FILE, users)
+        
     # 获取存储的密码和 Keys
     stored_user = users[req.account] # 👤 获取用户信息
     stored_password = "" # 🔑 临时密码变量
@@ -353,6 +364,39 @@ async def login(req: LoginRequest):
         "user_id": req.account,
         "keys": user_keys # 🗝️ 返回用户的 API Keys
     }
+
+@app.post("/update_user_keys")
+async def update_user_keys(req: UpdateKeysRequest):
+    # =================================
+    #  🎉 更新用户密钥 (更新请求)
+    #
+    #  🎨 代码用途：
+    #     接收客户端提交的最新 Key 列表，并保存到服务器。
+    #     支持新增和更新，会覆盖旧的 Key 列表。
+    #
+    #  💡 易懂解释：
+    #     管家，这是我最新的钥匙串，帮我保管好！🔑
+    #
+    #  ⚠️ 警告：
+    #     这里直接覆盖了 keys 列表，客户端需要负责合并逻辑。
+    # =================================
+    users = load_json(KEY_FILE, {}) # 📖 读取用户库
+    
+    if req.account not in users:
+        # 如果用户不存在，自动创建 (仅限开发环境)
+        users[req.account] = {"password": "", "keys": []}
+    
+    user_data = users[req.account]
+    if isinstance(user_data, dict):
+        user_data["keys"] = req.keys # 💾 更新 Keys
+    else:
+        # 旧格式转新格式
+        users[req.account] = {"password": user_data, "keys": req.keys}
+        
+    if save_json(KEY_FILE, users): # 💾 保存到文件
+        return {"status": "success", "msg": "密钥已更新"}
+    else:
+        raise HTTPException(status_code=500, detail="保存失败")
 
 @app.post("/save_memory")
 async def save_memory(state: AppState):

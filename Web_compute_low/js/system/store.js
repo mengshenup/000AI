@@ -363,6 +363,8 @@ class Store {
             this.apps[id].openMsg = metadata.openMsg; // 💬 更新欢迎语
             
             // 💖 显式更新布局属性，确保新版本 UI 生效
+            this.apps[id].skipTaskbar = metadata.skipTaskbar; // 💖 更新跳过任务栏设置
+            this.apps[id].showTrayIcon = metadata.showTrayIcon; // 💖 更新托盘图标设置
             this.apps[id].frameless = metadata.frameless; // 🖼️ 更新无边框设置
             this.apps[id].fixed = metadata.fixed; // 📌 更新固定位置设置
             this.apps[id].width = metadata.width; // 📏 更新宽度

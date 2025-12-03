@@ -173,6 +173,9 @@ export class TaskManagerApp {
         const systemApps = [];
         
         Object.entries(apps).forEach(([id, app]) => {
+            // 💖 过滤规则：如果标记为 hideInTaskMgr，则不显示
+            if (app.hideInTaskMgr) return;
+
             const appData = { id, ...app };
             if (app.isSystem) {
                 // 💖 过滤规则：显示所有系统应用，不再隐藏

@@ -105,25 +105,23 @@ function update() {
     Object.entries(store.apps).forEach(([id, app]) => { // 💖 遍历所有应用
         if (app.isSystem) return; // 💖 跳过系统应用
 
-        // 💖 核心逻辑：显示条件 = (已固定) OR (已打开)
-        // 如果既没有固定，也没有打开，就不显示在任务栏
-        if (!app.showTaskbarIcon && !app.isOpen) return;
+        // 💖 新增：如果应用明确要求跳过任务栏 (即使运行中也不显示)
+        if (app.skipTaskbar) return;
 
         const win = document.getElementById(id); // 💖 尝试获取应用对应的窗口 DOM
+        
+        // 💖 逻辑更新：显示条件 = (已固定) OR (已打开)
+        const isPinned = app.showTaskbarIcon !== false; // 默认为 true，除非显式设为 false
+        const isRunning = app.isOpen && win && win.classList.contains('open');
+
+        if (!isPinned && !isRunning) return; // 既没固定也没运行，不显示
+
         const div = document.createElement('div'); // 💖 创建任务栏图标容器
         div.className = 'task-app'; // 💖 添加 CSS 类名
         div.dataset.id = id; // 💖 存储应用 ID
         div.title = app.name || id; // 💖 设置鼠标悬停提示
         const iconPath = app.icon || app.iconPath; // 💖 获取图标路径
         div.innerHTML = `<svg style="width:24px;fill:${app.color}" viewBox="0 0 24 24"><path d="${iconPath}"/></svg>`; // 💖 渲染 SVG 图标
-
-        // 💖 修复：增加 store 状态检查，确保只有真正打开的应用才显示运行状态
-        // 解决“关闭后仍显示横杠”的问题
-        // 💖 逻辑更新：显示条件 = (已固定) OR (已打开)
-        const isPinned = app.showTaskbarIcon !== false; // 默认为 true，除非显式设为 false
-        const isRunning = app.isOpen && win && win.classList.contains('open');
-
-        if (!isPinned && !isRunning) return; // 既没固定也没运行，不显示
 
         if (isRunning) { // 💖 如果窗口存在且已打开
             div.classList.add('running'); // 💖 标记为运行中（显示下划线或高亮）
@@ -195,6 +193,9 @@ function renderTrayIcons() {
     const wm = window.wm; // 💖 获取窗口管理器实例
 
     Object.entries(store.apps).forEach(([id, app]) => { // 💖 遍历所有应用
+        // 💖 新增：如果应用明确要求不显示托盘图标
+        if (app.showTrayIcon === false) return;
+
         // 💖 只渲染标记为系统应用且未明确禁止显示的应用
         // 💖 修复：过滤掉不需要显示在托盘的系统应用 (如桌面、任务栏本身、右键菜单等)
         // 💖 新增：过滤掉胶囊服务 (svc-traffic, svc-billing, svc-fps)，它们只显示胶囊，不显示托盘图标
