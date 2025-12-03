@@ -1,3 +1,12 @@
+# ==========================================================================
+#  📃 文件功能 : 截图工具 (ScreenshotTool)
+#  ⚡ 逻辑摘要 : 封装 Playwright 截图功能，支持多级画质压缩和磁盘缓存控制。
+#  💡 易懂解释 : Angel 的眼睛！负责把看到的网页拍下来，还能把照片变小一点省流量。
+#  🔋 未来扩展 : 支持 WebP 格式，支持区域截图。
+#  📊 当前状态 : 活跃 (更新: 2025-12-03)
+#  🧱 screenshot_tool.py 踩坑记录 :
+#     1. [2025-12-03] [已修复] [性能]: 频繁写入磁盘导致直播流卡顿 -> 增加 save_to_disk 参数控制 (Line 32)
+# ==========================================================================
 import base64 # 📦 Base64 编码库
 import io # 📥 I/O 流处理库
 import os # 📂 操作系统
@@ -29,14 +38,14 @@ class ScreenshotTool:
         # =================================
         self.page = page # 📄 绑定的页面实例
 
-    async def capture(self, quality_mode='high', user_id='default_user'):
+    async def capture(self, quality_mode='high', user_id='default_user', save_to_disk=False):
         # =================================
-        #  🎉 捕获视野 (画质模式, 用户ID)
+        #  🎉 捕获视野 (画质模式, 用户ID, 是否保存到磁盘)
         #
         #  🎨 代码用途：
         #     截取当前页面屏幕，支持 'high', 'medium', 'low' 三种画质。
         #     低画质模式下会使用 PIL 进行降采样和压缩，以减少数据传输量。
-        #     同时将截图保存到 Memorybank/Screenshots/{user_id}/ 目录下。
+        #     可选将截图保存到 Memorybank/Screenshots/{user_id}/ 目录下。
         #
         #  💡 易懂解释：
         #     看这里！✌️ 拍张照！如果是为了省流量（low模式），我会把照片变小一点、模糊一点，但还是能看清大概的！
@@ -64,16 +73,17 @@ class ScreenshotTool:
                 caret="hide"
             ) 
             
-            # 🛠️ 保存截图到 Memorybank
+            # 🛠️ 保存截图到 Memorybank (仅当 save_to_disk=True 时)
             # 路径: Agent_angel_server/Memorybank/Screenshots/{user_id}/capture.jpg
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Agent_angel_server
-            save_dir = os.path.join(base_dir, "Memorybank", "Screenshots", user_id)
-            os.makedirs(save_dir, exist_ok=True)
-            
-            save_path = os.path.join(save_dir, "capture.jpg")
-            with open(save_path, "wb") as f:
-                f.write(screenshot_bytes)
-            # print(f"📸 [DEBUG] Screenshot saved to {save_path}")
+            if save_to_disk:
+                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # Agent_angel_server
+                save_dir = os.path.join(base_dir, "Memorybank", "Screenshots", user_id)
+                os.makedirs(save_dir, exist_ok=True)
+                
+                save_path = os.path.join(save_dir, "capture.jpg")
+                with open(save_path, "wb") as f:
+                    f.write(screenshot_bytes)
+                # print(f"📸 [DEBUG] Screenshot saved to {save_path}")
 
             if quality_mode == 'high':
                 return base64.b64encode(screenshot_bytes).decode() # 💎 高画质直接返回

@@ -1,3 +1,12 @@
+# ==========================================================================
+#  📃 文件功能 : 流媒体管理器 (StreamManager)
+#  ⚡ 逻辑摘要 : 管理 WebSocket 视频流，控制帧率和画质，协调截图工具。
+#  💡 易懂解释 : Angel 的直播间导演！负责指挥摄像机（截图）和信号塔（WebSocket），把画面传给观众。
+#  🔋 未来扩展 : 支持 WebRTC，支持音频流。
+#  📊 当前状态 : 活跃 (更新: 2025-12-03)
+#  🧱 stream_manager.py 踩坑记录 :
+#     1. [2025-12-03] [已修复] [性能]: 直播流卡顿 -> 禁用截图保存到磁盘 (Line 115)
+# ==========================================================================
 import asyncio # ⚡ 异步 I/O
 import base64 # 🧬 Base64 编码
 import json # 📄 JSON 处理
@@ -111,7 +120,8 @@ class StreamManager:
                 current_fps = config['fps']
                 
                 # print(f"📸 [Stream] Capturing frame for {user_id}...") # 🛠️ DEBUG: Uncommented
-                screenshot_b64 = await eye.capture(quality_mode=current_quality, user_id=user_id)
+                # 🛠️ 优化：直播流不需要保存到磁盘，save_to_disk=False 以提高性能
+                screenshot_b64 = await eye.capture(quality_mode=current_quality, user_id=user_id, save_to_disk=False)
 
                 if screenshot_b64:
                     # 4. 发送数据 (通过 WebSocket)
