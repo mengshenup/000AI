@@ -1,0 +1,9 @@
+[2025-12-17 05:56:17] INFO: Web_compute_low 启动脚本开始执行
+[2025-12-17 05:56:18] INFO: WSL 路径: /mnt/d/001xm/000AI/Web_compute_low
+
+=== Cargo 输出 ===
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.34s
+     Running `target/debug/web_compute_low_server`
+📂 [Rust Low] 正在启动静态文件服务...
+🚀 [Rust Low] 静态资源服务器监听中: http://0.0.0.0:3000
+[2025-12-17 06:05:34] ERROR: 服务异常退出 (退出码: 15)

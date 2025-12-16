@@ -1,0 +1,11 @@
+[2025-12-17 05:56:33] INFO: Web_compute_high 启动脚本开始执行
+[2025-12-17 05:56:34] INFO: WSL 路径: /mnt/d/001xm/000AI/Web_compute_high
+
+=== Cargo 输出 ===
+   Compiling web_compute_low v0.1.0 (/mnt/d/001xm/000AI/Web_compute_high)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.91s
+     Running `target/debug/web_compute_high_server`
+🗿 [Rust High] 正在启动 RocksDB 引擎...
+✅ [Rust High] RocksDB 已就绪: ./angel_rocksdb
+🚀 [Rust High] Axum 高算力节点监听中: http://0.0.0.0:9000
+[2025-12-17 06:05:35] ERROR: 服务异常退出 (退出码: 15)

@@ -1,0 +1,104 @@
+/* 窗口管理器样式 */
+
+/* 窗口通用样式 */
+.window {
+    position: absolute;
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.2s, opacity 0.2s;
+    transform: scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.window.open {
+    transform: scale(1);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.window.minimized {
+    transform: scale(0.8) translateY(200px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.window.frameless {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* 标题栏 */
+.title-bar {
+    height: 40px;
+    background: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    cursor: default;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+}
+
+.title-bar:active { cursor: grabbing; }
+
+.win-title {
+    font-size: 14px;
+    color: #2d3436;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+    margin-left: 8px;
+}
+
+.win-controls {
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.win-btn {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.win-btn:hover { transform: scale(1.1); }
+.win-btn:active { transform: scale(0.9); }
+.close-btn { background: #ff5f56; }
+.min-btn { background: #ffbd2e; }
+.max-btn { background: #27c93f; }
+
+/* 内容区域 */
+.content {
+    flex: 1;
+    padding: 15px;
+    overflow: auto;
+    position: relative;
+}
+
+/* 拖拽遮罩 */
+#drag-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    display: none;
+    cursor: grabbing;
+}

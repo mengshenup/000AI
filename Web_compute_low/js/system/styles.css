@@ -1,0 +1,45 @@
+/**
+ * @fileoverview 系统核心样式入口
+ * @description 仅加载系统核心 CSS，用户应用 CSS 由 CSSInjector 动态注入
+ * 
+ * 🎨 代码用途：
+ *    系统启动时加载的核心样式。
+ *    apps/ 下的用户应用样式在应用打开时动态注入。
+ * 
+ * 💡 易懂解释：
+ *    系统的"基础衣柜"，只放必需品！
+ *    用户应用的衣服在打开应用时才拿出来穿！👔
+ * 
+ * 加载策略：
+ *    - system/ + apps_system/ → 系统启动时加载（核心）
+ *    - apps/ → 应用打开时通过 CSSInjector 动态注入
+ */
+
+/* ========== 1. 全局样式 ========== */
+@import url('./global.css');
+
+/* ========== 2. 系统核心组件 ========== */
+@import url('./window_manager/window_manager.css');
+@import url('./store/store.css');
+@import url('./network/network.css');
+
+/* ========== 3. 共享组件 ========== */
+@import url('./components/button/button.css');
+@import url('./components/input/input.css');
+@import url('./components/modal/modal.css');
+@import url('./components/icon/icon.css');
+
+/* ========== 4. 系统应用 (apps_system) - 系统核心，必须预加载 ========== */
+@import url('../apps_system/desktop/desktop.css');
+@import url('../apps_system/taskbar/taskbar.css');
+@import url('../apps_system/angel/angel.css');
+@import url('../apps_system/billing/billing.css');
+
+/* 
+ * ⚠️ 注意：apps/ 下的用户应用 CSS 不在这里加载！
+ * 用户应用的 CSS 在应用打开时通过 CSSInjector 动态注入：
+ *   - apps/personalization/personalization.css
+ *   - apps/task_manager/task_manager.css
+ *   - apps/intelligence/intelligence.css
+ *   - ... 未来上万个应用
+ */

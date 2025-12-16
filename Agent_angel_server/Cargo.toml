@@ -1,0 +1,60 @@
+[package]
+name = "web_compute_low"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "agent_angel_server"
+path = "Brain/Main.rs"
+
+[[bin]]
+name = "inspect_db"
+path = "Debug/inspect_db.rs"
+
+[dependencies]
+# --- 核心 Web 栈 (统一基于 Hyper 1.0) ---
+# Web 框架: 必须 0.8.x (注意路由语法变了!)
+axum = { version = "0.8.7", features = ["ws", "macros"] }
+# HTTP 客户端: 必须升级到 0.12 以适配 Axum 0.8，避免底层库冲突
+reqwest = { version = "0.12", features = ["json", "blocking", "rustls-tls"] }
+# HTTP 中间件: 配合 Axum 0.8 的最佳版本
+tower-http = { version = "0.6", features = ["fs", "trace", "cors", "compression-full"] }
+
+# --- 异步运行时 ---
+# 开启 full 才能获得 io_uring 支持
+tokio = { version = "1.48", features = ["full"] }
+
+# --- 数据库: 核心中的核心 ---
+# lz4 = 省硬盘钱 (必开)
+# multi-threaded-cf = Axum 并发读写不报错 (必开)
+rocksdb = { version = "0.24", features = ["lz4", "multi-threaded-cf"] }
+
+# --- 工具链 & 序列化 ---
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"       # 错误处理
+walkdir = "2.5"      # 建议升级到 2.5 (文件遍历)
+url = "2.5"          # 建议解锁版本限制，不要用 =2.4.1
+dashmap = "6.0"
+base64 = "0.22"
+futures = "0.3"
+tokio-tungstenite = "0.24"
+dotenv = "0.15"
+
+# --- 监控 ---
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# --- 时间处理 ---
+# chrono = { version = "0.4", features = ["serde"] }
+
+# --- 已废弃/替代 ---
+# lazy_static = "1.4"  <-- 建议移除。Rust 1.70+ 请直接用 std::sync::OnceLock，性能更好且零依赖。
+
+# [[bin]]
+# name = "web_compute_low_server"
+# path = "ServerCore/main.rs"
+
+# [[bin]]
+# name = "apps_list"
+# path = "Operator/apps_list.rs"

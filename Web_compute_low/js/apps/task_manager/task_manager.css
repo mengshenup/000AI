@@ -1,0 +1,112 @@
+/* 任务管理器样式 */
+
+.task-group-title {
+    font-size: 12px;
+    color: #888;
+    margin: 10px 0 5px 0;
+    padding-left: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    margin-bottom: 4px;
+    transition: all 0.2s;
+    border: 1px solid rgba(255,255,255,0.5);
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateX(5px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.task-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.task-icon {
+    width: 32px;
+    height: 32px;
+    background: #f0f0f0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+}
+
+.task-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.task-name {
+    font-weight: 700;
+    color: #000;
+    font-size: 14px;
+}
+
+.task-status {
+    font-size: 11px;
+    color: #444;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.status-dot.active {
+    background: #2ecc71;
+    box-shadow: 0 0 5px #2ecc71;
+}
+
+.task-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.task-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.btn-kill {
+    background: #ffecec;
+    color: #ff5f56;
+}
+
+.btn-kill:hover {
+    background: #ff5f56;
+    color: white;
+}
+
+.btn-switch {
+    background: #eef2ff;
+    color: #4a69bd;
+}
+
+.btn-switch:hover {
+    background: #4a69bd;
+    color: white;
+}

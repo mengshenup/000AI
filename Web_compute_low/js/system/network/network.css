@@ -1,0 +1,35 @@
+/**
+ * Network 模块样式
+ * 网络状态指示器样式
+ */
+
+.network-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.network-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc;
+}
+
+.network-status-dot.connected {
+    background: #4caf50;
+}
+
+.network-status-dot.disconnected {
+    background: #f44336;
+}
+
+.network-status-dot.connecting {
+    background: #ff9800;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}

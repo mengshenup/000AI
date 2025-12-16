@@ -1,0 +1,39 @@
+/* 输入框组件样式 */
+.sys-input {
+    padding: 8px 12px;
+    border: 1px solid #dfe6e9;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sys-input:focus {
+    border-color: #6c5ce7;
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+}
+
+.sys-input:disabled {
+    background: #f5f6fa;
+    cursor: not-allowed;
+}
+
+.sys-input::placeholder {
+    color: #b2bec3;
+}
+
+/* 输入框组 */
+.sys-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sys-input-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #636e72;
+}

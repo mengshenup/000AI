@@ -26,7 +26,9 @@
 # 📅 2025年11月27日更新
 Agent_angel_server/Memorybank/BrowserData/
 Agent_angel_server/Memorybank/Screenshots/
-Web_compute_high/Memorybank/
+Agent_angel_server/target/
+Web_compute_high/Memorybank/.env
+Web_compute_high/target/
 Web_compute_low/target/
 Web_compute_low/Debug/Trash/
 Web_compute_low/no_code/

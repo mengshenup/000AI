@@ -65,10 +65,10 @@ while ($true) {
 
     Kill-Port 9000
 
-    if (Test-Path 'server.py') {
-        python server.py
+    if (Test-Path 'staff\server.py') {
+        python staff\server.py
     } else {
-        Write-Host "❌ 错误：找不到 server.py 文件！" -ForegroundColor Red
+        Write-Host "❌ 错误：找不到 staff\server.py 文件！" -ForegroundColor Red
     }
 
     Write-Host "`n🛑 服务器已停止。" -ForegroundColor Yellow

@@ -1,97 +1,205 @@
 {
     // ============================================
-    // 🐍 核心环境与个人习惯
+    // � 通心用编辑器配置 (Kiro + VSCode 共用)
     // ============================================
-    "python.defaultInterpreterPath": "C:\\Users\\Administrator\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
-    "git.enableSmartCommit": true,
-    "explorer.confirmDelete": false,
-    "security.workspace.trust.untrustedFiles": "open",
-    "powershell.promptToUpdatePowerShell": true,
-    "terminal.integrated.cwd": "${workspaceFolder}",
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 1000,
+    "files.watcherExclude": {
+        "**/target/**": true,
+        "**/node_modules/**": true,
+        "**/.git/objects/**": true,
+        "**/__pycache__/**": true
+    },
+    "search.exclude": {
+        "**/target": true,
+        "**/node_modules": true
+    },
+    "explorer.confirmDelete": true,
+    "explorer.confirmDragAndDrop": false,
+    "workbench.localHistory.enabled": true,
+    "workbench.localHistory.maxFileEntries": 50,
+    "editor.inlineSuggest.enabled": true,
+    "editor.inlineSuggest.showToolbar": "always",
 
     // ============================================
-    // 🤖 Copilot 全自动免打扰配置 (2025 终极版)
+    // 🔧 终端配置 (Kiro + VSCode 共用)
     // ============================================
-    "github.copilot.enable": {
-        "*": true, "plaintext": true, "markdown": true, "scminput": true, 
-        "yaml": true, "json": true, "bat": true, "powershell": true, "shellscript": true
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.enableMultiLinePasteWarning": "never",
+    "terminal.integrated.confirmOnExit": "never",
+    "terminal.integrated.confirmOnKill": "never",
+    "terminal.integrated.commandsToSkipShell": [],
+    "terminal.integrated.allowChords": true,
+    "terminal.integrated.autoReplies": {
+        "Terminate batch job (Y/N)?": "Y\r"
     },
-    "chat.agent.maxRequests": 200,
+
+    // ============================================
+    // 🐍 Python 配置 (Kiro + VSCode 共用)
+    // ============================================
+    "python.defaultInterpreterPath": "C:\\Users\\Administrator\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+    "python.testing.pytestArgs": [
+        "Debug"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+
+    // ============================================
+    // 🦀 Rust 配置 (Kiro + VSCode 共用)
+    // ============================================
+    "rust-analyzer.check.workspace": true,
+    "rust-analyzer.procMacro.enable": true,
+    "rust-analyzer.inlayHints.typeHints.enable": true,
+    "rust-analyzer.cachePriming.enable": false,
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.checkOnSave": true,
+
+    // ============================================
+    // 🤖 Kiro IDE 专用配置 (2025最新)
+    // ============================================
+    
+    // --- Kiro Agent 模型选择 ---
+    "kiroAgent.modelSelection": "claude-opus-4.5",
+    
+    // --- Kiro Agent 自动批准 (核心配置) ---
+    "kiroAgent.autoApprove": true,
+    "kiroAgent.alwaysAllowReadOnly": true,
+    "kiroAgent.alwaysAllowWrite": true,
+    "kiroAgent.alwaysAllowExecute": true,
+    "kiroAgent.continueOnError": true,
+    "kiroAgent.autoRetry": true,
+    "kiroAgent.maxRetries": 3,
+    "kiroAgent.suppressErrors": false,
+    "kiroAgent.logErrors": true,
+    
+    // --- Kiro 通用自动批准 ---
+    "kiro.autoApprove": true,
+    "kiro.alwaysApproveReadOnly": true,
+    "kiro.alwaysApproveWrite": true,
+    "kiro.alwaysApproveExecute": true,
+    "kiro.requireApproval": false,
+    "kiro.continueOnError": true,
+    "kiro.autoRetry": true,
+    "kiro.maxRetries": 3,
+    "kiro.retryDelay": 5000,
+    
+    // --- Kiro 终端命令自动批准 ---
+    "kiro.autoApprove.terminal": {
+        "/^[\\s\\S]*$/": true
+    },
+    
+    // --- Kiro Chat 工具自动批准 (实验性) ---
+    "chat.tools.autoApprove": true,
+    "chat.tools.global.autoApprove": true,
+    "chat.tools.terminal.enableAutoApprove": true,
+    "chat.tools.continueOnError": true,
+    "chat.tools.autoRetry": true,
+    "chat.tools.suppressWarnings": true,
+    "chat.tools.terminal.autoApprove": {
+    
+        "/^[\\s\\S]*$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    },
+    
+    // --- Kiro Agent 配置 ---
+    "chat.agent.maxRequests": 1000,
+    "chat.agent.timeout": 300000,
+    "chat.agent.continueOnError": true,
     "chat.agent.thinkingStyle": "fixedScrolling",
     "chat.customAgentInSubagent.enabled": true,
     "chat.commandCenter.enabled": true,
+    
+    // --- Kiro 命令执行自动批准 ---
+    "chat.executeCommand.autoApprove": true,
+    "chat.terminal.autoApprove": true,
+    "chat.command.autoApprove": true,
+    
+    // --- Kiro Agent 工具自动批准 ---
+    "agent.autoApprove": true,
+    "agent.alwaysAllowExecute": true,
+    "agent.requireApproval": false,
+    "agent.tools.autoApprove": true,
+    "agent.tools.terminal.autoApprove": true,
+
+    // ============================================
+    // 🔀 Cline/Roo 兼容配置 (如果Kiro基于Cline)
+    // ============================================
+    "cline.autoApprove": true,
+    "cline.continueOnError": true,
+    "cline.autoRetry": true,
+    "cline.autoApprove.terminal": {
+        "/^[\\s\\S]*$/": true
+    },
+    "roo-cline.allowAutoApprove": true,
+    "roo-cline.continueOnError": true,
+
+    // ============================================
+    // 🔒 安全与信任配置 (应用程序级别)
+    // ============================================
+    // 注意：以下配置应该在全局配置中设置
+    // 文件位置: C:\Users\Administrator\AppData\Roaming\Kiro\User\settings.json
+    "security.workspace.trust.enabled": false,
+    "security.workspace.trust.startupPrompt": "never",
+    "security.workspace.trust.banner": "never",
+    "security.workspace.trust.emptyWindow": false,
+    "security.workspace.trust.untrustedFiles": "open",
+
+    // ============================================
+    // 📦 扩展配置
+    // ============================================
+    "extensions.autoUpdate": true,
+    "extensions.ignoreRecommendations": false,
+
+    // ============================================
+    // 🔧 Git 配置
+    // ============================================
+    "git.enableSmartCommit": true,
+
+    // ============================================
+    // 🎨 GitHub Copilot 配置 (如果安装了)
+    // ============================================
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": true,
+        "markdown": true,
+        "scminput": true,
+        "yaml": true,
+        "json": true,
+        "bat": true,
+        "powershell": true,
+        "shellscript": true
+    },
     "github.copilot.advanced.messages": true,
     "github.copilot.nextEditSuggestions.enabled": true,
     "github.copilot.editor.enableAutoCompletions": true,
     "github.copilot.chat.locale": "zh-cn",
     "github.copilot.inlineChat.enable": true,
-    "editor.inlineSuggest.enabled": true,
-    "editor.inlineSuggest.showToolbar": "always",
-
-    // --- 🔐 权限总闸 ---
-    "chat.tools.global.autoApprove": true, 
-    "chat.tools.terminal.enableAutoApprove": true,
-
-    // --- 🛠️ 终端命令全放行 ---
-    "chat.tools.terminal.autoApprove": {
-        "/^[\\s\\S]*$/": { "approve": true, "matchCommandLine": true }
+    "github.copilot.chat.codeGeneration.autoApprove": {
+        "/.*/": true
     },
-    "github.copilot.chat.terminal.autoApprove": {
-        "/^[\\s\\S]*$/": { "approve": true, "matchCommandLine": true }
-    },
-
-    // --- ⚡ 代码生成与保存 ---
-    "github.copilot.chat.codeGeneration.autoApprove": { "/.*/": true },
     "github.copilot.chat.editing.alwaysSave": true,
-
-    // --- 🚫 弹窗屏蔽 ---
     "github.copilot.chat.terminal.executeCommand.confirm": false,
     "github.copilot.chat.runCommand.confirm": false,
     "github.copilot.chat.terminal.executeCommand.enabled": true,
     "github.copilot.chat.runCommand.enabled": true,
-
-    // ============================================
-    // 🦀 Rust 新手极速优化配置 (重点修改)
-    // ============================================
-    
-    // 1. 【核心加速】禁用启动时的全量缓存预热
-    // 效果：打开项目不再全速转圈，改为点开哪个文件分析哪个。解决“打开慢”的元凶。
-    "rust-analyzer.cachePriming.enable": false,
-
-    // 2. 【新手导师模式】保持使用 Clippy
-    // 建议新手保留这个！它会像老师一样教你写出地道的 Rust 代码。
-    // 如果你实在觉得写代码时电脑太卡，再把下面改成 "check"。
-    "rust-analyzer.check.command": "clippy",
-
-    // 3. 仅在保存时检查，打字时不干扰
-    "rust-analyzer.checkOnSave": true,
-    
-    // // 4. 不下载标准库源码 (节省硬盘IO，需加速可保留，需看源码学习可删掉此行)
-    // "rust-analyzer.cargo.sysrootSrc": null,
-
-    // ============================================
-    // 🛠️ 系统性能与排除项
-    // ============================================
-    "terminal.integrated.shellIntegration.enabled": true,
-    "terminal.integrated.enableMultiLinePasteWarning": "never",
-    "terminal.integrated.autoReplies": {
-        "Terminate batch job (Y/N)?": "Y\r"
-    },
-    
-    // 这里的排除非常重要，防止 VS Code 浪费资源去监控编译生成的文件
-    "files.watcherExclude": {
-        "**/target/**": true, 
-        "**/node_modules/**": true, 
-        "**/.git/objects/**": true
-    },
-    "search.exclude": {
-        "**/target": true
+    "github.copilot.chat.terminal.autoApprove": {
+        "/^[\\s\\S]*$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     },
 
+    "kiro.agent.trustedCommands": [
+    "*" 
+  ],
     // ============================================
-    // 🧪 Python 配置
+    // 🔧 PowerShell 配置
     // ============================================
-    "python.testing.pytestArgs": ["Debug"],
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "powershell.promptToUpdatePowerShell": true,
+    "kiroAgent.trustedCommands": [
+        "*"
+    ]
 }

@@ -18,10 +18,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 💖 让网页适配各种屏幕大小 -->
     <title>Angel Web Compute</title> <!-- 💖 网页的标题名字 -->
     <link rel="icon" href="data:;base64,="> <!-- 💖 防止 favicon.ico 404 错误 -->
-    <!-- 💖 引入主样式表 -->
-    <link rel="stylesheet" href="css/style.css"> <!-- 💖 加载外部 CSS 样式文件 -->
-    <!-- 💖 引入 Three.js 3D 引擎库 -->
-    <script src="assets/three.min.js"></script> <!-- 💖 加载 Three.js 库，用于 3D 显示 -->
+    <!-- 💖 引入主样式表 (原子化后的统一入口) -->
+    <link rel="stylesheet" href="js/system/styles.css"> <!-- 💖 加载模块化 CSS 样式 -->
+    <!-- 💖 引入 Three.js 3D 引擎库 (小天使 3D 模型用) -->
+    <script src="js/apps_system/angel/assets/three.min.js"></script>
 </head>
 
 <body>
@@ -137,6 +137,7 @@
     //  ⚠️ 警告：
     //     type="module" 很重要，它允许我们使用现代的 import 语法。一定要放在 body 的最后哦！
     // ================================= -->
+    <script src="js/debug_helper.js"></script> <!-- 💖 调试助手 (F12 控制台可用) -->
     <script type="module" src="js/system/loader.js"></script>
 </body>
 

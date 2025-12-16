@@ -1,11 +1,25 @@
+# ==========================================================================
+# Agent_angel_server Python 依赖
+# 更新时间: 2025-12-16
+# 重大变更: 迁移到 Patchright (反爬虫增强版 Playwright)
+# ==========================================================================
+
+# 核心框架
 fastapi
 uvicorn
 websockets
-playwright
+pydantic
+requests
+httpx
+aiohttp
+
+# 浏览器自动化 (Patchright - 反爬虫增强版)
+patchright>=1.56.0
+
+# AI 模型
 google-generativeai
+
+# 工具库
 python-dotenv
 watchfiles
 Pillow
-playwright-stealth
-pydantic
-requests

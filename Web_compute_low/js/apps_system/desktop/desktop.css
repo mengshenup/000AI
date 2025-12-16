@@ -1,0 +1,61 @@
+/* 桌面样式 */
+
+#desktop {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    transition: background-image 0.5s ease;
+}
+
+/* 桌面图标 */
+.desktop-icon {
+    position: absolute;
+    width: 80px;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.desktop-icon:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.icon-svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 5px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.icon-text {
+    color: white;
+    font-size: 12px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    text-align: center;
+}
+
+/* 重命名输入框 */
+#rename-input {
+    position: absolute;
+    z-index: 2000;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    outline: none;
+    text-align: center;
+    min-width: 100px;
+    display: none;
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
+}

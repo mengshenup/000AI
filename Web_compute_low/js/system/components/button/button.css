@@ -1,0 +1,35 @@
+/* 按钮组件样式 */
+.sys-btn {
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.sys-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 尺寸 */
+.sys-btn-small { padding: 4px 10px; font-size: 12px; }
+.sys-btn-medium { padding: 8px 16px; font-size: 14px; }
+.sys-btn-large { padding: 12px 24px; font-size: 16px; }
+
+/* 类型 */
+.sys-btn-primary { background: #6c5ce7; color: #fff; }
+.sys-btn-primary:hover:not(:disabled) { background: #5b4cdb; }
+
+.sys-btn-secondary { background: #dfe6e9; color: #2d3436; }
+.sys-btn-secondary:hover:not(:disabled) { background: #b2bec3; }
+
+.sys-btn-danger { background: #ff7675; color: #fff; }
+.sys-btn-danger:hover:not(:disabled) { background: #d63031; }
+
+.sys-btn-success { background: #00b894; color: #fff; }
+.sys-btn-success:hover:not(:disabled) { background: #00a085; }

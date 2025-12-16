@@ -1,0 +1,28 @@
+{
+    "admin": {
+        "password": "",
+        "keys": [
+            {
+                "name": "Default Key",
+                "value": "sk-local-default-key"
+            },
+            {
+                "name": "Default Key",
+                "value": "AIzaSyBZqhHbm-bbE9cXKkgtaRZv8M5em56zQF0"
+            },
+            {
+                "name": "哇",
+                "value": "1"
+            }
+        ]
+    },
+    "222": {
+        "password": "",
+        "keys": [
+            {
+                "name": "哇",
+                "value": "666"
+            }
+        ]
+    }
+}

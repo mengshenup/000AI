@@ -1,0 +1,962 @@
+{
+    "default": {
+        "apps": {
+            "sys-keymgr": {
+                "id": "sys-keymgr",
+                "name": "密钥管理",
+                "type": "service",
+                "isSystem": true,
+                "description": "管理用户密钥与会话",
+                "version": "1.0.0",
+                "isOpen": true
+            },
+            "sys-taskbar": {
+                "id": "sys-taskbar",
+                "name": "任务栏",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "description": "系统任务栏管理器",
+                "isOpen": true
+            },
+            "sys-desktop": {
+                "id": "sys-desktop",
+                "name": "桌面",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "description": "系统桌面图标管理器",
+                "isOpen": true
+            },
+            "sys-context-menu": {
+                "id": "sys-context-menu",
+                "name": "右键菜单",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "isOpen": true
+            },
+            "win-companion": {
+                "id": "win-companion",
+                "name": "守护天使",
+                "version": "1.0.0",
+                "description": "永远陪伴在你身边的守护者",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z",
+                "color": "#ff7675",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "pos": {
+                    "x": 1115,
+                    "y": 100
+                },
+                "winPos": {
+                    "x": 1033,
+                    "y": 347
+                },
+                "isOpen": true,
+                "content": "\n        <div id=\"angel-container\" style=\"width:100%; height:100%; position:relative;\">\n            <div id=\"angel-scene\" style=\"width:100%; height:100%;\"></div>\n            <div id=\"angel-speech\" class=\"speech-bubble\">...</div>\n            \n            <!-- 💖 新增：聊天交互框 -->\n            <div id=\"angel-chat\" class=\"angel-chat-box\">\n                <div class=\"chat-input-wrapper\">\n                    <input type=\"text\" id=\"angel-input\" class=\"angel-input\" placeholder=\"输入指令或聊天...\" autocomplete=\"off\">\n                    <button id=\"btn-voice\" class=\"chat-btn\" title=\"语音输入\">\n                        <svg viewBox=\"0 0 24 24\"><path d=\"M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z\"/><path d=\"M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z\"/></svg>\n                    </button>\n                    <!-- 💖 新增：静音按钮 -->\n                    <button id=\"btn-mute\" class=\"chat-btn\" title=\"开启/关闭语音\">\n                        <svg id=\"icon-sound-on\" viewBox=\"0 0 24 24\" style=\"display:block\"><path d=\"M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z\"/></svg>\n                        <svg id=\"icon-sound-off\" viewBox=\"0 0 24 24\" style=\"display:none\"><path d=\"M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z\"/></svg>\n                    </button>\n                    <button id=\"btn-send\" class=\"chat-btn\" title=\"发送\">\n                        <svg viewBox=\"0 0 24 24\"><path d=\"M2.01 21L23 12 2.01 3 2 10l15 2-15 2z\"/></svg>\n                    </button>\n                </div>\n            </div>\n        </div>\n        <style>\n            /* 💖 特殊样式：让这个窗口背景透明，去掉边框和阴影 */\n            #win-companion {\n                background: transparent !important;\n                box-shadow: none !important;\n                border: none !important;\n                overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */\n                -webkit-backdrop-filter: none !important;\n                backdrop-filter: none !important; /* 🚫 移除毛玻璃效果 */\n            }\n            #win-companion .title-bar {\n                display: none !important; /* 💖 隐藏标题栏，让它看起来像悬浮在桌面上 */\n            }\n            #win-companion .window-content {\n                background: transparent !important;\n                overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */\n            }\n            /* 💖 气泡样式已移至 style.css 统一管理 */\n        </style>\n    ",
+                "contentStyle": "background:transparent; overflow:visible;",
+                "isSystem": true,
+                "zIndex": 102
+            },
+            "svc-billing": {
+                "id": "svc-billing",
+                "name": "金色收获",
+                "description": "任务栏计费监控服务",
+                "icon": "M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+                "color": "#fdcb6e",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "relatedApps": [
+                    "win-billing"
+                ],
+                "isSystem": true,
+                "capsuleOffsetX": -1
+            },
+            "svc-traffic": {
+                "id": "svc-traffic",
+                "name": "流量胶囊",
+                "description": "任务栏流量监控服务",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#00cec9",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "relatedApps": [
+                    "win-traffic"
+                ],
+                "isSystem": true
+            },
+            "svc-fps": {
+                "id": "svc-fps",
+                "name": "帧率监控",
+                "version": "1.0.0",
+                "description": "实时监控系统渲染帧率",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+                "color": "#636e72",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "isSystem": true
+            },
+            "win-billing": {
+                "id": "win-billing",
+                "name": "金色收获",
+                "version": "1.0.0",
+                "description": "每一分价值都值得被记录",
+                "icon": "M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+                "color": "#fdcb6e",
+                "system": true,
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "frameless": true,
+                "fixed": false,
+                "width": 200,
+                "height": 200,
+                "pos": {
+                    "x": 0,
+                    "y": 0
+                },
+                "isOpen": false,
+                "content": "\n        <div style=\"padding: 15px; background: rgba(45, 52, 54, 0.95); color: #dfe6e9; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column;\">\n            <div style=\"font-size: 12px; color: #fdcb6e; margin-bottom: 10px; font-weight: bold;\">BILLING DETAILS</div>\n            \n            <div style=\"flex: 1; overflow-y: auto; margin-bottom: 10px;\">\n                <div class=\"bill-row\" style=\"display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;\">\n                    <span style=\"color: #b2bec3;\">Network</span>\n                    <span id=\"pop-net\" style=\"color: #fff;\">¥0.00</span>\n                </div>\n                <div class=\"bill-row\" style=\"display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;\">\n                    <span style=\"color: #b2bec3;\">AI Compute</span>\n                    <span id=\"ai-cost\" style=\"color: #fff;\">¥0.00</span>\n                </div>\n                <div style=\"border-top: 1px solid #636e72; margin: 5px 0;\"></div>\n                <div id=\"pop-models\" style=\"font-size: 10px; color: #aaa;\">\n                    <!-- 动态内容 -->\n                </div>\n            </div>\n\n            <div style=\"border-top: 1px solid #636e72; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;\">\n                <span style=\"font-size: 12px;\">TOTAL</span>\n                <span id=\"pop-total\" style=\"color: #fdcb6e; font-weight: bold; font-size: 16px;\">¥0.00</span>\n            </div>\n        </div>\n    ",
+                "contentStyle": "background: transparent; padding: 0; box-shadow: none; border: none;",
+                "zIndex": 109
+            },
+            "win-traffic": {
+                "id": "win-traffic",
+                "name": "脉动监测",
+                "version": "1.0.0",
+                "description": "感受数据的每一次跳动",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#00cec9",
+                "system": true,
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "frameless": true,
+                "fixed": false,
+                "width": 200,
+                "height": 120,
+                "pos": {
+                    "x": 0,
+                    "y": 0
+                },
+                "isOpen": false,
+                "openMsg": "",
+                "content": "\n        <div style=\"padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%;\">\n            <div style=\"font-size: 12px; color: #00cec9; margin-bottom: 10px; font-weight: bold;\">NETWORK MONITOR</div> <!-- 💖 标题 -->\n            <div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">\n                <span style=\"color: #aaa; font-size: 11px;\">UPLOAD</span> <!-- 💖 上传标签 -->\n                <span id=\"tx-stat\" style=\"color: #74b9ff; font-family: monospace;\">0 KB/s</span> <!-- 💖 上传速度显示区域 -->\n            </div>\n            <div style=\"display: flex; justify-content: space-between;\">\n                <span style=\"color: #aaa; font-size: 11px;\">DOWNLOAD</span> <!-- 💖 下载标签 -->\n                <span id=\"rx-stat\" style=\"color: #55efc4; font-family: monospace;\">0 KB/s</span> <!-- 💖 下载速度显示区域 -->\n            </div>\n            <div style=\"margin-top: 10px; height: 2px; background: #333; border-radius: 1px; overflow: hidden;\">\n                <div style=\"width: 50%; height: 100%; background: #00cec9; animation: pulse 2s infinite;\"></div> <!-- 💖 装饰性动画条 -->\n            </div>\n        </div>\n    ",
+                "contentStyle": "background: transparent; padding: 0; box-shadow: none; border: none;",
+                "zIndex": 107
+            },
+            "app-login": {
+                "id": "app-login",
+                "type": "service",
+                "name": "Login Service",
+                "version": "1.0.0",
+                "isSystem": true,
+                "isOpen": false
+            }
+        },
+        "installedApps": {
+            "sys-keymgr": {
+                "name": "Key Manager",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "key_manager.js"
+            },
+            "sys-taskbar": {
+                "name": "Taskbar",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "taskbar.js"
+            },
+            "sys-desktop": {
+                "name": "Desktop",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "desktop.js"
+            },
+            "sys-context-menu": {
+                "name": "Context Menu",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "context_menu.js"
+            },
+            "app-login": {
+                "name": "Login",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "login.js"
+            },
+            "win-companion": {
+                "name": "Angel System",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "angel.js"
+            },
+            "svc-billing": {
+                "name": "Billing",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "billing.js"
+            },
+            "svc-traffic": {
+                "name": "Traffic",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "traffic.js"
+            },
+            "svc-fps": {
+                "name": "FPS Counter",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "fps.js"
+            },
+            "win-angel": {
+                "name": "探索之窗",
+                "version": "1.2.1",
+                "isSystem": false,
+                "filename": "browser.js",
+                "icon": "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
+                "color": "#6c5ce7",
+                "path": "../apps/browser.js"
+            },
+            "win-personalization": {
+                "name": "个性化",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "personalization.js",
+                "icon": "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22L5.09 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+                "color": "#e17055",
+                "path": "../apps/personalization.js"
+            },
+            "win-taskmgr": {
+                "name": "活力源泉",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "task_manager.js",
+                "icon": "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",
+                "color": "#d63031",
+                "path": "../apps/task_manager.js"
+            },
+            "win-manual": {
+                "name": "光明指引",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "manual.js",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+                "color": "#0984e3",
+                "path": "../apps/manual.js"
+            },
+            "win-performance": {
+                "name": "性能调优",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "performance.js",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#6c5ce7",
+                "path": "../apps/performance.js"
+            },
+            "win-intelligence": {
+                "name": "智慧锦囊",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "intelligence.js",
+                "icon": "M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z",
+                "color": "#00b894",
+                "path": "../apps/intelligence.js"
+            }
+        }
+    },
+    "admin": {
+        "apps": {
+            "sys-keymgr": {
+                "id": "sys-keymgr",
+                "name": "密钥管理",
+                "type": "service",
+                "isSystem": true,
+                "description": "管理用户密钥与会话",
+                "version": "1.0.0",
+                "isOpen": true
+            },
+            "sys-taskbar": {
+                "id": "sys-taskbar",
+                "name": "任务栏",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "description": "系统任务栏管理器",
+                "isOpen": true
+            },
+            "sys-desktop": {
+                "id": "sys-desktop",
+                "name": "桌面",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "description": "系统桌面图标管理器",
+                "isOpen": true
+            },
+            "sys-context-menu": {
+                "id": "sys-context-menu",
+                "name": "右键菜单",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "isOpen": true
+            },
+            "win-companion": {
+                "id": "win-companion",
+                "name": "守护天使",
+                "version": "1.0.0",
+                "description": "永远陪伴在你身边的守护者",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z",
+                "color": "#ff7675",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "pos": {
+                    "x": 1115,
+                    "y": 100
+                },
+                "winPos": {
+                    "x": 1130,
+                    "y": 352
+                },
+                "isOpen": true,
+                "content": "\n        <div id=\"angel-container\" style=\"width:100%; height:100%; position:relative;\">\n            <div id=\"angel-scene\" style=\"width:100%; height:100%;\"></div>\n            <div id=\"angel-speech\" class=\"speech-bubble\">...</div>\n            \n            <!-- 💖 新增：聊天交互框 -->\n            <div id=\"angel-chat\" class=\"angel-chat-box\">\n                <div class=\"chat-input-wrapper\">\n                    <input type=\"text\" id=\"angel-input\" class=\"angel-input\" placeholder=\"输入指令或聊天...\" autocomplete=\"off\">\n                    <button id=\"btn-voice\" class=\"chat-btn\" title=\"语音输入\">\n                        <svg viewBox=\"0 0 24 24\"><path d=\"M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z\"/><path d=\"M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z\"/></svg>\n                    </button>\n                    <!-- 💖 新增：静音按钮 -->\n                    <button id=\"btn-mute\" class=\"chat-btn\" title=\"开启/关闭语音\">\n                        <svg id=\"icon-sound-on\" viewBox=\"0 0 24 24\" style=\"display:block\"><path d=\"M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z\"/></svg>\n                        <svg id=\"icon-sound-off\" viewBox=\"0 0 24 24\" style=\"display:none\"><path d=\"M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z\"/></svg>\n                    </button>\n                    <button id=\"btn-send\" class=\"chat-btn\" title=\"发送\">\n                        <svg viewBox=\"0 0 24 24\"><path d=\"M2.01 21L23 12 2.01 3 2 10l15 2-15 2z\"/></svg>\n                    </button>\n                </div>\n            </div>\n        </div>\n        <style>\n            /* 💖 特殊样式：让这个窗口背景透明，去掉边框和阴影 */\n            #win-companion {\n                background: transparent !important;\n                box-shadow: none !important;\n                border: none !important;\n                overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */\n                -webkit-backdrop-filter: none !important;\n                backdrop-filter: none !important; /* 🚫 移除毛玻璃效果 */\n            }\n            #win-companion .title-bar {\n                display: none !important; /* 💖 隐藏标题栏，让它看起来像悬浮在桌面上 */\n            }\n            #win-companion .window-content {\n                background: transparent !important;\n                overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */\n            }\n            /* 💖 气泡样式已移至 style.css 统一管理 */\n        </style>\n    ",
+                "contentStyle": "background:transparent; overflow:visible;",
+                "isSystem": true,
+                "zIndex": 103
+            },
+            "svc-billing": {
+                "id": "svc-billing",
+                "name": "金色收获",
+                "description": "任务栏计费监控服务",
+                "icon": "M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+                "color": "#fdcb6e",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "relatedApps": [
+                    "win-billing"
+                ],
+                "isSystem": true,
+                "capsuleOffsetX": -1
+            },
+            "svc-traffic": {
+                "id": "svc-traffic",
+                "name": "流量胶囊",
+                "description": "任务栏流量监控服务",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#00cec9",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "relatedApps": [
+                    "win-traffic"
+                ],
+                "isSystem": true,
+                "capsuleOffsetX": 0
+            },
+            "svc-fps": {
+                "id": "svc-fps",
+                "name": "帧率监控",
+                "version": "1.0.0",
+                "description": "实时监控系统渲染帧率",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+                "color": "#636e72",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "isSystem": true
+            },
+            "win-billing": {
+                "id": "win-billing",
+                "name": "金色收获",
+                "version": "1.0.0",
+                "description": "每一分价值都值得被记录",
+                "icon": "M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+                "color": "#fdcb6e",
+                "system": true,
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "skipTaskbar": true,
+                "showTrayIcon": false,
+                "frameless": true,
+                "fixed": false,
+                "width": 200,
+                "height": 200,
+                "pos": {
+                    "x": 0,
+                    "y": 0
+                },
+                "isOpen": false,
+                "content": "\n        <div style=\"padding: 15px; background: rgba(45, 52, 54, 0.95); color: #dfe6e9; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column;\">\n            <div style=\"font-size: 12px; color: #fdcb6e; margin-bottom: 10px; font-weight: bold;\">金色收获 (BILLING)</div>\n            \n            <div style=\"flex: 1; overflow-y: auto; margin-bottom: 10px;\">\n                <div class=\"bill-row\" style=\"display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;\">\n                    <span style=\"color: #b2bec3;\">网络传输 (Network)</span>\n                    <span id=\"pop-net\" style=\"color: #fff;\">$0.00</span>\n                </div>\n                <div class=\"bill-row\" style=\"display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;\">\n                    <span style=\"color: #b2bec3;\">AI 算力 (Compute)</span>\n                    <span id=\"ai-cost\" style=\"color: #fff;\">$0.00</span>\n                </div>\n                <div style=\"border-top: 1px solid #636e72; margin: 5px 0;\"></div>\n                <div id=\"pop-models\" style=\"font-size: 10px; color: #aaa;\">\n                    <!-- 动态内容 -->\n                </div>\n            </div>\n\n            <div style=\"border-top: 1px solid #636e72; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;\">\n                <span style=\"font-size: 12px;\">总计 (TOTAL)</span>\n                <span id=\"pop-total\" style=\"color: #fdcb6e; font-weight: bold; font-size: 16px;\">$0.00</span>\n            </div>\n        </div>\n    ",
+                "contentStyle": "background: transparent; padding: 0; box-shadow: none; border: none;",
+                "hideInTaskMgr": true,
+                "zIndex": 108,
+                "winPos": {
+                    "x": 1058,
+                    "y": 652
+                }
+            },
+            "win-traffic": {
+                "id": "win-traffic",
+                "name": "脉动监测",
+                "version": "1.0.0",
+                "description": "感受数据的每一次跳动",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#00cec9",
+                "system": true,
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "skipTaskbar": true,
+                "showTrayIcon": false,
+                "frameless": true,
+                "fixed": false,
+                "width": 200,
+                "height": 120,
+                "pos": {
+                    "x": 0,
+                    "y": 0
+                },
+                "isOpen": false,
+                "openMsg": "",
+                "content": "\n        <div style=\"padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column; justify-content: space-between;\">\n            <div style=\"font-size: 12px; color: #00cec9; margin-bottom: 5px; font-weight: bold;\">网络脉动监测 (NETWORK)</div> <!-- 💖 标题 -->\n            \n            <!-- 实时速率 -->\n            <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;\">\n                <span style=\"color: #aaa; font-size: 11px;\">实时上传</span>\n                <span id=\"tx-stat\" style=\"color: #74b9ff; font-family: monospace;\">0 KB/s</span>\n            </div>\n            <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;\">\n                <span style=\"color: #aaa; font-size: 11px;\">实时下载</span>\n                <span id=\"rx-stat\" style=\"color: #55efc4; font-family: monospace;\">0 KB/s</span>\n            </div>\n\n            <!-- 总流量 -->\n            <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;\">\n                <span style=\"color: #aaa; font-size: 11px;\">总发送量</span>\n                <span id=\"total-tx\" style=\"color: #fff; font-family: monospace;\">0 MB</span>\n            </div>\n            <div style=\"display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;\">\n                <span style=\"color: #aaa; font-size: 11px;\">总接收量</span>\n                <span id=\"total-rx\" style=\"color: #fff; font-family: monospace;\">0 MB</span>\n            </div>\n\n            <!-- 会话信息 -->\n            <div style=\"border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; display: flex; justify-content: space-between;\">\n                <div style=\"text-align: center;\">\n                    <div style=\"color: #aaa; font-size: 10px;\">会话时长</div>\n                    <div id=\"session-duration\" style=\"color: #fab1a0; font-family: monospace;\">00:00:00</div>\n                </div>\n                <div style=\"text-align: center;\">\n                    <div style=\"color: #aaa; font-size: 10px;\">预估成本</div>\n                    <div id=\"session-cost\" style=\"color: #ffeaa7; font-family: monospace;\">$0.0000</div>\n                </div>\n            </div>\n\n            <div style=\"margin-top: 10px; height: 2px; background: #333; border-radius: 1px; overflow: hidden;\">\n                <div style=\"width: 50%; height: 100%; background: #00cec9; animation: pulse 2s infinite;\"></div> <!-- 💖 装饰性动画条 -->\n            </div>\n        </div>\n    ",
+                "contentStyle": "background: transparent; padding: 0; box-shadow: none; border: none;",
+                "hideInTaskMgr": true,
+                "zIndex": 110,
+                "winPos": {
+                    "x": 1105,
+                    "y": 657
+                }
+            },
+            "app-login": {
+                "id": "app-login",
+                "type": "service",
+                "name": "Login Service",
+                "version": "1.0.0",
+                "isSystem": true,
+                "isOpen": false
+            },
+            "win-intelligence": {
+                "name": "智慧锦囊",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "intelligence.js",
+                "icon": "M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z",
+                "color": "#00b894",
+                "path": "../apps/intelligence.js",
+                "pos": {
+                    "x": 218,
+                    "y": 518
+                }
+            },
+            "win-performance": {
+                "id": "win-performance",
+                "name": "性能调优",
+                "description": "调整系统性能与兼容性设置",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "version": "1.0.0",
+                "color": "#6c5ce7",
+                "pos": {
+                    "x": 150,
+                    "y": 150
+                },
+                "winPos": {
+                    "x": 400,
+                    "y": 200
+                },
+                "width": 400,
+                "height": 500,
+                "content": "\n        <div style=\"padding: 20px; display: flex; flex-direction: column; gap: 20px;\">\n            <!-- 🚀 性能模式 -->\n            <div class=\"perf-section\">\n                <h3 style=\"margin: 0 0 10px 0; color: #2d3436;\">🚀 性能模式</h3>\n                <div style=\"display: flex; gap: 10px;\">\n                    <button id=\"btn-perf-high\" class=\"perf-btn active\">高性能 (60FPS)</button>\n                    <button id=\"btn-perf-low\" class=\"perf-btn\">节能模式 (30FPS)</button>\n                </div>\n                <p style=\"font-size: 0.8em; color: #636e72; margin-top: 5px;\">\n                    高性能模式画面更流畅，但会消耗更多电量。节能模式适合笔记本使用。\n                </p>\n            </div>\n\n            <hr style=\"border: 0; border-top: 1px solid #eee;\">\n\n            <!-- 🐢 兼容性模式 -->\n            <div class=\"perf-section\">\n                <h3 style=\"margin: 0 0 10px 0; color: #2d3436;\">🐢 兼容性模式</h3>\n                <div style=\"display: flex; align-items: center; gap: 10px;\">\n                    <label class=\"switch\">\n                        <input type=\"checkbox\" id=\"chk-force-cpu\">\n                        <span class=\"slider round\"></span>\n                    </label>\n                    <span style=\"font-weight: bold;\">强制无 GPU 兼容模式</span>\n                </div>\n                <p style=\"font-size: 0.8em; color: #e17055; margin-top: 5px;\">\n                    如果小天使无法显示或导致浏览器崩溃，请开启此选项。开启后将使用 CPU 渲染，可能会有卡顿。\n                    <br><b>注意：切换此选项需要重启小天使。</b>\n                </p>\n            </div>\n\n            <hr style=\"border: 0; border-top: 1px solid #eee;\">\n\n            <!-- 🚑 紧急修复 -->\n            <div class=\"perf-section\">\n                <h3 style=\"margin: 0 0 10px 0; color: #2d3436;\">🚑 紧急修复</h3>\n                <button id=\"btn-reset-angel\" style=\"\n                    background: #ff7675; color: white; border: none; \n                    padding: 8px 16px; border-radius: 5px; cursor: pointer;\n                    font-weight: bold; width: 100%;\n                \">重置小天使状态</button>\n                <p style=\"font-size: 0.8em; color: #636e72; margin-top: 5px;\">\n                    如果小天使卡住、消失或行为异常，点击此按钮可将其恢复出厂设置。\n                </p>\n            </div>\n\n            <hr style=\"border: 0; border-top: 1px solid #eee;\">\n\n            <!-- 💻 本机配置信息 (迁移自 Manual App) -->\n            <div class=\"perf-section\">\n                <h3 style=\"margin: 0 0 10px 0; color: #2d3436;\">💻 硬件信息</h3>\n                <div id=\"perf-sys-info\" style=\"background:#f8f9fa; padding:10px; border-radius:5px; font-size:0.9em; color:#666;\">\n                    正在读取系统信息...\n                </div>\n            </div>\n        </div>\n\n        <style>\n            .perf-btn {\n                flex: 1;\n                padding: 8px;\n                border: 1px solid #dfe6e9;\n                background: white;\n                border-radius: 5px;\n                cursor: pointer;\n                transition: all 0.2s;\n            }\n            .perf-btn.active {\n                background: #6c5ce7;\n                color: white;\n                border-color: #6c5ce7;\n            }\n            /* 开关样式 */\n            .switch {\n                position: relative;\n                display: inline-block;\n                width: 40px;\n                height: 20px;\n            }\n            .switch input { opacity: 0; width: 0; height: 0; }\n            .slider {\n                position: absolute;\n                cursor: pointer;\n                top: 0; left: 0; right: 0; bottom: 0;\n                background-color: #ccc;\n                transition: .4s;\n                border-radius: 20px;\n            }\n            .slider:before {\n                position: absolute;\n                content: \"\";\n                height: 16px;\n                width: 16px;\n                left: 2px;\n                bottom: 2px;\n                background-color: white;\n                transition: .4s;\n                border-radius: 50%;\n            }\n            input:checked + .slider { background-color: #00b894; }\n            input:checked + .slider:before { transform: translateX(20px); }\n        </style>\n    ",
+                "isOpen": false,
+                "zIndex": 118
+            },
+            "win-manual": {
+                "id": "win-manual",
+                "name": "光明指引",
+                "version": "1.0.0",
+                "description": "照亮前行之路的操作指南",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+                "color": "#0984e3",
+                "pos": {
+                    "x": 20,
+                    "y": 20
+                },
+                "winPos": {
+                    "x": 100,
+                    "y": 50
+                },
+                "content": "\n        <h3>欢迎使用 Seraphim OS! ✨</h3>\n        <p>这是一个基于 Web 的桌面操作系统模拟器。</p>\n        <hr style=\"margin:10px 0; border:0; border-top:1px solid #eee;\">\n        <p><b>操作指南：</b></p>\n        <ul>\n            <li>🖱️ <b>拖拽窗口</b>：按住标题栏移动。</li>\n            <li>📂 <b>打开应用</b>：双击桌面图标。</li>\n            <li>👀 <b>小天使交互</b>：\n                <ul>\n                    <li>左键点击：随机对话</li>\n                    <li>右键拖拽：旋转视角</li>\n                </ul>\n            </li>\n            <li>⚙️ <b>个性化</b>：在设置中更换壁纸。</li>\n        </ul>\n        <hr style=\"margin:10px 0; border:0; border-top:1px solid #eee;\">\n        <p><b>💡 提示：</b></p>\n        <p style=\"font-size:0.9em; color:#666;\">\n            想要查看本机硬件配置或调整性能模式？<br>\n            请前往 <b>“性能调优”</b> 应用 (仪表盘图标)。\n        </p>\n    ",
+                "contentStyle": "color:#444; line-height:1.6;",
+                "isOpen": false,
+                "zIndex": 108,
+                "isMinimized": false
+            },
+            "win-taskmgr": {
+                "id": "win-taskmgr",
+                "name": "活力源泉",
+                "description": "掌控系统能量的指挥中心",
+                "icon": "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",
+                "version": "1.0.0",
+                "color": "#d63031",
+                "pos": {
+                    "x": 20,
+                    "y": 380
+                },
+                "winPos": {
+                    "x": 1017,
+                    "y": 183
+                },
+                "content": "\n        <!-- 💖 任务列表容器 -->\n        <div id=\"task-list\" style=\"height:100%; overflow-y:auto; padding:10px;\">\n            <!-- 任务列表由 JS 动态生成 -->\n        </div>\n    ",
+                "isOpen": false,
+                "zIndex": 117
+            },
+            "win-personalization": {
+                "id": "win-personalization",
+                "name": "个性化",
+                "version": "1.0.0",
+                "description": "定制你的专属梦想空间",
+                "icon": "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22L5.09 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+                "color": "#e17055",
+                "pos": {
+                    "x": 20,
+                    "y": 290
+                },
+                "winPos": {
+                    "x": 200,
+                    "y": 200
+                },
+                "content": "\n        <h4>选择壁纸</h4>\n        <!-- 💖 壁纸网格容器 -->\n        <div id=\"wp-grid\" style=\"margin-top:10px;\">\n            <!-- 壁纸列表由 JS 动态生成 -->\n        </div>\n        <div style=\"margin-top:20px;\">\n            <h4>自定义壁纸</h4>\n            <div style=\"display:flex; gap:10px; margin-top:5px;\">\n                <!-- 💖 自定义壁纸输入框 -->\n                <input type=\"text\" id=\"custom-wp\" placeholder=\"输入图片 URL\" style=\"flex:1; padding:5px;\">\n                <!-- 💖 应用按钮 -->\n                <button id=\"btn-custom-wp\" style=\"padding:5px 10px;\">应用</button>\n            </div>\n        </div>\n    ",
+                "isOpen": false,
+                "zIndex": 103
+            },
+            "win-angel": {
+                "id": "win-angel",
+                "name": "探索之窗",
+                "version": "1.2.0",
+                "description": "连接无限可能的数字世界",
+                "icon": "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
+                "color": "#6c5ce7",
+                "pos": {
+                    "x": 20,
+                    "y": 110
+                },
+                "winPos": {
+                    "x": 229,
+                    "y": 71
+                },
+                "width": 800,
+                "height": 600,
+                "resizable": true,
+                "content": "\n        <!-- 💖 浏览器地址栏容器 -->\n        <div style=\"padding:8px; background:#f1f2f6; display:flex; flex-direction:column; gap:8px; border-bottom:1px solid #ddd;\">\n            <div style=\"display:flex; gap:8px;\">\n                <!-- 💖 导航按钮 -->\n                <button id=\"btn-browser-back\" style=\"padding:4px 8px; cursor:pointer;\" title=\"后退\">⬅️</button>\n                <button id=\"btn-browser-forward\" style=\"padding:4px 8px; cursor:pointer;\" title=\"前进\">➡️</button>\n                <button id=\"btn-browser-refresh\" style=\"padding:4px 8px; cursor:pointer;\" title=\"刷新\">🔄</button>\n                \n                <!-- 💖 网址输入框 -->\n                <input type=\"text\" id=\"browser-url\" placeholder=\"https://www.douyin.com/\"\n                    style=\"flex:1; padding:4px 8px; border:1px solid #ccc; border-radius:4px;\">\n                <!-- 💖 前往按钮 -->\n                <button id=\"btn-browser-go\" style=\"padding:4px 12px; cursor:pointer;\">前往</button>\n                <!-- 💖 重连按钮 (新增) -->\n                <button id=\"btn-browser-reconnect\" style=\"padding:4px 8px; cursor:pointer; color:red;\" title=\"强制重连直播流\">🔌</button>\n                <!-- 💖 验证码按钮 (新增) -->\n                <button id=\"btn-browser-captcha\" style=\"padding:4px 8px; cursor:pointer; color:orange;\" title=\"AI 解决验证码\">🧩</button>\n            </div>\n            \n            <!-- 💖 智能任务栏 (AI Task Bar) -->\n            <div style=\"display:flex; gap:8px; align-items:center;\">\n                <span style=\"font-size:14px;\">🤖</span>\n                <input type=\"text\" id=\"browser-task-input\" placeholder=\"告诉 Angel 你想做什么... (例如: 去淘宝买个手机)\"\n                    style=\"flex:1; padding:4px 8px; border:1px solid #a29bfe; border-radius:4px; background:#f8f9fa;\">\n                <button id=\"btn-browser-task\"\n                    style=\"padding:4px 12px; cursor:pointer; background:var(--primary-color); color:white; border:none; border-radius:4px;\">执行任务</button>\n            </div>\n\n            <!-- 💖 性能控制栏 -->\n            <div style=\"display:flex; gap:8px; align-items:center; font-size:12px; color:#666;\">\n                <span>画质:</span>\n                <select id=\"sel-quality\" style=\"padding:2px;\">\n                    <option value=\"high\" selected>高清 (High)</option>\n                    <option value=\"medium\">均衡 (Medium)</option>\n                    <option value=\"low\">省流 (Low)</option>\n                </select>\n                <span style=\"margin-left:8px;\">帧率:</span>\n                <select id=\"sel-fps\" style=\"padding:2px;\">\n                    <option value=\"30\">30 FPS</option>\n                    <option value=\"15\" selected>15 FPS</option>\n                    <option value=\"5\">5 FPS</option>\n                    <option value=\"1\">1 FPS</option>\n                </select>\n            </div>\n        </div>\n\n        <!-- 💖 浏览器内容显示区域 -->\n        <div style=\"flex:1; position:relative; background:black;\">\n            <!-- 💖 实时画面显示组件 (默认隐藏，有数据时显示) -->\n            <img id=\"live-image\" style=\"width:100%; height:100%; object-fit:contain; display:none;\" />\n            \n            <!-- 💖 状态提示遮罩 (Status Overlay) -->\n            <div id=\"browser-status-overlay\" \n                style=\"position:absolute; bottom:20px; left:50%; transform:translateX(-50%); \n                       background:rgba(0,0,0,0.6); color:white; padding:4px 12px; border-radius:12px; \n                       font-size:12px; pointer-events:none; transition: opacity 0.3s;\">\n                💤 Agent Waiting...\n            </div>\n\n            <!-- 💖 远程控制交互层 (覆盖在画面之上，用于捕获点击) -->\n            <div id=\"remote-screen\"\n                style=\"position:absolute; top:0; left:0; width:100%; height:100%; cursor:crosshair;\"></div>\n            <!-- 💖 视频播放进度条 (悬停显示) -->\n            <div id=\"video-progress-bar\"\n                style=\"position:absolute; bottom:0; left:0; width:100%; height:5px; background:rgba(255,255,255,0.3); cursor:pointer; display:none;\">\n                <!-- 💖 进度条填充部分 -->\n                <div style=\"width:0%; height:100%; background:red;\"></div>\n            </div>\n        </div>\n    ",
+                "contentStyle": "display:flex; flex-direction:column; padding:0;",
+                "isSystem": false,
+                "isOpen": false,
+                "zIndex": 104,
+                "isMinimized": false
+            }
+        },
+        "installedApps": {
+            "sys-keymgr": {
+                "name": "Key Manager",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "key_manager.js"
+            },
+            "sys-taskbar": {
+                "name": "Taskbar",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "taskbar.js"
+            },
+            "sys-desktop": {
+                "name": "Desktop",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "desktop.js"
+            },
+            "sys-context-menu": {
+                "name": "Context Menu",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "context_menu.js"
+            },
+            "app-login": {
+                "name": "Login",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "login.js"
+            },
+            "win-companion": {
+                "name": "Angel System",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "angel.js"
+            },
+            "svc-billing": {
+                "name": "Billing",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "billing.js"
+            },
+            "svc-traffic": {
+                "name": "Traffic",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "traffic.js"
+            },
+            "svc-fps": {
+                "name": "FPS Counter",
+                "version": "1.0.0",
+                "isSystem": true,
+                "filename": "fps.js"
+            },
+            "win-angel": {
+                "name": "探索之窗",
+                "version": "1.2.1",
+                "isSystem": false,
+                "filename": "browser.js",
+                "icon": "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
+                "color": "#6c5ce7",
+                "path": "../apps/browser.js"
+            },
+            "win-personalization": {
+                "name": "个性化",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "personalization.js",
+                "icon": "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22L5.09 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+                "color": "#e17055",
+                "path": "../apps/personalization.js"
+            },
+            "win-taskmgr": {
+                "name": "活力源泉",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "task_manager.js",
+                "icon": "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",
+                "color": "#d63031",
+                "path": "../apps/task_manager.js"
+            },
+            "win-manual": {
+                "name": "光明指引",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "manual.js",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+                "color": "#0984e3",
+                "path": "../apps/manual.js"
+            },
+            "win-performance": {
+                "name": "性能调优",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "performance.js",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#6c5ce7",
+                "path": "../apps/performance.js"
+            },
+            "win-intelligence": {
+                "name": "智慧锦囊",
+                "version": "1.0.1",
+                "isSystem": false,
+                "filename": "intelligence.js",
+                "icon": "M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z",
+                "color": "#00b894",
+                "path": "../apps/intelligence.js"
+            }
+        }
+    },
+    "222": {
+        "apps": {
+            "sys-keymgr": {
+                "id": "sys-keymgr",
+                "name": "密钥管理",
+                "type": "service",
+                "isSystem": true,
+                "description": "管理用户密钥与会话",
+                "isOpen": true
+            },
+            "sys-taskbar": {
+                "id": "sys-taskbar",
+                "name": "任务栏",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "description": "系统任务栏管理器",
+                "isOpen": true
+            },
+            "sys-desktop": {
+                "id": "sys-desktop",
+                "name": "桌面",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "description": "系统桌面图标管理器",
+                "isOpen": true
+            },
+            "sys-context-menu": {
+                "id": "sys-context-menu",
+                "name": "右键菜单",
+                "version": "1.0.0",
+                "type": "service",
+                "isSystem": true,
+                "isOpen": true
+            },
+            "app-login": {
+                "id": "app-login",
+                "type": "service",
+                "name": "Login Service",
+                "version": "1.0.0",
+                "isSystem": true,
+                "isOpen": false
+            },
+            "win-companion": {
+                "id": "win-companion",
+                "name": "守护天使",
+                "version": "1.0.0",
+                "description": "永远陪伴在你身边的守护者",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z",
+                "color": "#ff7675",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "pos": {
+                    "x": 1114,
+                    "y": 100
+                },
+                "winPos": {
+                    "x": 991,
+                    "y": 326
+                },
+                "isOpen": true,
+                "content": "\n        <div id=\"angel-container\" style=\"width:100%; height:100%; position:relative;\">\n            <div id=\"angel-scene\" style=\"width:100%; height:100%;\"></div>\n            <div id=\"angel-speech\" class=\"speech-bubble\">...</div>\n            \n            <!-- 💖 新增：聊天交互框 -->\n            <div id=\"angel-chat\" class=\"angel-chat-box\">\n                <div class=\"chat-input-wrapper\">\n                    <input type=\"text\" id=\"angel-input\" class=\"angel-input\" placeholder=\"输入指令或聊天...\" autocomplete=\"off\">\n                    <button id=\"btn-voice\" class=\"chat-btn\" title=\"语音输入\">\n                        <svg viewBox=\"0 0 24 24\"><path d=\"M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z\"/><path d=\"M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z\"/></svg>\n                    </button>\n                    <!-- 💖 新增：静音按钮 -->\n                    <button id=\"btn-mute\" class=\"chat-btn\" title=\"开启/关闭语音\">\n                        <svg id=\"icon-sound-on\" viewBox=\"0 0 24 24\" style=\"display:block\"><path d=\"M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z\"/></svg>\n                        <svg id=\"icon-sound-off\" viewBox=\"0 0 24 24\" style=\"display:none\"><path d=\"M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z\"/></svg>\n                    </button>\n                    <button id=\"btn-send\" class=\"chat-btn\" title=\"发送\">\n                        <svg viewBox=\"0 0 24 24\"><path d=\"M2.01 21L23 12 2.01 3 2 10l15 2-15 2z\"/></svg>\n                    </button>\n                </div>\n            </div>\n        </div>\n        <style>\n            /* 💖 特殊样式：让这个窗口背景透明，去掉边框和阴影 */\n            #win-companion {\n                background: transparent !important;\n                box-shadow: none !important;\n                border: none !important;\n                overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */\n                -webkit-backdrop-filter: none !important;\n                backdrop-filter: none !important; /* 🚫 移除毛玻璃效果 */\n            }\n            #win-companion .title-bar {\n                display: none !important; /* 💖 隐藏标题栏，让它看起来像悬浮在桌面上 */\n            }\n            #win-companion .window-content {\n                background: transparent !important;\n                overflow: visible !important; /* 💖 允许气泡溢出窗口边界 */\n            }\n            /* 💖 气泡样式已移至 style.css 统一管理 */\n        </style>\n    ",
+                "contentStyle": "background:transparent; overflow:visible;",
+                "isSystem": true,
+                "zIndex": 102
+            },
+            "svc-billing": {
+                "id": "svc-billing",
+                "name": "金色收获",
+                "description": "任务栏计费监控服务",
+                "icon": "M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+                "color": "#fdcb6e",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "relatedApps": [
+                    "win-billing"
+                ],
+                "isSystem": true,
+                "capsuleOffsetX": -216
+            },
+            "win-billing": {
+                "id": "win-billing",
+                "name": "金色收获",
+                "version": "1.0.0",
+                "description": "每一分价值都值得被记录",
+                "icon": "M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+                "color": "#fdcb6e",
+                "system": true,
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "skipTaskbar": true,
+                "showTrayIcon": false,
+                "frameless": true,
+                "fixed": false,
+                "width": 200,
+                "height": 200,
+                "pos": {
+                    "x": 0,
+                    "y": 0
+                },
+                "isOpen": false,
+                "content": "\n        <div style=\"padding: 15px; background: rgba(45, 52, 54, 0.95); color: #dfe6e9; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%; display: flex; flex-direction: column;\">\n            <div style=\"font-size: 12px; color: #fdcb6e; margin-bottom: 10px; font-weight: bold;\">BILLING DETAILS</div>\n            \n            <div style=\"flex: 1; overflow-y: auto; margin-bottom: 10px;\">\n                <div class=\"bill-row\" style=\"display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;\">\n                    <span style=\"color: #b2bec3;\">Network</span>\n                    <span id=\"pop-net\" style=\"color: #fff;\">¥0.00</span>\n                </div>\n                <div class=\"bill-row\" style=\"display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;\">\n                    <span style=\"color: #b2bec3;\">AI Compute</span>\n                    <span id=\"ai-cost\" style=\"color: #fff;\">¥0.00</span>\n                </div>\n                <div style=\"border-top: 1px solid #636e72; margin: 5px 0;\"></div>\n                <div id=\"pop-models\" style=\"font-size: 10px; color: #aaa;\">\n                    <!-- 动态内容 -->\n                </div>\n            </div>\n\n            <div style=\"border-top: 1px solid #636e72; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;\">\n                <span style=\"font-size: 12px;\">TOTAL</span>\n                <span id=\"pop-total\" style=\"color: #fdcb6e; font-weight: bold; font-size: 16px;\">¥0.00</span>\n            </div>\n        </div>\n    ",
+                "contentStyle": "background: transparent; padding: 0; box-shadow: none; border: none;",
+                "hideInTaskMgr": true,
+                "zIndex": 102
+            },
+            "svc-traffic": {
+                "id": "svc-traffic",
+                "name": "流量胶囊",
+                "description": "任务栏流量监控服务",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#00cec9",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "relatedApps": [
+                    "win-traffic"
+                ],
+                "isSystem": true,
+                "capsuleOffsetX": -134
+            },
+            "win-traffic": {
+                "id": "win-traffic",
+                "name": "脉动监测",
+                "version": "1.0.0",
+                "description": "感受数据的每一次跳动",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#00cec9",
+                "system": true,
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "skipTaskbar": true,
+                "showTrayIcon": false,
+                "frameless": true,
+                "fixed": false,
+                "width": 200,
+                "height": 120,
+                "pos": {
+                    "x": 0,
+                    "y": 0
+                },
+                "isOpen": false,
+                "openMsg": "",
+                "content": "\n        <div style=\"padding: 15px; background: rgba(30, 39, 46, 0.95); color: #fff; border-radius: 8px; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); height: 100%;\">\n            <div style=\"font-size: 12px; color: #00cec9; margin-bottom: 10px; font-weight: bold;\">NETWORK MONITOR</div> <!-- 💖 标题 -->\n            <div style=\"display: flex; justify-content: space-between; margin-bottom: 8px;\">\n                <span style=\"color: #aaa; font-size: 11px;\">UPLOAD</span> <!-- 💖 上传标签 -->\n                <span id=\"tx-stat\" style=\"color: #74b9ff; font-family: monospace;\">0 KB/s</span> <!-- 💖 上传速度显示区域 -->\n            </div>\n            <div style=\"display: flex; justify-content: space-between;\">\n                <span style=\"color: #aaa; font-size: 11px;\">DOWNLOAD</span> <!-- 💖 下载标签 -->\n                <span id=\"rx-stat\" style=\"color: #55efc4; font-family: monospace;\">0 KB/s</span> <!-- 💖 下载速度显示区域 -->\n            </div>\n            <div style=\"margin-top: 10px; height: 2px; background: #333; border-radius: 1px; overflow: hidden;\">\n                <div style=\"width: 50%; height: 100%; background: #00cec9; animation: pulse 2s infinite;\"></div> <!-- 💖 装饰性动画条 -->\n            </div>\n        </div>\n    ",
+                "contentStyle": "background: transparent; padding: 0; box-shadow: none; border: none;",
+                "hideInTaskMgr": true,
+                "zIndex": 105
+            },
+            "svc-fps": {
+                "id": "svc-fps",
+                "name": "帧率监控",
+                "version": "1.0.0",
+                "description": "实时监控系统渲染帧率",
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+                "color": "#636e72",
+                "system": true,
+                "type": "service",
+                "showDesktopIcon": false,
+                "showTaskbarIcon": false,
+                "isOpen": true,
+                "isSystem": true,
+                "capsuleOffsetX": -96
+            },
+            "win-intelligence": {
+                "id": "win-intelligence",
+                "filename": "intelligence.js",
+                "name": "智慧锦囊",
+                "version": "1.0.1",
+                "line_count": 0,
+                "icon": "M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z",
+                "color": "#00b894",
+                "path": "../apps/intelligence.js",
+                "pos": {
+                    "x": 388,
+                    "y": 508
+                }
+            },
+            "win-performance": {
+                "id": "win-performance",
+                "filename": "performance.js",
+                "name": "性能调优",
+                "version": "1.0.1",
+                "line_count": 0,
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#6c5ce7",
+                "path": "../apps/performance.js",
+                "pos": {
+                    "x": 357,
+                    "y": 301
+                }
+            }
+        },
+        "installedApps": {
+            "win-angel": {
+                "id": "win-angel",
+                "filename": "browser.js",
+                "name": "探索之窗",
+                "version": "1.2.1",
+                "line_count": 0,
+                "icon": "M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z",
+                "color": "#6c5ce7",
+                "path": "../apps/browser.js"
+            },
+            "win-personalization": {
+                "id": "win-personalization",
+                "filename": "personalization.js",
+                "name": "个性化",
+                "version": "1.0.1",
+                "line_count": 0,
+                "icon": "M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0 .59-.22L5.09 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+                "color": "#e17055",
+                "path": "../apps/personalization.js"
+            },
+            "win-taskmgr": {
+                "id": "win-taskmgr",
+                "filename": "task_manager.js",
+                "name": "活力源泉",
+                "version": "1.0.1",
+                "line_count": 0,
+                "icon": "M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z",
+                "color": "#d63031",
+                "path": "../apps/task_manager.js"
+            },
+            "win-manual": {
+                "id": "win-manual",
+                "filename": "manual.js",
+                "name": "光明指引",
+                "version": "1.0.1",
+                "line_count": 0,
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z",
+                "color": "#0984e3",
+                "path": "../apps/manual.js"
+            },
+            "win-performance": {
+                "id": "win-performance",
+                "filename": "performance.js",
+                "name": "性能调优",
+                "version": "1.0.1",
+                "line_count": 0,
+                "icon": "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
+                "color": "#6c5ce7",
+                "path": "../apps/performance.js"
+            },
+            "win-intelligence": {
+                "id": "win-intelligence",
+                "filename": "intelligence.js",
+                "name": "智慧锦囊",
+                "version": "1.0.1",
+                "line_count": 0,
+                "icon": "M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z",
+                "color": "#00b894",
+                "path": "../apps/intelligence.js"
+            }
+        }
+    },
+    "test_user": {
+        "apps": {
+            "test-app": {
+                "id": "test-app",
+                "pos": {
+                    "x": 100,
+                    "y": 200
+                },
+                "isOpen": true
+            }
+        },
+        "installedApps": {
+            "test-app": {
+                "id": "test-app",
+                "name": "Test App"
+            }
+        }
+    }
+}

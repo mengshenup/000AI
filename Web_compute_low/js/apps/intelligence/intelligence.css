@@ -1,0 +1,9 @@
+/* 情报站样式 */
+
+.file-item {
+    transition: background 0.2s;
+}
+
+.file-item:hover {
+    background: #f5f6fa;
+}

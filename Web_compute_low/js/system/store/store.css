@@ -1,0 +1,23 @@
+/**
+ * Store 模块样式
+ * 目前 store 是纯逻辑模块，暂无样式需求
+ * 保留此文件以符合原子化架构规范
+ */
+
+/* 预留：未来可能的加载状态指示器样式 */
+.store-loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.store-syncing::after {
+    content: '同步中...';
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+}

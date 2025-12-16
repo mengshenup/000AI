@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-playwright"],
+      "disabled": false,
+      "autoApprove": ["playwright_navigate", "playwright_screenshot", "playwright_click", "playwright_fill", "playwright_select", "playwright_hover", "playwright_evaluate"]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "YOUR_API_KEY_HERE"
+      },
+      "disabled": true,
+      "autoApprove": ["brave_web_search"]
+    }
+  }
+}

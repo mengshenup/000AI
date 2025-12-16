@@ -1,0 +1,410 @@
+{
+  "version": "1.0.0",
+  "generated": "2025-12-16T16:34:30.278Z",
+  "modules": {
+    "system": [
+      {
+        "name": "capsule_manager",
+        "type": "system",
+        "path": "system/capsule_manager",
+        "version": "1.0.0",
+        "atoms": [
+          "create",
+          "drag"
+        ],
+        "exports": [
+          "VERSION"
+        ]
+      },
+      {
+        "name": "components",
+        "type": "system",
+        "path": "system/components",
+        "version": "1.0.0",
+        "atoms": [],
+        "exports": []
+      },
+      {
+        "name": "event_bus",
+        "type": "system",
+        "path": "system/event_bus",
+        "version": "1.0.0",
+        "atoms": [
+          "emit",
+          "off",
+          "on"
+        ],
+        "exports": [
+          "VERSION",
+          "bus"
+        ]
+      },
+      {
+        "name": "loader",
+        "type": "system",
+        "path": "system/loader",
+        "version": "1.0.0",
+        "atoms": [
+          "apps",
+          "business",
+          "fetch",
+          "fetch_apps",
+          "init",
+          "ui"
+        ],
+        "exports": [
+          "VERSION"
+        ]
+      },
+      {
+        "name": "network",
+        "type": "system",
+        "path": "system/network",
+        "version": "1.0.0",
+        "atoms": [
+          "heartbeat",
+          "send",
+          "websocket"
+        ],
+        "exports": [
+          "VERSION",
+          "Network",
+          "network"
+        ]
+      },
+      {
+        "name": "process_manager",
+        "type": "system",
+        "path": "system/process_manager",
+        "version": "1.0.0",
+        "atoms": [
+          "context",
+          "kill",
+          "queue",
+          "stats"
+        ],
+        "exports": [
+          "VERSION",
+          "pm"
+        ]
+      },
+      {
+        "name": "store",
+        "type": "system",
+        "path": "system/store",
+        "version": "1.0.0",
+        "atoms": [
+          "cache",
+          "idb",
+          "sync"
+        ],
+        "exports": [
+          "VERSION",
+          "store"
+        ]
+      },
+      {
+        "name": "window_manager",
+        "type": "system",
+        "path": "system/window_manager",
+        "version": "1.0.0",
+        "atoms": [
+          "close",
+          "create",
+          "drag",
+          "focus",
+          "open",
+          "wallpaper"
+        ],
+        "exports": [
+          "VERSION",
+          "WindowManager",
+          "wm"
+        ]
+      }
+    ],
+    "apps_system": [
+      {
+        "name": "angel",
+        "type": "apps_system",
+        "path": "apps_system/angel",
+        "version": "1.0.0",
+        "atoms": [
+          "animation",
+          "interaction",
+          "model",
+          "renderer",
+          "speak",
+          "voice"
+        ],
+        "exports": [
+          "VERSION",
+          "config",
+          "AngelApp",
+          "app"
+        ]
+      },
+      {
+        "name": "app_store",
+        "type": "apps_system",
+        "path": "apps_system/app_store",
+        "version": "1.0.0",
+        "atoms": [
+          "actions",
+          "render"
+        ],
+        "exports": [
+          "VERSION",
+          "config",
+          "appStoreApp",
+          "init"
+        ]
+      },
+      {
+        "name": "billing",
+        "type": "apps_system",
+        "path": "apps_system/billing",
+        "version": "1.0.0",
+        "atoms": [
+          "config",
+          "render"
+        ],
+        "exports": [
+          "VERSION",
+          "config",
+          "init"
+        ]
+      },
+      {
+        "name": "context_menu",
+        "type": "apps_system",
+        "path": "apps_system/context_menu",
+        "version": "1.0.0",
+        "atoms": [],
+        "exports": [
+          "VERSION",
+          "config",
+          "ContextMenuApp",
+          "contextMenuApp"
+        ]
+      },
+      {
+        "name": "desktop",
+        "type": "apps_system",
+        "path": "apps_system/desktop",
+        "version": "1.0.0",
+        "atoms": [
+          "grid",
+          "icon",
+          "menu",
+          "render"
+        ],
+        "exports": [
+          "VERSION",
+          "config",
+          "init"
+        ]
+      },
+      {
+        "name": "fps",
+        "type": "apps_system",
+        "path": "apps_system/fps",
+        "version": "1.0.0",
+        "atoms": [],
+        "exports": [
+          "VERSION",
+          "config",
+          "init"
+        ]
+      },
+      {
+        "name": "key_manager",
+        "type": "apps_system",
+        "path": "apps_system/key_manager",
+        "version": "1.0.0",
+        "atoms": [],
+        "exports": [
+          "VERSION",
+          "config",
+          "init"
+        ]
+      },
+      {
+        "name": "login",
+        "type": "apps_system",
+        "path": "apps_system/login",
+        "version": "1.0.0",
+        "atoms": [
+          "auth",
+          "render"
+        ],
+        "exports": [
+          "VERSION",
+          "config",
+          "loginApp",
+          "init"
+        ]
+      },
+      {
+        "name": "taskbar",
+        "type": "apps_system",
+        "path": "apps_system/taskbar",
+        "version": "1.0.0",
+        "atoms": [
+          "apps",
+          "start",
+          "tray"
+        ],
+        "exports": [
+          "VERSION",
+          "config",
+          "init"
+        ]
+      },
+      {
+        "name": "traffic",
+        "type": "apps_system",
+        "path": "apps_system/traffic",
+        "version": "1.0.0",
+        "atoms": [],
+        "exports": [
+          "VERSION",
+          "config",
+          "init"
+        ]
+      }
+    ],
+    "apps": [
+      {
+        "name": "browser",
+        "type": "apps",
+        "path": "apps/browser",
+        "version": "1.0.0",
+        "atoms": [
+          "config",
+          "remote"
+        ],
+        "exports": [
+          "VERSION",
+          "BrowserApp",
+          "app"
+        ]
+      },
+      {
+        "name": "intelligence",
+        "type": "apps",
+        "path": "apps/intelligence",
+        "version": "1.0.0",
+        "atoms": [
+          "config"
+        ],
+        "exports": [
+          "VERSION",
+          "APP_NAME",
+          "app"
+        ]
+      },
+      {
+        "name": "manual",
+        "type": "apps",
+        "path": "apps/manual",
+        "version": "1.0.0",
+        "atoms": [
+          "config"
+        ],
+        "exports": [
+          "VERSION",
+          "app"
+        ]
+      },
+      {
+        "name": "performance",
+        "type": "apps",
+        "path": "apps/performance",
+        "version": "1.0.0",
+        "atoms": [
+          "config",
+          "sysinfo",
+          "template"
+        ],
+        "exports": [
+          "VERSION",
+          "PerformanceApp",
+          "app"
+        ]
+      },
+      {
+        "name": "personalization",
+        "type": "apps",
+        "path": "apps/personalization",
+        "version": "1.0.0",
+        "atoms": [
+          "config"
+        ],
+        "exports": [
+          "VERSION",
+          "APP_NAME",
+          "app"
+        ]
+      },
+      {
+        "name": "task_manager",
+        "type": "apps",
+        "path": "apps/task_manager",
+        "version": "1.0.0",
+        "atoms": [
+          "config",
+          "render"
+        ],
+        "exports": [
+          "VERSION",
+          "APP_NAME",
+          "TaskManagerApp",
+          "app"
+        ]
+      }
+    ],
+    "components": [
+      {
+        "name": "button",
+        "type": "components",
+        "path": "components/button",
+        "version": "1.0.0",
+        "atoms": [
+          "button"
+        ],
+        "exports": []
+      },
+      {
+        "name": "icon",
+        "type": "components",
+        "path": "components/icon",
+        "version": "1.0.0",
+        "atoms": [
+          "svg_icon"
+        ],
+        "exports": []
+      },
+      {
+        "name": "input",
+        "type": "components",
+        "path": "components/input",
+        "version": "1.0.0",
+        "atoms": [
+          "input"
+        ],
+        "exports": []
+      },
+      {
+        "name": "modal",
+        "type": "components",
+        "path": "components/modal",
+        "version": "1.0.0",
+        "atoms": [
+          "modal"
+        ],
+        "exports": []
+      }
+    ]
+  }
+}
